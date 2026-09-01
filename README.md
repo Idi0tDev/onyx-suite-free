@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="docs/assets/onyx-review-hero.png" alt="Onyx Review scanning a wireframe bust and identifying mesh issues" width="100%">
+  <img src="docs/assets/onyx-suite-hero.png" alt="Onyx Suite modular cube artwork" width="100%">
 </p>
 
 <h1 align="center">Onyx Suite Free</h1>
 
 <p align="center">
-  <strong>Catch mesh problems while they are still cheap to fix.</strong><br>
-  Free, focused Blender tools built around safe workflows and honest feedback.
+  <strong>A shared foundation for focused Blender tools.</strong><br>
+  Free, open-source tools built around safe workflows and honest feedback.
 </p>
 
 <p align="center">
@@ -16,13 +16,30 @@
   <img alt="Early preview" src="https://img.shields.io/badge/status-early%20preview-c58b36">
 </p>
 
+## What's in this repository
+
+Onyx Suite Free currently contains two closely connected projects:
+
+- **Onyx Review** helps artists find, understand, and revisit mesh problems.
+- **Onyx Core** gives Onyx tools a shared foundation for startup, diagnostics,
+  compatibility, and communication.
+
+You can install Review by itself. Its ZIP already contains the Core runtime it
+needs, so there is no extra dependency to set up.
+
+## Onyx Review
+
+<p align="center">
+  <img src="docs/assets/onyx-review-hero.png" alt="Onyx Review scanning a mesh and identifying geometry problems" width="100%">
+</p>
+
+<p align="center"><em>Mesh analysis and diagnostics, with the problem areas pointed out on the model.</em></p>
+
 <p align="center">
   <img src="docs/assets/onyx-review-in-blender.png" alt="Onyx Review displaying color-coded mesh findings and finding filters inside Blender 5.2 LTS" width="100%">
 </p>
 
 <p align="center"><em>A real Blender 5.2 LTS capture: one review, distinct problem colors, and the full evidence legend beside the mesh.</em></p>
-
-## Meet Onyx Review
 
 **Onyx Review** is a reversible mesh-inspection workspace for Blender 5.2 LTS.
 It gives artists a clear answer to three everyday questions:
@@ -115,7 +132,7 @@ face map to distinguish quads, triangles, and ngons, or a pole map to locate
 3-edge, 5-edge, and 6+-edge vertices. Every class can also be highlighted alone
 or selected exactly in Edit Mode.
 
-## Built to leave the scene alone
+### Built to leave the scene alone
 
 Onyx Review is intentionally an inspection tool—not a cleanup button.
 
@@ -131,7 +148,13 @@ The first review mode used in a viewport captures its settings. **Restore View**
 returns them exactly, and disabling the extension restores any remaining saved
 viewports.
 
-## Onyx Core, included
+## Onyx Core
+
+<p align="center">
+  <img src="docs/assets/onyx-core-foundation.png" alt="Onyx Core shown as the shared foundation of the Onyx Suite" width="100%">
+</p>
+
+<p align="center"><em>The common foundation behind Onyx tools. This public repository currently includes Review and the optional standalone Core extension.</em></p>
 
 Every Onyx product is self-contained. Onyx Review bundles the generated
 **Onyx Core** runtime, so artists do not install a separate dependency.
