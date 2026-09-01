@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 - 2026-09-01
+
+- Add explicit quick fixes for inconsistent face winding, exact duplicate
+  faces, loose edges, and loose vertices.
+- Make every fix a separate Blender undo step and refresh Review immediately.
+- Refuse fixes on linked, multi-user, and shape-key mesh data.
+- Keep Live Review inspection-only and omit any automatic or Fix All workflow.
+- Leave holes, ngons, coincident vertices, islands, transforms, UVs, and
+  materials diagnosis-only.
+
 ## 0.4.0 - 2026-09-01
 
 - Add optional, debounced Live Review after watched mesh changes.

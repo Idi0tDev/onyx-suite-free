@@ -75,6 +75,40 @@ def make_problem_mesh():
     return obj
 
 
+def make_simple_fix_mesh():
+    mesh = bpy.data.meshes.new("SimpleFixMesh")
+    mesh.from_pydata(
+        (
+            (0.0, 0.0, 0.0),
+            (1.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0),
+            (0.0, -1.0, 0.0),
+            (3.0, 0.0, 0.0),
+            (4.0, 0.0, 0.0),
+            (4.0, 1.0, 0.0),
+            (3.0, 1.0, 0.0),
+            (3.0, 0.0, 0.0),
+            (4.0, 0.0, 0.0),
+            (4.0, 1.0, 0.0),
+            (3.0, 1.0, 0.0),
+            (6.0, 0.0, 0.0),
+            (7.0, 0.0, 0.0),
+            (8.0, 0.0, 0.0),
+        ),
+        ((12, 13),),
+        (
+            (0, 1, 2),
+            (0, 1, 3),
+            (4, 5, 6, 7),
+            (8, 9, 10, 11),
+        ),
+    )
+    mesh.update()
+    obj = bpy.data.objects.new("SimpleFixAsset", mesh)
+    bpy.context.collection.objects.link(obj)
+    return obj
+
+
 def check_tooltips():
     for cls in properties.CLASSES:
         for identifier in cls.__annotations__:
@@ -441,6 +475,71 @@ def main():
         len(problem.data.edges),
         len(problem.data.polygons),
     )
+
+    fix_asset = make_simple_fix_mesh()
+    for obj in tuple(bpy.context.selected_objects):
+        obj.select_set(False)
+    fix_asset.select_set(True)
+    bpy.context.view_layer.objects.active = fix_asset
+    settings.scope = "ACTIVE"
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    fix_codes = {issue.code for issue in settings.results[0].issues}
+    assert {
+        "topology.duplicate_faces",
+        "topology.winding",
+        "topology.loose_edges",
+        "topology.loose_vertices",
+    }.issubset(fix_codes)
+    assert operators.simple_fix_info("topology.boundary") is None
+    assert "UNDO" in operators.ONYX_OT_fix_review_issue.bl_options
+
+    shared_fix_asset = bpy.data.objects.new("SimpleFixSharedAsset", fix_asset.data)
+    bpy.context.collection.objects.link(shared_fix_asset)
+    assert fix_asset.data.users == 2
+    assert bpy.ops.onyx.fix_review_issue(
+        object_name=fix_asset.name,
+        issue_code="topology.winding",
+    ) == {"CANCELLED"}
+    assert "topology.winding" in {
+        issue.code for issue in settings.results[0].issues
+    }
+    bpy.data.objects.remove(shared_fix_asset, do_unlink=True)
+    assert fix_asset.data.users == 1
+
+    face_count = len(fix_asset.data.polygons)
+    assert bpy.ops.onyx.fix_review_issue(
+        object_name=fix_asset.name,
+        issue_code="topology.winding",
+    ) == {"FINISHED"}
+    assert len(fix_asset.data.polygons) == face_count
+    assert "topology.winding" not in {
+        issue.code for issue in settings.results[0].issues
+    }
+
+    assert bpy.ops.onyx.fix_review_issue(
+        object_name=fix_asset.name,
+        issue_code="topology.duplicate_faces",
+    ) == {"FINISHED"}
+    assert len(fix_asset.data.polygons) == face_count - 1
+    assert "topology.duplicate_faces" not in {
+        issue.code for issue in settings.results[0].issues
+    }
+
+    assert bpy.ops.onyx.fix_review_issue(
+        object_name=fix_asset.name,
+        issue_code="topology.loose_edges",
+    ) == {"FINISHED"}
+    assert "topology.loose_edges" not in {
+        issue.code for issue in settings.results[0].issues
+    }
+
+    assert bpy.ops.onyx.fix_review_issue(
+        object_name=fix_asset.name,
+        issue_code="topology.loose_vertices",
+    ) == {"FINISHED"}
+    assert "topology.loose_vertices" not in {
+        issue.code for issue in settings.results[0].issues
+    }
 
     assert bpy.ops.onyx.clear_review() == {"FINISHED"}
     assert not settings.results and not settings.last_summary

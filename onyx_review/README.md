@@ -1,4 +1,4 @@
-# Onyx Review 0.4.0
+# Onyx Review 0.5.0
 
 Onyx Review is an independent, reversible mesh-inspection workspace for Blender
 5.2 LTS. It reports source and evaluated geometry statistics, identifies common
@@ -31,6 +31,7 @@ installation is required.
 - Copyable plain-text review report
 - Optional debounced Live Review after mesh changes
 - Automatic Live Review pause in Edit Mode and above a configurable source-vertex limit
+- Explicit, undoable fixes for winding, exact duplicate faces, loose edges, and loose vertices
 
 ## Live Review
 
@@ -42,6 +43,21 @@ Live Review pauses while a target is in Edit Mode, because the editable mesh may
 not yet match its stored object data. It also pauses when the chosen scope
 exceeds the **Live Vertex Limit**. Use zero only when you deliberately want no
 density ceiling. The manual **Run Now** action remains available at all times.
+
+## Simple fixes
+
+Supported findings show a **Fix** button for four deterministic operations:
+
+- Recalculate inconsistent face winding
+- Remove redundant faces whose vertex positions match exactly
+- Delete edges that are not used by a face
+- Delete vertices that are not connected to an edge
+
+Every fix is explicit, creates one Blender undo step, and refreshes the review.
+There is no automatic cleanup pass. Onyx does not offer generic fixes for holes,
+ngons, coincident vertices, disconnected islands, transforms, UVs, or materials.
+Fixes are also refused for linked data, multi-user meshes, and meshes with shape
+keys so a local cleanup cannot silently affect another asset state.
 
 ## Viewport modes
 
@@ -56,6 +72,6 @@ captured viewport.
 
 ## Install
 
-Build `onyx_review-0.4.0.zip` with `tools/package_review.ps1`, then install the
+Build `onyx_review-0.5.0.zip` with `tools/package_review.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.

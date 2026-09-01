@@ -3,7 +3,7 @@
 import bpy
 
 from . import highlight_state, operators
-from .mesh_analysis import issue_selection_domain, topology_class_info
+from .mesh_analysis import issue_selection_domain, simple_fix_info, topology_class_info
 
 
 def _draw_topology_class(layout, object_name, topology_class, count):
@@ -284,8 +284,14 @@ class ONYX_PT_review(bpy.types.Panel):
             for issue in result.issues:
                 icon = "ERROR" if issue.severity == "ERROR" else "INFO"
                 suffix = f" ({issue.count:,})" if issue.count > 1 else ""
-                row = box.row(align=True)
-                row.label(text=f"{issue.message}{suffix}", icon=icon)
+                fix_info = simple_fix_info(issue.code)
+                if fix_info:
+                    finding = box.column(align=True)
+                    finding.label(text=f"{issue.message}{suffix}", icon=icon)
+                    row = finding.row(align=True)
+                else:
+                    row = box.row(align=True)
+                    row.label(text=f"{issue.message}{suffix}", icon=icon)
                 if issue_selection_domain(issue.code):
                     is_visible = highlight_state.is_active(object_name, issue.code)
                     highlight = row.operator(
@@ -304,6 +310,14 @@ class ONYX_PT_review(bpy.types.Panel):
                     )
                     inspect.object_name = object_name
                     inspect.issue_code = issue.code
+                    if fix_info:
+                        fix = row.operator(
+                            "onyx.fix_review_issue",
+                            text="Fix",
+                            icon="CHECKMARK",
+                        )
+                        fix.object_name = object_name
+                        fix.issue_code = issue.code
 
 
 CLASSES = (ONYX_PT_review,)

@@ -10,11 +10,13 @@ from bpy.props import EnumProperty, StringProperty
 from .analysis import Issue, ObjectReview, ReviewSummary, Severity, format_review_report
 from .mesh_analysis import (
     TOPOLOGY_CLASS_ENUM_ITEMS,
+    apply_simple_fix,
     issue_overlay_geometry,
     issue_overlays_geometry,
     issue_selection_domain,
     review_object,
     select_issue_elements,
+    simple_fix_info,
     topology_class_info,
     topology_map_classes,
 )
@@ -257,6 +259,57 @@ class ONYX_OT_inspect_review_issue(bpy.types.Operator):
 
         noun = {"VERT": "vertices", "EDGE": "edges", "FACE": "faces"}[domain]
         self.report({"INFO"}, f"Selected {count:,} matching {noun}")
+        return {"FINISHED"}
+
+
+class ONYX_OT_fix_review_issue(bpy.types.Operator):
+    bl_idname = "onyx.fix_review_issue"
+    bl_label = "Fix Finding"
+    bl_description = "Apply one explicit, undoable fix for a supported mesh finding"
+    bl_options = {"REGISTER", "UNDO"}
+
+    object_name: StringProperty(description="Name of the reviewed mesh to fix")
+    issue_code: StringProperty(description="Stable identifier of the finding to fix")
+
+    @classmethod
+    def description(cls, _context, properties):
+        info = simple_fix_info(properties.issue_code)
+        return info[1] if info else cls.bl_description
+
+    def execute(self, context):
+        info = simple_fix_info(self.issue_code)
+        if info is None:
+            self.report({"WARNING"}, "This finding has no simple fix")
+            return {"CANCELLED"}
+
+        obj = bpy.data.objects.get(self.object_name)
+        if obj is None or obj.type != "MESH" or obj.name not in context.view_layer.objects:
+            self.report({"WARNING"}, "The reviewed mesh is no longer in the active view layer")
+            return {"CANCELLED"}
+        if obj.mode != "OBJECT":
+            self.report({"WARNING"}, "Leave Edit Mode before applying a fix")
+            return {"CANCELLED"}
+
+        mesh = obj.data
+        if mesh.library is not None or not mesh.is_editable:
+            self.report({"WARNING"}, "Linked mesh data cannot be fixed")
+            return {"CANCELLED"}
+        if mesh.users > 1:
+            self.report({"WARNING"}, "Make the mesh data single-user before applying a fix")
+            return {"CANCELLED"}
+        if mesh.shape_keys is not None:
+            self.report({"WARNING"}, "Simple fixes are disabled for meshes with shape keys")
+            return {"CANCELLED"}
+
+        changed = apply_simple_fix(mesh, self.issue_code)
+        if not changed:
+            self.report({"INFO"}, "No exact matching elements remain; run Review again")
+            return {"CANCELLED"}
+
+        if not review_blocker(context, context.scene.onyx_review.scope):
+            perform_review(context)
+        label, _ = info
+        self.report({"INFO"}, f"{label}: changed {changed:,} mesh elements")
         return {"FINISHED"}
 
 
@@ -597,6 +650,7 @@ CLASSES = (
     ONYX_OT_copy_review_report,
     ONYX_OT_select_review_object,
     ONYX_OT_inspect_review_issue,
+    ONYX_OT_fix_review_issue,
     ONYX_OT_inspect_topology_class,
     ONYX_OT_highlight_review_issue,
     ONYX_OT_highlight_review_object,

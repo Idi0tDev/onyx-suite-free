@@ -54,6 +54,27 @@ An open boundary is not automatically a bad mesh: planes, cards, clothing, and
 other intentionally open surfaces can be correct. Onyx Review reports facts and
 leaves the production decision to the artist.
 
+## Simple fixes
+
+A **Fix** button appears only for four deliberately narrow cases:
+
+| Finding | Explicit operation |
+| --- | --- |
+| Inconsistent face winding | Recalculate connected face normals for consistent winding |
+| Exact duplicate faces | Keep the first face and delete later faces with exactly matching vertex positions |
+| Loose edges | Delete edges that are not used by any face |
+| Loose vertices | Delete vertices that are not connected to any edge |
+
+Fixes work on the base mesh in Object Mode. Each click is one Blender undo step,
+clears stale viewport evidence, and reruns the current review so the new counts
+are visible immediately. Onyx refuses to run a fix on linked mesh data,
+multi-user mesh data, or a mesh with shape keys.
+
+There is no **Fix All** action and Live Review never runs fixes. Open boundaries,
+degenerate faces, ngons, coincident vertices, disconnected islands, transforms,
+UVs, and materials remain diagnosis-only because a generic change could destroy
+intentional modeling decisions.
+
 Element-level topology findings include an **Inspect** action. It activates the
 reviewed mesh, enters Edit Mode, switches to the matching vertex, edge, or face
 selection mode, and selects the elements that currently produce that finding.

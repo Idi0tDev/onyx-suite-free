@@ -68,6 +68,25 @@ _TOPOLOGY_MAP_CLASSES = {
     "POLES": ("POLES_3", "POLES_5", "POLES_6_PLUS"),
 }
 
+_SIMPLE_FIXES = {
+    "topology.duplicate_faces": (
+        "Remove Exact Duplicates",
+        "Delete redundant faces only when every vertex position matches exactly",
+    ),
+    "topology.winding": (
+        "Recalculate Winding",
+        "Make connected face winding consistent using Blender's normal recalculation",
+    ),
+    "topology.loose_edges": (
+        "Delete Loose Edges",
+        "Delete edges that are not used by any face",
+    ),
+    "topology.loose_vertices": (
+        "Delete Loose Vertices",
+        "Delete vertices that are not connected to any edge",
+    ),
+}
+
 TOPOLOGY_CLASS_ENUM_ITEMS = tuple(
     (class_id, label, description)
     for class_id, (_, label, description) in _TOPOLOGY_CLASSES.items()
@@ -161,6 +180,65 @@ def topology_map_classes(map_kind):
         return _TOPOLOGY_MAP_CLASSES[map_kind]
     except KeyError as exc:
         raise ValueError(f"Unknown topology map: {map_kind}") from exc
+
+
+def simple_fix_info(issue_code):
+    """Return the label and description for a deliberately narrow quick fix."""
+    return _SIMPLE_FIXES.get(issue_code)
+
+
+def _exact_face_position_key(face):
+    return tuple(sorted(tuple(vertex.co) for vertex in face.verts))
+
+
+def _exact_duplicate_faces_to_remove(faces):
+    groups = {}
+    for face in faces:
+        groups.setdefault(_exact_face_position_key(face), []).append(face)
+    return tuple(
+        face
+        for group in groups.values()
+        for face in sorted(group, key=lambda item: item.index)[1:]
+    )
+
+
+def apply_simple_fix(mesh, issue_code):
+    """Apply one deterministic base-mesh fix and return its changed element count."""
+    if issue_code not in _SIMPLE_FIXES:
+        raise ValueError(f"No simple fix is available for {issue_code}")
+
+    bm = bmesh.new()
+    try:
+        bm.from_mesh(mesh)
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+        bm.faces.ensure_lookup_table()
+
+        if issue_code == "topology.duplicate_faces":
+            elements = _exact_duplicate_faces_to_remove(bm.faces)
+            if elements:
+                bmesh.ops.delete(bm, geom=elements, context="FACES_ONLY")
+        elif issue_code == "topology.winding":
+            elements = _matching_elements(bm, issue_code)
+            if elements:
+                bmesh.ops.recalc_face_normals(bm, faces=tuple(bm.faces))
+        elif issue_code == "topology.loose_edges":
+            elements = _matching_elements(bm, issue_code)
+            if elements:
+                bmesh.ops.delete(bm, geom=elements, context="EDGES")
+        else:
+            elements = _matching_elements(bm, issue_code)
+            if elements:
+                bmesh.ops.delete(bm, geom=elements, context="VERTS")
+
+        changed = len(elements)
+        if changed:
+            bm.normal_update()
+            bm.to_mesh(mesh)
+            mesh.update()
+        return changed
+    finally:
+        bm.free()
 
 
 def _matching_elements(bm, issue_code):

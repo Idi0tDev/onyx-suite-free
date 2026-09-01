@@ -44,8 +44,9 @@ when the chosen scope exceeds its configurable source-vertex limit.
 5. Open **Topology Detail** to map or select face types and topology poles.
 6. Use **Show All Findings** for an overview, or **Show** to isolate one finding.
 7. Use **Inspect** when you want its mesh elements selected in Edit Mode.
-8. Switch between Studio, Silhouette, Topology, and Face Orientation views.
-9. Press **Restore View** to return the viewport to its original settings.
+8. Optionally use **Fix** for supported, deterministic cleanup cases.
+9. Switch between Studio, Silhouette, Topology, and Face Orientation views.
+10. Press **Restore View** to return the viewport to its original settings.
 
 ### What it currently checks
 
@@ -65,6 +66,12 @@ Actionable topology findings can select their exact vertices, edges, or faces
 in Edit Mode. This navigation changes the active selection for inspection but
 does not alter the mesh.
 
+Four deliberately narrow findings also offer an explicit **Fix** action:
+inconsistent winding, exact duplicate faces, loose edges, and loose vertices.
+Each action changes only the base mesh, creates one Blender undo step, and
+immediately reruns the review. Fixes are never run automatically, and Onyx
+refuses them on linked, shared, or shape-key mesh data.
+
 They can also draw temporary, color-coded highlights directly in the 3D
 Viewport. Each problem type has a distinct color, while error-level findings use
 thicker marks. Show a single finding or every actionable finding for one object
@@ -83,6 +90,7 @@ Onyx Review is intentionally an inspection tool—not a cleanup button.
 
 - No automatic mesh repair
 - No geometry edits from Live Review
+- No hole filling, remeshing, vertex merging, or transform application
 - No material replacement
 - No export or pipeline assumptions
 - No downloads, accounts, telemetry, or background network access
@@ -140,6 +148,7 @@ The repository includes:
 - Transient viewport-highlight geometry and cleanup coverage
 - Empty-scope readiness and clipboard-report coverage
 - Debounced Live Review, Edit Mode pause, and density-limit coverage
+- Explicit quick-fix mutation, refusal, and result-refresh coverage
 - Viewport restoration coverage
 - Core embedding verification
 - Standalone Core and bundled-product coexistence tests
