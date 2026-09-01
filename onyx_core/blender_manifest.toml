@@ -1,0 +1,12 @@
+schema_version = "1.0.0"
+
+id = "onyx_core"
+version = "0.1.0"
+name = "Onyx Core"
+tagline = "Shared framework and interoperability for Onyx extensions"
+maintainer = "Onyx"
+type = "add-on"
+
+tags = ["Development"]
+blender_version_min = "5.2.0"
+license = ["SPDX:GPL-3.0-or-later"]

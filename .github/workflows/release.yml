@@ -1,0 +1,49 @@
+name: Draft Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  draft-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Read and verify versions
+        shell: pwsh
+        run: |
+          $tagVersion = "${{ github.ref_name }}".TrimStart("v")
+          if ($tagVersion -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Release tags must use vMAJOR.MINOR.PATCH."
+          }
+          $coreManifest = Get-Content onyx_core/blender_manifest.toml -Raw
+          $reviewManifest = Get-Content onyx_review/blender_manifest.toml -Raw
+          $coreVersion = [regex]::Match($coreManifest, '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
+          $reviewVersion = [regex]::Match($reviewManifest, '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
+          if ($tagVersion -ne $reviewVersion) {
+            throw "Tag version $tagVersion does not match Onyx Review $reviewVersion."
+          }
+          "ONYX_CORE_VERSION=$coreVersion" >> $env:GITHUB_ENV
+          "ONYX_REVIEW_VERSION=$reviewVersion" >> $env:GITHUB_ENV
+      - name: Build verified release bundle
+        shell: pwsh
+        run: ./tools/build_release.ps1 -CoreVersion $env:ONYX_CORE_VERSION -ReviewVersion $env:ONYX_REVIEW_VERSION
+      - name: Create draft GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" `
+            "dist/onyx_core-$env:ONYX_CORE_VERSION.zip#Onyx Core $env:ONYX_CORE_VERSION" `
+            "dist/onyx_review-$env:ONYX_REVIEW_VERSION.zip#Onyx Review $env:ONYX_REVIEW_VERSION" `
+            "dist/SHA256SUMS.txt#SHA-256 checksums" `
+            --draft `
+            --generate-notes `
+            --verify-tag `
+            --title "Onyx Suite Free $env:ONYX_REVIEW_VERSION"
