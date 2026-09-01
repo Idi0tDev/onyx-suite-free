@@ -26,6 +26,12 @@ _FINDING_STYLES = {
     "topology.coincident_vertices": FindingStyle("Orange", (1.0, 0.34, 0.03, 0.96)),
     "topology.disconnected_islands": FindingStyle("Blue", (0.12, 0.42, 1.0, 0.96)),
     "topology.ngons": FindingStyle("Amber", (1.0, 0.58, 0.04, 0.96)),
+    "topology_map.triangles": FindingStyle("Gold", (1.0, 0.72, 0.04, 0.96)),
+    "topology_map.quads": FindingStyle("Teal", (0.05, 0.86, 0.64, 0.96)),
+    "topology_map.ngons": FindingStyle("Coral", (1.0, 0.18, 0.08, 0.98)),
+    "topology_map.poles_3": FindingStyle("Sky", (0.05, 0.64, 1.0, 0.96)),
+    "topology_map.poles_5": FindingStyle("Violet", (0.58, 0.18, 1.0, 0.98)),
+    "topology_map.poles_6_plus": FindingStyle("Pink", (1.0, 0.05, 0.52, 0.98)),
 }
 _ERROR_STYLE = FindingStyle("Red", (1.0, 0.12, 0.03, 0.98))
 _WARNING_STYLE = FindingStyle("Orange", (1.0, 0.48, 0.03, 0.96))
@@ -45,6 +51,7 @@ class Highlight:
 
 _ACTIVE = ()
 _OVERVIEW_OBJECT = ""
+_OVERVIEW_KEY = ""
 _HANDLER = None
 _SHADER = None
 _BATCHES = None
@@ -56,6 +63,10 @@ def active_highlight():
 
 def active_highlights():
     return _ACTIVE
+
+
+def active_overview_key():
+    return _OVERVIEW_KEY
 
 
 def finding_style(issue_code, severity):
@@ -74,8 +85,12 @@ def is_active(object_name, issue_code):
     )
 
 
-def is_overview_active(object_name):
-    return bool(_ACTIVE and _OVERVIEW_OBJECT == object_name)
+def is_overview_active(object_name, overview_key="FINDINGS"):
+    return bool(
+        _ACTIVE
+        and _OVERVIEW_OBJECT == object_name
+        and _OVERVIEW_KEY == overview_key
+    )
 
 
 def _tag_redraw():
@@ -155,13 +170,14 @@ def make_highlight(
     )
 
 
-def _show(highlights, overview_object=""):
-    global _ACTIVE, _OVERVIEW_OBJECT, _HANDLER, _SHADER, _BATCHES
+def _show(highlights, overview_object="", overview_key=""):
+    global _ACTIVE, _OVERVIEW_OBJECT, _OVERVIEW_KEY, _HANDLER, _SHADER, _BATCHES
     highlights = tuple(highlights)
     if not highlights:
         raise ValueError("At least one viewport highlight is required")
     _ACTIVE = highlights
     _OVERVIEW_OBJECT = str(overview_object)
+    _OVERVIEW_KEY = str(overview_key)
     _SHADER = None
     _BATCHES = None
     if _HANDLER is None:
@@ -200,21 +216,27 @@ def show_highlight(
     )
 
 
-def show_overview(object_name, highlights):
-    ordered = sorted(
+def show_overview(object_name, highlights, overview_key="FINDINGS"):
+    if overview_key == "FINDINGS":
+        highlights = sorted(
+            highlights,
+            key=lambda highlight: (
+                1 if highlight.severity == "ERROR" else 0,
+                highlight.issue_code,
+            ),
+        )
+    _show(
         highlights,
-        key=lambda highlight: (
-            1 if highlight.severity == "ERROR" else 0,
-            highlight.issue_code,
-        ),
+        overview_object=object_name,
+        overview_key=overview_key,
     )
-    _show(ordered, overview_object=object_name)
 
 
 def clear_highlight():
-    global _ACTIVE, _OVERVIEW_OBJECT, _HANDLER, _SHADER, _BATCHES
+    global _ACTIVE, _OVERVIEW_OBJECT, _OVERVIEW_KEY, _HANDLER, _SHADER, _BATCHES
     _ACTIVE = ()
     _OVERVIEW_OBJECT = ""
+    _OVERVIEW_KEY = ""
     _SHADER = None
     _BATCHES = None
     if _HANDLER is not None:

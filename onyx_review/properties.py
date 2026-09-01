@@ -47,6 +47,10 @@ class OnyxReviewResult(bpy.types.PropertyGroup):
     error_count: IntProperty(min=0, description="Number of error-level findings")
     warning_count: IntProperty(min=0, description="Number of warning-level findings")
     expanded: BoolProperty(default=True, description="Show detailed metrics and findings")
+    topology_expanded: BoolProperty(
+        default=False,
+        description="Show topology-map and class-selection controls",
+    )
     issues: CollectionProperty(
         type=OnyxReviewIssue,
         description="Findings recorded for this reviewed object",

@@ -3,7 +3,30 @@
 import bpy
 
 from . import highlight_state, operators
-from .mesh_analysis import issue_selection_domain
+from .mesh_analysis import issue_selection_domain, topology_class_info
+
+
+def _draw_topology_class(layout, object_name, topology_class, count):
+    issue_code, label, _ = topology_class_info(topology_class)
+    row = layout.row(align=True)
+    row.label(text=f"{label} ({count:,})")
+    actions = row.row(align=True)
+    actions.enabled = count > 0
+    visible = highlight_state.is_active(object_name, issue_code)
+    highlight = actions.operator(
+        "onyx.highlight_topology_class",
+        text="Hide" if visible else "Show",
+        icon="HIDE_ON" if visible else "HIDE_OFF",
+    )
+    highlight.object_name = object_name
+    highlight.topology_class = topology_class
+    inspect = actions.operator(
+        "onyx.inspect_topology_class",
+        text="Inspect",
+        icon="VIEWZOOM",
+    )
+    inspect.object_name = object_name
+    inspect.topology_class = topology_class
 
 
 def _status_icon(settings):
@@ -65,18 +88,17 @@ class ONYX_PT_review(bpy.types.Panel):
         active_highlights = highlight_state.active_highlights()
         if active_highlights:
             active_highlight = active_highlights[0]
+            overview_key = highlight_state.active_overview_key()
             visual = layout.box()
             visual.label(text="Viewport Highlight", icon="HIDE_OFF")
             visual.label(text=active_highlight.object_name, icon="MESH_DATA")
-            if len(active_highlights) == 1 and not highlight_state.is_overview_active(
-                active_highlight.object_name
-            ):
+            if len(active_highlights) == 1 and not overview_key:
                 style = highlight_state.finding_style(
                     active_highlight.issue_code,
                     active_highlight.severity,
                 )
                 visual.label(text=f"{style.name} · {active_highlight.message}")
-            else:
+            elif overview_key == "FINDINGS":
                 visual.label(text=f"{len(active_highlights):,} actionable findings")
                 visual.label(text="Errors use thicker marks", icon="INFO")
                 for highlight in active_highlights:
@@ -86,6 +108,15 @@ class ONYX_PT_review(bpy.types.Panel):
                     )
                     icon = "ERROR" if highlight.severity == "ERROR" else "INFO"
                     visual.label(text=f"{style.name} · {highlight.message}", icon=icon)
+            else:
+                map_name = "Face Topology Map" if overview_key == "FACE_MAP" else "Pole Topology Map"
+                visual.label(text=map_name, icon="OVERLAY")
+                for highlight in active_highlights:
+                    style = highlight_state.finding_style(
+                        highlight.issue_code,
+                        highlight.severity,
+                    )
+                    visual.label(text=f"{style.name} · {highlight.message}", icon="INFO")
             visual.operator("onyx.clear_review_highlight", icon="X")
 
         modes = layout.box()
@@ -139,6 +170,78 @@ class ONYX_PT_review(bpy.types.Panel):
                     f"{result.six_plus_poles:,} × 6+"
                 )
             )
+            topology = box.box()
+            topology_header = topology.row(align=True)
+            topology_header.prop(
+                result,
+                "topology_expanded",
+                text="",
+                emboss=False,
+                icon="TRIA_DOWN" if result.topology_expanded else "TRIA_RIGHT",
+            )
+            topology_header.label(text="Topology Detail", icon="OVERLAY")
+            if result.topology_expanded:
+                row = topology.row(align=True)
+                face_map_visible = highlight_state.is_overview_active(
+                    object_name,
+                    "FACE_MAP",
+                )
+                face_map = row.operator(
+                    "onyx.highlight_topology_map",
+                    text="Hide Face Map" if face_map_visible else "Show Face Map",
+                    icon="HIDE_ON" if face_map_visible else "HIDE_OFF",
+                )
+                face_map.object_name = object_name
+                face_map.map_kind = "FACES"
+                pole_map_visible = highlight_state.is_overview_active(
+                    object_name,
+                    "POLE_MAP",
+                )
+                pole_map = row.operator(
+                    "onyx.highlight_topology_map",
+                    text="Hide Pole Map" if pole_map_visible else "Show Pole Map",
+                    icon="HIDE_ON" if pole_map_visible else "HIDE_OFF",
+                )
+                pole_map.object_name = object_name
+                pole_map.map_kind = "POLES"
+                topology.label(text="Face classes", icon="FACESEL")
+                _draw_topology_class(
+                    topology,
+                    object_name,
+                    "FACE_TRIANGLES",
+                    result.triangle_faces,
+                )
+                _draw_topology_class(
+                    topology,
+                    object_name,
+                    "FACE_QUADS",
+                    result.quad_faces,
+                )
+                _draw_topology_class(
+                    topology,
+                    object_name,
+                    "FACE_NGONS",
+                    result.ngon_faces,
+                )
+                topology.label(text="Pole classes", icon="VERTEXSEL")
+                _draw_topology_class(
+                    topology,
+                    object_name,
+                    "POLES_3",
+                    result.three_poles,
+                )
+                _draw_topology_class(
+                    topology,
+                    object_name,
+                    "POLES_5",
+                    result.five_poles,
+                )
+                _draw_topology_class(
+                    topology,
+                    object_name,
+                    "POLES_6_PLUS",
+                    result.six_plus_poles,
+                )
             box.label(
                 text=(
                     f"Size {result.dimensions[0]:.3g} × {result.dimensions[1]:.3g} × "

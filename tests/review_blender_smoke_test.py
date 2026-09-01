@@ -136,6 +136,51 @@ def main():
     assert "ReviewedCube" in stored_report
     assert bpy.ops.onyx.copy_review_report() == {"FINISHED"}
 
+    assert bpy.ops.onyx.highlight_topology_map(
+        object_name=cube.name,
+        map_kind="FACES",
+    ) == {"FINISHED"}
+    highlights = highlight_state.active_highlights()
+    assert highlight_state.is_overview_active(cube.name, "FACE_MAP")
+    assert not highlight_state.is_overview_active(cube.name)
+    assert len(highlights) == 1
+    assert highlights[0].issue_code == "topology_map.quads"
+    assert highlights[0].element_count == 6
+    assert len(highlights[0].points) == 6
+    assert len(highlights[0].lines) == 48
+    assert bpy.ops.onyx.highlight_topology_map(
+        object_name=cube.name,
+        map_kind="FACES",
+    ) == {"FINISHED"}
+    assert not highlight_state.active_highlights()
+
+    assert bpy.ops.onyx.highlight_topology_map(
+        object_name=cube.name,
+        map_kind="POLES",
+    ) == {"FINISHED"}
+    highlights = highlight_state.active_highlights()
+    assert highlight_state.is_overview_active(cube.name, "POLE_MAP")
+    assert len(highlights) == 1
+    assert highlights[0].issue_code == "topology_map.poles_3"
+    assert highlights[0].element_count == 8
+    assert len(highlights[0].points) == 8
+    assert not highlights[0].lines
+    assert bpy.ops.onyx.highlight_topology_map(
+        object_name=cube.name,
+        map_kind="POLES",
+    ) == {"FINISHED"}
+    assert not highlight_state.active_highlights()
+
+    assert bpy.ops.onyx.inspect_topology_class(
+        object_name=cube.name,
+        topology_class="POLES_3",
+    ) == {"FINISHED"}
+    assert bpy.context.mode == "EDIT_MESH"
+    assert tuple(bpy.context.tool_settings.mesh_select_mode) == (True, False, False)
+    edit_mesh = bmesh.from_edit_mesh(cube.data)
+    assert sum(1 for vertex in edit_mesh.verts if vertex.select) == 8
+    bpy.ops.object.mode_set(mode="OBJECT")
+
     problem = make_problem_mesh()
     for obj in tuple(bpy.context.selected_objects):
         obj.select_set(False)
@@ -180,6 +225,62 @@ def main():
     assert len({style.color for style in styles}) == len(styles)
     assert highlight_state.finding_style("unknown.error", "ERROR").name == "Red"
     assert highlight_state.finding_style("unknown.warning", "WARNING").name == "Orange"
+    topology_map_codes = (
+        "topology_map.triangles",
+        "topology_map.quads",
+        "topology_map.ngons",
+        "topology_map.poles_3",
+        "topology_map.poles_5",
+        "topology_map.poles_6_plus",
+    )
+    topology_map_styles = tuple(
+        highlight_state.finding_style(issue_code, "INFO")
+        for issue_code in topology_map_codes
+    )
+    assert len({style.name for style in topology_map_styles}) == len(topology_map_styles)
+    assert len({style.color for style in topology_map_styles}) == len(topology_map_styles)
+
+    assert bpy.ops.onyx.highlight_topology_class(
+        object_name=problem.name,
+        topology_class="FACE_TRIANGLES",
+    ) == {"FINISHED"}
+    highlight = highlight_state.active_highlight()
+    assert highlight.issue_code == "topology_map.triangles"
+    assert highlight.domain == "FACE"
+    assert highlight.element_count == 1
+    assert highlight_state.finding_style(highlight.issue_code, "INFO").name == "Gold"
+    assert bpy.ops.onyx.highlight_topology_class(
+        object_name=problem.name,
+        topology_class="FACE_TRIANGLES",
+    ) == {"FINISHED"}
+    assert not highlight_state.active_highlights()
+
+    assert bpy.ops.onyx.highlight_topology_map(
+        object_name=problem.name,
+        map_kind="FACES",
+    ) == {"FINISHED"}
+    highlights = highlight_state.active_highlights()
+    assert highlight_state.is_overview_active(problem.name, "FACE_MAP")
+    assert {highlight.issue_code for highlight in highlights} == {
+        "topology_map.triangles",
+        "topology_map.ngons",
+    }
+    assert {highlight.element_count for highlight in highlights} == {1, 2}
+    assert bpy.ops.onyx.highlight_topology_map(
+        object_name=problem.name,
+        map_kind="FACES",
+    ) == {"FINISHED"}
+    assert not highlight_state.active_highlights()
+
+    assert bpy.ops.onyx.inspect_topology_class(
+        object_name=problem.name,
+        topology_class="FACE_TRIANGLES",
+    ) == {"FINISHED"}
+    assert bpy.context.mode == "EDIT_MESH"
+    assert tuple(bpy.context.tool_settings.mesh_select_mode) == (False, False, True)
+    edit_mesh = bmesh.from_edit_mesh(problem.data)
+    assert sum(1 for face in edit_mesh.faces if face.select) == 1
+    bpy.ops.object.mode_set(mode="OBJECT")
 
     assert bpy.ops.onyx.highlight_review_issue(
         object_name=problem.name,

@@ -35,10 +35,11 @@ changed behind your back.
 1. Choose the active object, current selection, or active collection.
 2. Press **Run Review**.
 3. Read per-object findings and compare base versus evaluated triangles.
-4. Use **Show All Findings** for an overview, or **Show** to isolate one finding.
-5. Use **Inspect** when you want its mesh elements selected in Edit Mode.
-6. Switch between Studio, Silhouette, Topology, and Face Orientation views.
-7. Press **Restore View** to return the viewport to its original settings.
+4. Open **Topology Detail** to map or select face types and topology poles.
+5. Use **Show All Findings** for an overview, or **Show** to isolate one finding.
+6. Use **Inspect** when you want its mesh elements selected in Edit Mode.
+7. Switch between Studio, Silhouette, Topology, and Face Orientation views.
+8. Press **Restore View** to return the viewport to its original settings.
 
 ### What it currently checks
 
@@ -64,6 +65,11 @@ thicker marks. Show a single finding or every actionable finding for one object
 at once. Highlights remain visible through the surface, create no scene data,
 and clear when the review is rerun, cleared, hidden, or the extension is
 disabled.
+
+**Topology Detail** turns the descriptive statistics into navigation. Use a
+face map to distinguish quads, triangles, and ngons, or a pole map to locate
+3-edge, 5-edge, and 6+-edge vertices. Every class can also be highlighted alone
+or selected exactly in Edit Mode.
 
 ## Built to leave the scene alone
 
@@ -123,6 +129,7 @@ The repository includes:
 - Real Blender mesh-analysis smoke tests
 - Vertex, edge, and face finding-selection coverage
 - Finding-color uniqueness and face/pole statistic coverage
+- Face-map, pole-map, and topology-class selection coverage
 - Transient viewport-highlight geometry and cleanup coverage
 - Empty-scope readiness and clipboard-report coverage
 - Viewport restoration coverage

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 - 2026-09-01
+
+- Add color-coded face maps for triangles, quads, and ngons.
+- Add color-coded pole maps for 3-edge, 5-edge, and 6+-edge vertices.
+- Add focused viewport highlights for every face and pole class.
+- Add Edit Mode inspection that selects the exact elements in each class.
+- Keep topology-map overlays temporary and free of scene data.
+
 ## 0.2.0 - 2026-09-01
 
 - Assign a distinct, stable viewport color to every actionable finding type.

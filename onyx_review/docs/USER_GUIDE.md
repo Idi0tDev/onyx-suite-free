@@ -45,6 +45,32 @@ of vertices connected to 3, 5, or 6+ edges. These are descriptive topology
 statistics rather than automatic warnings: the right mix and pole flow depend
 on how the asset will deform, shade, or be edited.
 
+## Topology detail
+
+Expand **Topology Detail** inside an object card to turn those statistics into
+viewport navigation.
+
+**Show Face Map** displays every available face class together:
+
+| Face class | Color |
+| --- | --- |
+| Quads | Teal |
+| Triangles | Gold |
+| Ngons | Coral |
+
+**Show Pole Map** displays the pole classes that are present:
+
+| Pole class | Color |
+| --- | --- |
+| 3-edge poles | Sky |
+| 5-edge poles | Violet |
+| 6+-edge poles | Pink |
+
+Use **Show** beside one class to isolate it. Use **Inspect** to enter Edit Mode
+and select its exact faces or vertices. Controls with a zero count remain
+disabled. Like finding highlights, topology maps are temporary, visible through
+the surface, and create no objects, materials, or saved mesh data.
+
 ## Viewport highlights
 
 Use **Show** beside an actionable topology finding to draw its affected geometry

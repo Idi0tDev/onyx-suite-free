@@ -9,11 +9,14 @@ from bpy.props import EnumProperty, StringProperty
 
 from .analysis import Issue, ObjectReview, ReviewSummary, Severity, format_review_report
 from .mesh_analysis import (
+    TOPOLOGY_CLASS_ENUM_ITEMS,
     issue_overlay_geometry,
     issue_overlays_geometry,
     issue_selection_domain,
     review_object,
     select_issue_elements,
+    topology_class_info,
+    topology_map_classes,
 )
 from . import highlight_state, viewport_state
 
@@ -241,6 +244,54 @@ class ONYX_OT_inspect_review_issue(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ONYX_OT_inspect_topology_class(bpy.types.Operator):
+    bl_idname = "onyx.inspect_topology_class"
+    bl_label = "Inspect Topology Class"
+    bl_description = "Enter Edit Mode and select this face or pole class"
+
+    object_name: StringProperty(description="Name of the reviewed mesh to inspect")
+    topology_class: EnumProperty(
+        items=TOPOLOGY_CLASS_ENUM_ITEMS,
+        description="Face or topology-pole class to inspect",
+    )
+
+    def execute(self, context):
+        issue_code, label, _ = topology_class_info(self.topology_class)
+        domain = issue_selection_domain(issue_code)
+        obj = bpy.data.objects.get(self.object_name)
+        if obj is None or obj.type != "MESH" or obj.name not in context.view_layer.objects:
+            self.report({"WARNING"}, "The reviewed mesh is no longer in the active view layer")
+            return {"CANCELLED"}
+        if obj.hide_get() or obj.hide_viewport:
+            self.report({"WARNING"}, "Show the reviewed mesh before inspecting its topology")
+            return {"CANCELLED"}
+
+        active = context.view_layer.objects.active
+        if active is not None and active.mode != "OBJECT":
+            bpy.ops.object.mode_set(mode="OBJECT")
+        for selected in tuple(context.selected_objects):
+            selected.select_set(False)
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
+        bpy.ops.object.mode_set(mode="EDIT")
+
+        context.tool_settings.mesh_select_mode = {
+            "VERT": (True, False, False),
+            "FACE": (False, False, True),
+        }[domain]
+        _, count = select_issue_elements(obj.data, issue_code)
+        if not count:
+            self.report({"INFO"}, f"No {label.lower()} remain; run Review again")
+            return {"FINISHED"}
+
+        noun = "vertices" if domain == "VERT" else "faces"
+        self.report(
+            {"INFO"},
+            f"Selected {count:,} matching {noun} for {label.lower()}",
+        )
+        return {"FINISHED"}
+
+
 class ONYX_OT_highlight_review_issue(bpy.types.Operator):
     bl_idname = "onyx.highlight_review_issue"
     bl_label = "Show Finding"
@@ -357,10 +408,124 @@ class ONYX_OT_highlight_review_object(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ONYX_OT_highlight_topology_class(bpy.types.Operator):
+    bl_idname = "onyx.highlight_topology_class"
+    bl_label = "Show Topology Class"
+    bl_description = "Draw this face or pole class over the 3D Viewport"
+
+    object_name: StringProperty(description="Name of the reviewed mesh to highlight")
+    topology_class: EnumProperty(
+        items=TOPOLOGY_CLASS_ENUM_ITEMS,
+        description="Face or topology-pole class to highlight",
+    )
+
+    def execute(self, context):
+        issue_code, label, _ = topology_class_info(self.topology_class)
+        if highlight_state.is_active(self.object_name, issue_code):
+            highlight_state.clear_highlight()
+            self.report({"INFO"}, "Topology highlight hidden")
+            return {"FINISHED"}
+
+        obj = bpy.data.objects.get(self.object_name)
+        if obj is None or obj.type != "MESH" or obj.name not in context.view_layer.objects:
+            self.report({"WARNING"}, "The reviewed mesh is no longer in the active view layer")
+            return {"CANCELLED"}
+        if obj.hide_get() or obj.hide_viewport:
+            self.report({"WARNING"}, "Show the reviewed mesh before highlighting its topology")
+            return {"CANCELLED"}
+
+        domain, points, lines, count = issue_overlay_geometry(obj, issue_code)
+        if not count:
+            self.report({"INFO"}, f"No {label.lower()} remain; run Review again")
+            return {"FINISHED"}
+        highlight_state.show_highlight(
+            obj.name,
+            issue_code,
+            f"{label} ({count:,})",
+            "INFO",
+            domain,
+            count,
+            points,
+            lines,
+        )
+        self.report(
+            {"INFO"},
+            f"Showing {count:,} matching mesh elements for {label.lower()}",
+        )
+        return {"FINISHED"}
+
+
+class ONYX_OT_highlight_topology_map(bpy.types.Operator):
+    bl_idname = "onyx.highlight_topology_map"
+    bl_label = "Show Topology Map"
+    bl_description = "Draw a color-coded face or pole map over the 3D Viewport"
+
+    object_name: StringProperty(description="Name of the reviewed mesh to highlight")
+    map_kind: EnumProperty(
+        items=(
+            ("FACES", "Faces", "Map triangles, quads, and ngons"),
+            ("POLES", "Poles", "Map 3-edge, 5-edge, and 6+-edge poles"),
+        ),
+        description="Topology classes to show together",
+    )
+
+    def execute(self, context):
+        overview_key = "FACE_MAP" if self.map_kind == "FACES" else "POLE_MAP"
+        if highlight_state.is_overview_active(self.object_name, overview_key):
+            highlight_state.clear_highlight()
+            self.report({"INFO"}, "Topology map hidden")
+            return {"FINISHED"}
+
+        obj = bpy.data.objects.get(self.object_name)
+        if obj is None or obj.type != "MESH" or obj.name not in context.view_layer.objects:
+            self.report({"WARNING"}, "The reviewed mesh is no longer in the active view layer")
+            return {"CANCELLED"}
+        if obj.hide_get() or obj.hide_viewport:
+            self.report({"WARNING"}, "Show the reviewed mesh before highlighting its topology")
+            return {"CANCELLED"}
+
+        classes = topology_map_classes(self.map_kind)
+        descriptions = {
+            issue_code: (label, description)
+            for class_id in classes
+            for issue_code, label, description in (topology_class_info(class_id),)
+        }
+        geometry = issue_overlays_geometry(obj, descriptions)
+        highlights = []
+        for issue_code, domain, points, lines, count in geometry:
+            if not count:
+                continue
+            label, _ = descriptions[issue_code]
+            highlights.append(
+                highlight_state.make_highlight(
+                    obj.name,
+                    issue_code,
+                    f"{label} ({count:,})",
+                    "INFO",
+                    domain,
+                    count,
+                    points,
+                    lines,
+                )
+            )
+        if not highlights:
+            self.report({"INFO"}, "This mesh has no matching topology classes")
+            return {"FINISHED"}
+
+        highlight_state.show_overview(
+            obj.name,
+            highlights,
+            overview_key=overview_key,
+        )
+        map_name = "face" if self.map_kind == "FACES" else "pole"
+        self.report({"INFO"}, f"Showing {map_name} topology map")
+        return {"FINISHED"}
+
+
 class ONYX_OT_clear_review_highlight(bpy.types.Operator):
     bl_idname = "onyx.clear_review_highlight"
     bl_label = "Clear Highlight"
-    bl_description = "Remove the current mesh-finding overlay from the 3D Viewport"
+    bl_description = "Remove the current review overlay from the 3D Viewport"
 
     @classmethod
     def poll(cls, _context):
@@ -416,8 +581,11 @@ CLASSES = (
     ONYX_OT_copy_review_report,
     ONYX_OT_select_review_object,
     ONYX_OT_inspect_review_issue,
+    ONYX_OT_inspect_topology_class,
     ONYX_OT_highlight_review_issue,
     ONYX_OT_highlight_review_object,
+    ONYX_OT_highlight_topology_class,
+    ONYX_OT_highlight_topology_map,
     ONYX_OT_clear_review_highlight,
     ONYX_OT_review_mode,
     ONYX_OT_restore_review_view,

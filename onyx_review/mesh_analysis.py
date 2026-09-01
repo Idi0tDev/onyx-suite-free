@@ -22,7 +22,56 @@ _ISSUE_SELECTION_DOMAINS = {
     "topology.coincident_vertices": "VERT",
     "topology.disconnected_islands": "VERT",
     "topology.ngons": "FACE",
+    "topology_map.triangles": "FACE",
+    "topology_map.quads": "FACE",
+    "topology_map.ngons": "FACE",
+    "topology_map.poles_3": "VERT",
+    "topology_map.poles_5": "VERT",
+    "topology_map.poles_6_plus": "VERT",
 }
+
+_TOPOLOGY_CLASSES = {
+    "FACE_TRIANGLES": (
+        "topology_map.triangles",
+        "Triangles",
+        "Three-sided faces",
+    ),
+    "FACE_QUADS": (
+        "topology_map.quads",
+        "Quads",
+        "Four-sided faces",
+    ),
+    "FACE_NGONS": (
+        "topology_map.ngons",
+        "Ngons",
+        "Faces with more than four sides",
+    ),
+    "POLES_3": (
+        "topology_map.poles_3",
+        "3-edge poles",
+        "Vertices connected to three edges",
+    ),
+    "POLES_5": (
+        "topology_map.poles_5",
+        "5-edge poles",
+        "Vertices connected to five edges",
+    ),
+    "POLES_6_PLUS": (
+        "topology_map.poles_6_plus",
+        "6+-edge poles",
+        "Vertices connected to six or more edges",
+    ),
+}
+
+_TOPOLOGY_MAP_CLASSES = {
+    "FACES": ("FACE_QUADS", "FACE_TRIANGLES", "FACE_NGONS"),
+    "POLES": ("POLES_3", "POLES_5", "POLES_6_PLUS"),
+}
+
+TOPOLOGY_CLASS_ENUM_ITEMS = tuple(
+    (class_id, label, description)
+    for class_id, (_, label, description) in _TOPOLOGY_CLASSES.items()
+)
 
 
 def _issue(code, message, count=1, *, error=False):
@@ -94,8 +143,24 @@ def _secondary_island_vertices(bm):
 
 
 def issue_selection_domain(issue_code):
-    """Return the mesh element domain that can be inspected for a finding."""
+    """Return the element domain for an inspectable finding or topology class."""
     return _ISSUE_SELECTION_DOMAINS.get(issue_code, "")
+
+
+def topology_class_info(class_id):
+    """Return the stable overlay code, label, and description for a class."""
+    try:
+        return _TOPOLOGY_CLASSES[class_id]
+    except KeyError as exc:
+        raise ValueError(f"Unknown topology class: {class_id}") from exc
+
+
+def topology_map_classes(map_kind):
+    """Return the ordered topology classes shown by a map."""
+    try:
+        return _TOPOLOGY_MAP_CLASSES[map_kind]
+    except KeyError as exc:
+        raise ValueError(f"Unknown topology map: {map_kind}") from exc
 
 
 def _matching_elements(bm, issue_code):
@@ -127,11 +192,23 @@ def _matching_elements(bm, issue_code):
         return _secondary_island_vertices(bm)
     if issue_code == "topology.ngons":
         return tuple(face for face in bm.faces if len(face.verts) > 4)
+    if issue_code == "topology_map.triangles":
+        return tuple(face for face in bm.faces if len(face.verts) == 3)
+    if issue_code == "topology_map.quads":
+        return tuple(face for face in bm.faces if len(face.verts) == 4)
+    if issue_code == "topology_map.ngons":
+        return tuple(face for face in bm.faces if len(face.verts) > 4)
+    if issue_code == "topology_map.poles_3":
+        return tuple(vertex for vertex in bm.verts if len(vertex.link_edges) == 3)
+    if issue_code == "topology_map.poles_5":
+        return tuple(vertex for vertex in bm.verts if len(vertex.link_edges) == 5)
+    if issue_code == "topology_map.poles_6_plus":
+        return tuple(vertex for vertex in bm.verts if len(vertex.link_edges) >= 6)
     raise ValueError(f"Finding cannot select mesh elements: {issue_code}")
 
 
 def select_issue_elements(mesh, issue_code):
-    """Select current edit-mesh elements matching an actionable finding."""
+    """Select edit-mesh elements matching a finding or topology class."""
     domain = issue_selection_domain(issue_code)
     if not domain:
         raise ValueError(f"Finding cannot select mesh elements: {issue_code}")
@@ -155,7 +232,7 @@ def select_issue_elements(mesh, issue_code):
 
 
 def issue_overlays_geometry(obj, issue_codes):
-    """Build world-space overlay geometry for one or more actionable findings."""
+    """Build world-space overlay geometry for inspectable element classes."""
     issue_codes = tuple(dict.fromkeys(issue_codes))
     for issue_code in issue_codes:
         if not issue_selection_domain(issue_code):
@@ -205,7 +282,7 @@ def issue_overlays_geometry(obj, issue_codes):
 
 
 def issue_overlay_geometry(obj, issue_code):
-    """Build world-space points and line segments for one actionable finding."""
+    """Build world-space points and lines for one inspectable element class."""
     _, domain, points, lines, count = issue_overlays_geometry(obj, (issue_code,))[0]
     return domain, points, lines, count
 
