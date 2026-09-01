@@ -1,4 +1,4 @@
-# Onyx Review 0.3.0
+# Onyx Review 0.4.0
 
 Onyx Review is an independent, reversible mesh-inspection workspace for Blender
 5.2 LTS. It reports source and evaluated geometry statistics, identifies common
@@ -29,6 +29,19 @@ installation is required.
 - Thicker lines and larger points for error-level findings
 - Combined per-object overview of all actionable findings
 - Copyable plain-text review report
+- Optional debounced Live Review after mesh changes
+- Automatic Live Review pause in Edit Mode and above a configurable source-vertex limit
+
+## Live Review
+
+Enable **Live Review** in Review Options when you want diagnostics to follow a
+modeling pass. It refreshes the same inspection-only results after detected mesh
+changes settle. It does not repair or otherwise edit geometry.
+
+Live Review pauses while a target is in Edit Mode, because the editable mesh may
+not yet match its stored object data. It also pauses when the chosen scope
+exceeds the **Live Vertex Limit**. Use zero only when you deliberately want no
+density ceiling. The manual **Run Now** action remains available at all times.
 
 ## Viewport modes
 
@@ -43,6 +56,6 @@ captured viewport.
 
 ## Install
 
-Build `onyx_review-0.3.0.zip` with `tools/package_review.ps1`, then install the
+Build `onyx_review-0.4.0.zip` with `tools/package_review.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.

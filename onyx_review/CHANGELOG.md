@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 - 2026-09-01
+
+- Add optional, debounced Live Review after watched mesh changes.
+- Reuse the manual inspection engine so live and manual results stay identical.
+- Pause live refreshes while a target is in Edit Mode.
+- Add a configurable source-vertex ceiling for dense review scopes.
+- Clear stale viewport evidence before a refreshed result is shown.
+- Keep Live Review strictly diagnostic with no mesh repair or geometry edits.
+
 ## 0.3.0 - 2026-09-01
 
 - Add color-coded face maps for triangles, quads, and ngons.

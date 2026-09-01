@@ -11,7 +11,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import onyx_review  # noqa: E402
-from onyx_review import highlight_state, operators, properties, viewport_state  # noqa: E402
+from onyx_review import (  # noqa: E402
+    highlight_state,
+    live_review,
+    operators,
+    properties,
+    viewport_state,
+)
 from onyx_review._onyx_core.integration import BROKER_KEY  # noqa: E402
 
 
@@ -105,6 +111,7 @@ def check_viewport_restore():
 def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     onyx_review.register()
+    assert live_review.is_registered()
     assert bpy.app.driver_namespace[BROKER_KEY] is onyx_review.CORE.endpoint
     assert onyx_review.CORE.endpoint.extension("onyx_review") is not None
     check_tooltips()
@@ -180,6 +187,45 @@ def main():
     edit_mesh = bmesh.from_edit_mesh(cube.data)
     assert sum(1 for vertex in edit_mesh.verts if vertex.select) == 8
     bpy.ops.object.mode_set(mode="OBJECT")
+
+    # Live Review reuses the same inspection path, invalidates stale overlays,
+    # and pauses instead of reading or changing a mesh in Edit Mode.
+    settings.live_review = True
+    assert live_review.has_pending(bpy.context.scene)
+    assert live_review.flush_scene(bpy.context.scene)
+    assert settings.live_status == "Up to date"
+    live_triangles = settings.results[0].evaluated_triangles
+
+    assert bpy.ops.onyx.highlight_topology_map(
+        object_name=cube.name,
+        map_kind="FACES",
+    ) == {"FINISHED"}
+    assert highlight_state.active_highlights()
+    modifier.levels = 2
+    bpy.context.view_layer.update()
+    assert live_review.has_pending(bpy.context.scene)
+    assert live_review.flush_scene(bpy.context.scene)
+    assert settings.results[0].evaluated_triangles > live_triangles
+    assert not highlight_state.active_highlights()
+
+    settings.live_max_vertices = 1
+    assert live_review.has_pending(bpy.context.scene)
+    assert not live_review.flush_scene(bpy.context.scene)
+    assert settings.live_status.startswith("Paused:")
+    assert not live_review.has_pending(bpy.context.scene)
+
+    settings.live_max_vertices = 250_000
+    bpy.ops.object.mode_set(mode="EDIT")
+    assert live_review.has_pending(bpy.context.scene)
+    assert not live_review.flush_scene(bpy.context.scene)
+    assert "Edit Mode" in settings.live_status
+    assert live_review.has_pending(bpy.context.scene)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    assert live_review.flush_scene(bpy.context.scene)
+    assert settings.live_status == "Up to date"
+    settings.live_review = False
+    assert settings.live_status == "Off"
+    assert not live_review.has_pending(bpy.context.scene)
 
     problem = make_problem_mesh()
     for obj in tuple(bpy.context.selected_objects):
@@ -400,6 +446,7 @@ def main():
     assert not settings.results and not settings.last_summary
     assert highlight_state.active_highlight() is None
     onyx_review.unregister()
+    assert not live_review.is_registered()
     assert BROKER_KEY not in bpy.app.driver_namespace
     print("ONYX_REVIEW_BLENDER_OK")
 

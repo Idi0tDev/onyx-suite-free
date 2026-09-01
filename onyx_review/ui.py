@@ -37,6 +37,16 @@ def _status_icon(settings):
     return "CHECKMARK"
 
 
+def _live_status_icon(status):
+    if status == "Up to date":
+        return "CHECKMARK"
+    if status.endswith("pending"):
+        return "TIME"
+    if status.startswith("Paused"):
+        return "INFO"
+    return "DOT"
+
+
 class ONYX_PT_review(bpy.types.Panel):
     bl_label = "Review"
     bl_idname = "ONYX_PT_review"
@@ -64,13 +74,26 @@ class ONYX_PT_review(bpy.types.Panel):
         options.label(text="Review Options", icon="PREFERENCES")
         options.prop(settings, "scope", expand=True)
         options.prop(settings, "triangle_budget")
+        options.prop(settings, "live_review", toggle=True)
+        if settings.live_review:
+            live_options = options.column(align=True)
+            live_options.prop(settings, "live_delay")
+            live_options.prop(settings, "live_max_vertices")
+            live_options.label(
+                text=settings.live_status,
+                icon=_live_status_icon(settings.live_status),
+            )
 
         row = layout.row(align=True)
         row.scale_y = 1.25
         row.enabled = bool(targets)
         row.operator(
             "onyx.run_review",
-            text="Run Again" if settings.results else "Run Review",
+            text=(
+                "Run Now"
+                if settings.live_review
+                else "Run Again" if settings.results else "Run Review"
+            ),
             icon="VIEWZOOM",
         )
 

@@ -104,6 +104,34 @@ def _stored_summary(settings):
     return ReviewSummary(tuple(reviews))
 
 
+def perform_review(context):
+    """Run the current scene review and return its reusable summary."""
+    settings = context.scene.onyx_review
+    objects = scoped_meshes(context, settings.scope)
+    if not objects:
+        raise ValueError(review_blocker(context, settings.scope))
+
+    # Any existing overlay represents the previous mesh state. Never leave
+    # stale evidence visible after either a manual or live refresh.
+    highlight_state.clear_highlight()
+    settings.results.clear()
+    depsgraph = context.evaluated_depsgraph_get()
+    reviews = tuple(
+        review_object(obj, depsgraph, triangle_budget=settings.triangle_budget)
+        for obj in objects
+    )
+    summary = ReviewSummary(reviews)
+    for obj, review in zip(objects, reviews):
+        _store_review(settings, obj, review)
+    settings.last_summary = summary.message
+    settings.total_errors = summary.error_count
+    settings.total_warnings = summary.warning_count
+    settings.total_triangles = summary.evaluated_triangles
+    if settings.live_review:
+        settings.live_status = "Up to date"
+    return summary
+
+
 class ONYX_OT_run_review(bpy.types.Operator):
     bl_idname = "onyx.run_review"
     bl_label = "Run Review"
@@ -123,25 +151,11 @@ class ONYX_OT_run_review(bpy.types.Operator):
 
     def execute(self, context):
         settings = context.scene.onyx_review
-        objects = scoped_meshes(context, settings.scope)
-        if not objects:
-            self.report({"WARNING"}, "No mesh objects are available in the chosen scope")
+        blocker = review_blocker(context, settings.scope)
+        if blocker:
+            self.report({"WARNING"}, blocker)
             return {"CANCELLED"}
-
-        highlight_state.clear_highlight()
-        settings.results.clear()
-        depsgraph = context.evaluated_depsgraph_get()
-        reviews = tuple(
-            review_object(obj, depsgraph, triangle_budget=settings.triangle_budget)
-            for obj in objects
-        )
-        summary = ReviewSummary(reviews)
-        for obj, review in zip(objects, reviews):
-            _store_review(settings, obj, review)
-        settings.last_summary = summary.message
-        settings.total_errors = summary.error_count
-        settings.total_warnings = summary.warning_count
-        settings.total_triangles = summary.evaluated_triangles
+        summary = perform_review(context)
         self.report({"INFO"}, summary.message)
         return {"FINISHED"}
 
@@ -159,6 +173,8 @@ class ONYX_OT_clear_review(bpy.types.Operator):
         settings.total_errors = 0
         settings.total_warnings = 0
         settings.total_triangles = 0
+        if settings.live_review:
+            settings.live_status = "Waiting for mesh changes"
         return {"FINISHED"}
 
 

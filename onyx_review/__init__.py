@@ -2,11 +2,11 @@
 
 import bpy
 
-from . import highlight_state, operators, properties, ui, viewport_state
+from . import highlight_state, live_review, operators, properties, ui, viewport_state
 from ._onyx_core import EmbeddedCore, Lifecycle
 
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
 CORE = EmbeddedCore(
     bpy,
@@ -23,6 +23,7 @@ LIFECYCLE.add("viewport state", viewport_state.register, viewport_state.unregist
 LIFECYCLE.add("highlight state", highlight_state.register, highlight_state.unregister)
 LIFECYCLE.add("properties", properties.register, properties.unregister)
 LIFECYCLE.add("operators", operators.register, operators.unregister)
+LIFECYCLE.add("live review", live_review.register, live_review.unregister)
 LIFECYCLE.add("interface", ui.register, ui.unregister)
 
 

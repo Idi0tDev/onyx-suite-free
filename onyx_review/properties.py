@@ -13,6 +13,22 @@ from bpy.props import (
 )
 
 
+def _live_review_changed(_settings, context):
+    if context is None:
+        return
+    from . import live_review
+
+    live_review.settings_changed(context.scene)
+
+
+def _review_option_changed(_settings, context):
+    if context is None:
+        return
+    from . import live_review
+
+    live_review.review_options_changed(context.scene)
+
+
 class OnyxReviewIssue(bpy.types.PropertyGroup):
     code: StringProperty(description="Stable identifier for this review finding")
     message: StringProperty(description="Artist-facing explanation of the finding")
@@ -67,6 +83,7 @@ class OnyxReviewSettings(bpy.types.PropertyGroup):
         ),
         default="ACTIVE",
         description="Choose which mesh objects to inspect",
+        update=_review_option_changed,
     )
     triangle_budget: IntProperty(
         name="Triangle Budget",
@@ -74,6 +91,30 @@ class OnyxReviewSettings(bpy.types.PropertyGroup):
         min=0,
         soft_max=1_000_000,
         description="Warn when an evaluated mesh exceeds this count; use zero to disable",
+        update=_review_option_changed,
+    )
+    live_review: BoolProperty(
+        name="Live Review",
+        default=False,
+        description="Refresh diagnostics after mesh changes without editing or repairing geometry",
+        update=_live_review_changed,
+    )
+    live_delay: FloatProperty(
+        name="Debounce",
+        default=0.75,
+        min=0.25,
+        max=5.0,
+        subtype="TIME",
+        description="Wait after the last detected change before refreshing diagnostics",
+        update=_review_option_changed,
+    )
+    live_max_vertices: IntProperty(
+        name="Live Vertex Limit",
+        default=250_000,
+        min=0,
+        soft_max=2_000_000,
+        description="Pause live refreshes above this source-vertex count; use zero to disable the limit",
+        update=_review_option_changed,
     )
     results: CollectionProperty(
         type=OnyxReviewResult,
@@ -83,6 +124,10 @@ class OnyxReviewSettings(bpy.types.PropertyGroup):
     total_errors: IntProperty(min=0, description="Total error findings in the most recent review")
     total_warnings: IntProperty(min=0, description="Total warning findings in the most recent review")
     total_triangles: IntProperty(min=0, description="Total evaluated triangles in the most recent review")
+    live_status: StringProperty(
+        default="Off",
+        description="Current state of the optional live diagnostics",
+    )
 
 
 CLASSES = (OnyxReviewIssue, OnyxReviewResult, OnyxReviewSettings)

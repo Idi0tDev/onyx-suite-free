@@ -30,16 +30,22 @@ evaluated geometry, common topology concerns, transforms, UVs, materials, and an
 optional triangle budget. Nothing is repaired automatically and no mesh data is
 changed behind your back.
 
+When you want the panel to follow an active modeling pass, enable **Live
+Review**. It waits for mesh changes to settle, then refreshes the same findings
+without touching geometry. Live Review pauses while a target is in Edit Mode or
+when the chosen scope exceeds its configurable source-vertex limit.
+
 ### A typical review
 
 1. Choose the active object, current selection, or active collection.
 2. Press **Run Review**.
 3. Read per-object findings and compare base versus evaluated triangles.
-4. Open **Topology Detail** to map or select face types and topology poles.
-5. Use **Show All Findings** for an overview, or **Show** to isolate one finding.
-6. Use **Inspect** when you want its mesh elements selected in Edit Mode.
-7. Switch between Studio, Silhouette, Topology, and Face Orientation views.
-8. Press **Restore View** to return the viewport to its original settings.
+4. Optionally enable **Live Review** while iterating on the model.
+5. Open **Topology Detail** to map or select face types and topology poles.
+6. Use **Show All Findings** for an overview, or **Show** to isolate one finding.
+7. Use **Inspect** when you want its mesh elements selected in Edit Mode.
+8. Switch between Studio, Silhouette, Topology, and Face Orientation views.
+9. Press **Restore View** to return the viewport to its original settings.
 
 ### What it currently checks
 
@@ -76,6 +82,7 @@ or selected exactly in Edit Mode.
 Onyx Review is intentionally an inspection tool—not a cleanup button.
 
 - No automatic mesh repair
+- No geometry edits from Live Review
 - No material replacement
 - No export or pipeline assumptions
 - No downloads, accounts, telemetry, or background network access
@@ -132,6 +139,7 @@ The repository includes:
 - Face-map, pole-map, and topology-class selection coverage
 - Transient viewport-highlight geometry and cleanup coverage
 - Empty-scope readiness and clipboard-report coverage
+- Debounced Live Review, Edit Mode pause, and density-limit coverage
 - Viewport restoration coverage
 - Core embedding verification
 - Standalone Core and bundled-product coexistence tests

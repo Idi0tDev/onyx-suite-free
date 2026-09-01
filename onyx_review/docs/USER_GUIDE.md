@@ -15,6 +15,32 @@ disabled.
 Reviewing reads source and evaluated mesh data but does not change objects,
 modifiers, materials, selection, or mesh elements.
 
+## Live Review
+
+**Live Review** is optional and off by default. Enable it in **Review Options**
+when you want the results to refresh as a watched mesh changes. The active,
+selected, or collection scope is shared with manual review, so both paths report
+the same checks and counts.
+
+The **Debounce** value controls how long Onyx waits after the latest detected
+change. This prevents a new review from starting for every intermediate update
+while Blender is still evaluating a mesh or modifier stack. **Run Now** remains
+available whenever an immediate manual refresh is useful.
+
+Two safeguards keep the workflow predictable:
+
+- Live Review pauses while any target is in Edit Mode. Leave Edit Mode and the
+  pending review resumes without altering the edit mesh.
+- Live Review pauses when the scope exceeds the **Live Vertex Limit**, measured
+  from source-mesh vertices. Increase the limit for a known asset or set it to
+  zero to disable the ceiling.
+
+The status below the controls reports **Changes pending**, **Up to date**, or
+the reason a refresh is paused. A refresh clears any viewport highlight because
+that overlay described the previous mesh state. Live Review only refreshes
+diagnostic evidence: it never selects components, applies modifiers, repairs
+topology, or edits geometry.
+
 ## Findings
 
 Errors identify conditions that usually require correction, such as degenerate
@@ -38,7 +64,8 @@ outside the largest connected component.
 
 Inspect changes the active object, mode, and selection so the problem is ready
 to examine, but it never edits geometry. Results describe the last review run;
-after correcting a mesh, run Review again to refresh the counts.
+after correcting a mesh, run Review again or enable Live Review to refresh the
+counts.
 
 Each object card also reports its triangle, quad, and ngon face mix, plus counts
 of vertices connected to 3, 5, or 6+ edges. These are descriptive topology
