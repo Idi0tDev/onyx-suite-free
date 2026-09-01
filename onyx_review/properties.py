@@ -29,6 +29,17 @@ def _review_option_changed(_settings, context):
     live_review.review_options_changed(context.scene)
 
 
+def _finding_filter_changed(_settings, context):
+    """Discard viewport evidence that no longer matches the visible findings."""
+    from . import highlight_state
+
+    active = highlight_state.active_highlights()
+    if any(not item.issue_code.startswith("topology_map.") for item in active):
+        highlight_state.clear_highlight()
+    if context is not None and context.area is not None:
+        context.area.tag_redraw()
+
+
 class OnyxReviewIssue(bpy.types.PropertyGroup):
     code: StringProperty(description="Stable identifier for this review finding")
     message: StringProperty(description="Artist-facing explanation of the finding")
@@ -115,6 +126,18 @@ class OnyxReviewSettings(bpy.types.PropertyGroup):
         soft_max=2_000_000,
         description="Pause live refreshes above this source-vertex count; use zero to disable the limit",
         update=_review_option_changed,
+    )
+    finding_filter: EnumProperty(
+        name="Finding View",
+        items=(
+            ("ALL", "All", "Show every finding from the latest review"),
+            ("ERRORS", "Errors", "Show conditions that usually require correction"),
+            ("WARNINGS", "Warnings", "Show contextual conditions that deserve review"),
+            ("FIXABLE", "Fixable", "Show findings with a supported deterministic fix"),
+        ),
+        default="ALL",
+        description="Choose which findings to display without changing the complete report",
+        update=_finding_filter_changed,
     )
     results: CollectionProperty(
         type=OnyxReviewResult,

@@ -54,6 +54,24 @@ An open boundary is not automatically a bad mesh: planes, cards, clothing, and
 other intentionally open surfaces can be correct. Onyx Review reports facts and
 leaves the production decision to the artist.
 
+### Finding view
+
+Use **Finding View** after a review to control how much evidence is shown in the
+panel:
+
+| View | Shows |
+| --- | --- |
+| All | Every finding from the latest review |
+| Errors | Conditions that usually require correction |
+| Warnings | Contextual conditions that may be intentional |
+| Fixable | Findings with one of Onyx Review's supported simple fixes |
+
+This is a presentation filter: it does not rerun the review or delete hidden
+findings. **Show Visible Findings** uses the same focused set in the 3D
+Viewport, while **Copy Report** always includes every finding. Changing the view
+clears the previous finding overlay so old evidence is not confused with the
+new filter. Face and pole topology maps are independent and remain visible.
+
 ## Simple fixes
 
 A **Fix** button appears only for four deliberately narrow cases:
@@ -143,10 +161,10 @@ edge findings as lines, and face findings as outlines with center markers. The
 overlay remains visible through the mesh so problems on the far side are not
 hidden.
 
-Use **Show All Findings** in an object card to see every actionable problem for
-that mesh together. The highlight summary acts as a color legend and retains an
-error or warning icon beside each entry. Pressing **Show** on an individual
-finding switches the overview to that focused finding.
+Use **Show Visible Findings** in an object card to see its actionable findings
+from the current Finding View together. The highlight summary acts as a color
+legend and retains an error or warning icon beside each entry. Pressing **Show**
+on an individual finding switches the overview to that focused finding.
 
 Press **Hide**, **Hide All Findings**, or **Clear Highlight** to remove the
 overlay. Rerunning or clearing the review and disabling the extension also

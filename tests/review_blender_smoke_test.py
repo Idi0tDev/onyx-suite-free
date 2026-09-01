@@ -277,6 +277,61 @@ def main():
     assert "topology.ngons" in codes
     assert "data.uv" in codes
     assert "data.material" in codes
+    filtered_codes = {
+        filter_mode: {
+            issue.code
+            for issue in settings.results[0].issues
+            if operators.finding_matches_filter(issue, filter_mode)
+        }
+        for filter_mode in ("ALL", "ERRORS", "WARNINGS", "FIXABLE")
+    }
+    assert filtered_codes["ALL"] == codes
+    assert filtered_codes["ERRORS"] == {
+        "topology.degenerate",
+        "topology.duplicate_faces",
+    }
+    assert filtered_codes["WARNINGS"] == codes - filtered_codes["ERRORS"]
+    assert filtered_codes["FIXABLE"] == {
+        "topology.duplicate_faces",
+        "topology.loose_vertices",
+    }
+
+    settings.finding_filter = "ERRORS"
+    assert bpy.ops.onyx.highlight_review_object(object_name=problem.name) == {"FINISHED"}
+    assert {highlight.issue_code for highlight in highlight_state.active_highlights()} == {
+        "topology.degenerate",
+        "topology.duplicate_faces",
+    }
+    settings.finding_filter = "WARNINGS"
+    assert not highlight_state.active_highlights()
+    assert bpy.ops.onyx.highlight_review_object(object_name=problem.name) == {"FINISHED"}
+    assert {highlight.issue_code for highlight in highlight_state.active_highlights()} == {
+        "topology.boundary",
+        "topology.loose_vertices",
+        "topology.coincident_vertices",
+        "topology.disconnected_islands",
+        "topology.ngons",
+    }
+    settings.finding_filter = "FIXABLE"
+    assert not highlight_state.active_highlights()
+    assert bpy.ops.onyx.highlight_review_object(object_name=problem.name) == {"FINISHED"}
+    assert {highlight.issue_code for highlight in highlight_state.active_highlights()} == {
+        "topology.duplicate_faces",
+        "topology.loose_vertices",
+    }
+    settings.finding_filter = "ALL"
+    assert not highlight_state.active_highlights()
+    assert bpy.ops.onyx.highlight_topology_map(
+        object_name=problem.name,
+        map_kind="FACES",
+    ) == {"FINISHED"}
+    settings.finding_filter = "ERRORS"
+    assert highlight_state.is_overview_active(problem.name, "FACE_MAP")
+    assert bpy.ops.onyx.highlight_topology_map(
+        object_name=problem.name,
+        map_kind="FACES",
+    ) == {"FINISHED"}
+    settings.finding_filter = "ALL"
     issue_counts = {issue.code: issue.count for issue in settings.results[0].issues}
     assert issue_counts["topology.coincident_vertices"] == 5
     assert issue_counts["topology.disconnected_islands"] == 3

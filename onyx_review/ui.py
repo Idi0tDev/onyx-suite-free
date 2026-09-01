@@ -108,6 +108,12 @@ class ONYX_PT_review(bpy.types.Panel):
         row.operator("onyx.copy_review_report", icon="COPYDOWN")
         row.operator("onyx.clear_review", icon="X")
 
+        if settings.total_errors or settings.total_warnings:
+            finding_view = layout.box()
+            finding_view.label(text="Finding View", icon="FILTER")
+            finding_view.prop(settings, "finding_filter", expand=True)
+            finding_view.label(text="Copy Report always includes every finding", icon="INFO")
+
         active_highlights = highlight_state.active_highlights()
         if active_highlights:
             active_highlight = active_highlights[0]
@@ -271,17 +277,28 @@ class ONYX_PT_review(bpy.types.Panel):
                     f"{result.dimensions[2]:.3g} scene units"
                 )
             )
-            if any(issue_selection_domain(issue.code) for issue in result.issues):
+            visible_issues = tuple(
+                issue
+                for issue in result.issues
+                if operators.finding_matches_filter(issue, settings.finding_filter)
+            )
+            if any(issue_selection_domain(issue.code) for issue in visible_issues):
                 overview_visible = highlight_state.is_overview_active(object_name)
                 overview = box.operator(
                     "onyx.highlight_review_object",
-                    text="Hide All Findings" if overview_visible else "Show All Findings",
+                    text=(
+                        "Hide Visible Findings"
+                        if overview_visible
+                        else "Show Visible Findings"
+                    ),
                     icon="HIDE_ON" if overview_visible else "HIDE_OFF",
                 )
                 overview.object_name = object_name
             if not result.issues:
                 box.label(text="No findings", icon="CHECKMARK")
-            for issue in result.issues:
+            elif not visible_issues:
+                box.label(text="No findings match this view", icon="CHECKMARK")
+            for issue in visible_issues:
                 icon = "ERROR" if issue.severity == "ERROR" else "INFO"
                 suffix = f" ({issue.count:,})" if issue.count > 1 else ""
                 fix_info = simple_fix_info(issue.code)

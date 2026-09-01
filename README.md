@@ -40,13 +40,14 @@ when the chosen scope exceeds its configurable source-vertex limit.
 1. Choose the active object, current selection, or active collection.
 2. Press **Run Review**.
 3. Read per-object findings and compare base versus evaluated triangles.
-4. Optionally enable **Live Review** while iterating on the model.
-5. Open **Topology Detail** to map or select face types and topology poles.
-6. Use **Show All Findings** for an overview, or **Show** to isolate one finding.
-7. Use **Inspect** when you want its mesh elements selected in Edit Mode.
-8. Optionally use **Fix** for supported, deterministic cleanup cases.
-9. Switch between Studio, Silhouette, Topology, and Face Orientation views.
-10. Press **Restore View** to return the viewport to its original settings.
+4. Focus the list on **All**, **Errors**, **Warnings**, or **Fixable** findings.
+5. Optionally enable **Live Review** while iterating on the model.
+6. Open **Topology Detail** to map or select face types and topology poles.
+7. Use **Show Visible Findings** for an overview, or **Show** to isolate one finding.
+8. Use **Inspect** when you want its mesh elements selected in Edit Mode.
+9. Optionally use **Fix** for supported, deterministic cleanup cases.
+10. Switch between Studio, Silhouette, Topology, and Face Orientation views.
+11. Press **Restore View** to return the viewport to its original settings.
 
 ### What it currently checks
 
@@ -65,6 +66,12 @@ on a card, cloth panel, or trim sheet.
 Actionable topology findings can select their exact vertices, edges, or faces
 in Edit Mode. This navigation changes the active selection for inspection but
 does not alter the mesh.
+
+**Finding View** keeps dense results readable without discarding evidence.
+Switch between every finding, error-level findings, contextual warnings, or the
+small set with supported simple fixes. The viewport overview follows the active
+view, while topology maps stay independent and **Copy Report** always includes
+the complete review.
 
 Four deliberately narrow findings also offer an explicit **Fix** action:
 inconsistent winding, exact duplicate faces, loose edges, and loose vertices.
@@ -148,6 +155,7 @@ The repository includes:
 - Transient viewport-highlight geometry and cleanup coverage
 - Empty-scope readiness and clipboard-report coverage
 - Debounced Live Review, Edit Mode pause, and density-limit coverage
+- Finding-view filtering and matching viewport-overview coverage
 - Explicit quick-fix mutation, refusal, and result-refresh coverage
 - Viewport restoration coverage
 - Core embedding verification

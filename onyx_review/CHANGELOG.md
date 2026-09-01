@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0 - 2026-09-01
+
+- Add All, Errors, Warnings, and Fixable finding views for dense review results.
+- Make per-object viewport overviews follow the active finding view.
+- Clear stale finding overlays whenever the finding view changes while keeping
+  independent topology maps visible.
+- Keep copied reports complete regardless of the current presentation filter.
+
 ## 0.5.0 - 2026-09-01
 
 - Add explicit quick fixes for inconsistent face winding, exact duplicate

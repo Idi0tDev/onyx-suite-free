@@ -46,6 +46,19 @@ def review_blocker(context, scope):
     return "The active collection contains no mesh objects"
 
 
+def finding_matches_filter(issue, filter_mode):
+    """Return whether a stored finding belongs in the current artist-facing view."""
+    if filter_mode == "ALL":
+        return True
+    if filter_mode == "ERRORS":
+        return issue.severity == "ERROR"
+    if filter_mode == "WARNINGS":
+        return issue.severity == "WARNING"
+    if filter_mode == "FIXABLE":
+        return simple_fix_info(issue.code) is not None
+    raise ValueError(f"Unknown finding filter: {filter_mode}")
+
+
 def _store_review(settings, obj, review):
     item = settings.results.add()
     item.object_ref = obj
@@ -410,8 +423,8 @@ class ONYX_OT_highlight_review_issue(bpy.types.Operator):
 
 class ONYX_OT_highlight_review_object(bpy.types.Operator):
     bl_idname = "onyx.highlight_review_object"
-    bl_label = "Show All Findings"
-    bl_description = "Draw every actionable finding for this mesh in the 3D Viewport"
+    bl_label = "Show Visible Findings"
+    bl_description = "Draw the currently visible actionable findings for this mesh in the 3D Viewport"
 
     object_name: StringProperty(description="Name of the reviewed mesh to highlight")
 
@@ -443,7 +456,10 @@ class ONYX_OT_highlight_review_object(bpy.types.Operator):
             return {"CANCELLED"}
 
         actionable = tuple(
-            issue for issue in result.issues if issue_selection_domain(issue.code)
+            issue
+            for issue in result.issues
+            if finding_matches_filter(issue, settings.finding_filter)
+            and issue_selection_domain(issue.code)
         )
         geometry = {
             issue_code: (domain, points, lines, count)
@@ -469,7 +485,7 @@ class ONYX_OT_highlight_review_object(bpy.types.Operator):
                     )
                 )
         if not highlights:
-            self.report({"INFO"}, "This mesh has no actionable findings to show")
+            self.report({"INFO"}, "This view has no actionable findings to show")
             return {"FINISHED"}
 
         highlight_state.show_overview(obj.name, highlights)

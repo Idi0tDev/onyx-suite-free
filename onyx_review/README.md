@@ -1,4 +1,4 @@
-# Onyx Review 0.5.0
+# Onyx Review 0.6.0
 
 Onyx Review is an independent, reversible mesh-inspection workspace for Blender
 5.2 LTS. It reports source and evaluated geometry statistics, identifies common
@@ -28,6 +28,7 @@ installation is required.
 - Distinct, through-surface viewport colors for every actionable finding type
 - Thicker lines and larger points for error-level findings
 - Combined per-object overview of all actionable findings
+- All, Errors, Warnings, and Fixable finding views for dense reviews
 - Copyable plain-text review report
 - Optional debounced Live Review after mesh changes
 - Automatic Live Review pause in Edit Mode and above a configurable source-vertex limit
@@ -59,6 +60,17 @@ ngons, coincident vertices, disconnected islands, transforms, UVs, or materials.
 Fixes are also refused for linked data, multi-user meshes, and meshes with shape
 keys so a local cleanup cannot silently affect another asset state.
 
+## Finding view
+
+Use **Finding View** to focus the panel on all findings, errors, contextual
+warnings, or findings with one of the supported simple fixes. **Show Visible
+Findings** draws only that focused set in the viewport. Changing the view clears
+the previous finding overlay so its evidence cannot be mistaken for the new
+filter. Independent face and pole topology maps remain visible.
+
+The filter is presentation-only. **Copy Report** always includes every finding
+from the latest review.
+
 ## Viewport modes
 
 - Studio
@@ -72,6 +84,6 @@ captured viewport.
 
 ## Install
 
-Build `onyx_review-0.5.0.zip` with `tools/package_review.ps1`, then install the
+Build `onyx_review-0.6.0.zip` with `tools/package_review.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.
