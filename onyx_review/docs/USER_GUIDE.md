@@ -40,17 +40,38 @@ Inspect changes the active object, mode, and selection so the problem is ready
 to examine, but it never edits geometry. Results describe the last review run;
 after correcting a mesh, run Review again to refresh the counts.
 
+Each object card also reports its triangle, quad, and ngon face mix, plus counts
+of vertices connected to 3, 5, or 6+ edges. These are descriptive topology
+statistics rather than automatic warnings: the right mix and pole flow depend
+on how the asset will deform, shade, or be edited.
+
 ## Viewport highlights
 
 Use **Show** beside an actionable topology finding to draw its affected geometry
-directly over the model. Errors use red; warnings use orange. Vertex findings
-appear as points, edge findings as thick lines, and face findings as outlines
-with center markers. The overlay remains visible through the mesh so problems
-on the far side are not hidden.
+directly over the model. Each finding type keeps the same color:
+
+| Finding | Color |
+| --- | --- |
+| Edges connected to more than two faces | Red |
+| Degenerate faces | Rose |
+| Duplicate faces | Magenta |
+| Inconsistent winding | Purple |
+| Open boundary edges | Cyan |
+| Loose edges | Yellow |
+| Loose vertices | Lime |
+| Coincident vertices | Orange |
+| Disconnected islands | Blue |
+| Ngons | Amber |
+
+Error-level findings use thicker lines and larger point markers, so severity is
+still visible when several colors overlap. Vertex findings appear as points,
+edge findings as lines, and face findings as outlines with center markers. The
+overlay remains visible through the mesh so problems on the far side are not
+hidden.
 
 Use **Show All Findings** in an object card to see every actionable problem for
-that mesh together. The highlight summary acts as a legend: red geometry is an
-error and orange geometry is a warning. Pressing **Show** on an individual
+that mesh together. The highlight summary acts as a color legend and retains an
+error or warning icon beside each entry. Pressing **Show** on an individual
 finding switches the overview to that focused finding.
 
 Press **Hide**, **Hide All Findings**, or **Clear Highlight** to remove the

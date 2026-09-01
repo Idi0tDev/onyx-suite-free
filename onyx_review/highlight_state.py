@@ -9,8 +9,26 @@ import gpu
 from gpu_extras.batch import batch_for_shader
 
 
-_ERROR_COLOR = (1.0, 0.12, 0.03, 0.95)
-_WARNING_COLOR = (1.0, 0.48, 0.03, 0.95)
+@dataclass(frozen=True)
+class FindingStyle:
+    name: str
+    color: tuple
+
+
+_FINDING_STYLES = {
+    "topology.non_manifold": FindingStyle("Red", (1.0, 0.05, 0.12, 0.98)),
+    "topology.degenerate": FindingStyle("Rose", (1.0, 0.08, 0.42, 0.98)),
+    "topology.duplicate_faces": FindingStyle("Magenta", (0.95, 0.08, 1.0, 0.98)),
+    "topology.winding": FindingStyle("Purple", (0.62, 0.24, 1.0, 0.98)),
+    "topology.boundary": FindingStyle("Cyan", (0.05, 0.82, 1.0, 0.96)),
+    "topology.loose_edges": FindingStyle("Yellow", (1.0, 0.82, 0.05, 0.96)),
+    "topology.loose_vertices": FindingStyle("Lime", (0.55, 1.0, 0.12, 0.96)),
+    "topology.coincident_vertices": FindingStyle("Orange", (1.0, 0.34, 0.03, 0.96)),
+    "topology.disconnected_islands": FindingStyle("Blue", (0.12, 0.42, 1.0, 0.96)),
+    "topology.ngons": FindingStyle("Amber", (1.0, 0.58, 0.04, 0.96)),
+}
+_ERROR_STYLE = FindingStyle("Red", (1.0, 0.12, 0.03, 0.98))
+_WARNING_STYLE = FindingStyle("Orange", (1.0, 0.48, 0.03, 0.96))
 
 
 @dataclass(frozen=True)
@@ -38,6 +56,14 @@ def active_highlight():
 
 def active_highlights():
     return _ACTIVE
+
+
+def finding_style(issue_code, severity):
+    """Return the stable viewport color assigned to a finding type."""
+    return _FINDING_STYLES.get(
+        issue_code,
+        _ERROR_STYLE if severity == "ERROR" else _WARNING_STYLE,
+    )
 
 
 def is_active(object_name, issue_code):
@@ -91,14 +117,14 @@ def _draw_highlight():
                 continue
             if not obj.visible_get():
                 continue
-            color = _ERROR_COLOR if highlight.severity == "ERROR" else _WARNING_COLOR
+            style = finding_style(highlight.issue_code, highlight.severity)
             shader.bind()
-            shader.uniform_float("color", color)
+            shader.uniform_float("color", style.color)
             if line_batch is not None:
-                gpu.state.line_width_set(3.0)
+                gpu.state.line_width_set(4.0 if highlight.severity == "ERROR" else 2.5)
                 line_batch.draw(shader)
             if point_batch is not None:
-                gpu.state.point_size_set(11.0)
+                gpu.state.point_size_set(13.0 if highlight.severity == "ERROR" else 10.0)
                 point_batch.draw(shader)
     finally:
         gpu.state.line_width_set(1.0)

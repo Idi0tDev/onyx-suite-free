@@ -44,8 +44,8 @@ changed behind your back.
 
 | Area | Review evidence |
 | --- | --- |
-| Geometry | Base and evaluated vertices, faces, and triangles |
-| Topology | Boundaries, non-manifold edges, duplicate or degenerate faces, coincident vertices, disconnected islands, loose geometry, ngons, and inconsistent winding |
+| Geometry | Base and evaluated vertices, faces, and triangles; triangle, quad, and ngon face composition |
+| Topology | Boundaries, non-manifold edges, duplicate or degenerate faces, coincident vertices, disconnected islands, loose geometry, ngons, inconsistent winding, and 3/5/6+ edge pole counts |
 | Transforms | Negative transforms and unapplied scale |
 | Asset setup | UV-map and material-slot presence |
 | Budget | Optional evaluated triangle warning |
@@ -58,10 +58,12 @@ Actionable topology findings can select their exact vertices, edges, or faces
 in Edit Mode. This navigation changes the active selection for inspection but
 does not alter the mesh.
 
-They can also draw temporary red and orange highlights directly in the 3D
-Viewport. Show a single finding or every actionable finding for one object at
-once. Highlights remain visible through the surface, create no scene data, and
-clear when the review is rerun, cleared, hidden, or the extension is disabled.
+They can also draw temporary, color-coded highlights directly in the 3D
+Viewport. Each problem type has a distinct color, while error-level findings use
+thicker marks. Show a single finding or every actionable finding for one object
+at once. Highlights remain visible through the surface, create no scene data,
+and clear when the review is rerun, cleared, hidden, or the extension is
+disabled.
 
 ## Built to leave the scene alone
 
@@ -120,6 +122,7 @@ The repository includes:
 - UI-neutral result and aggregation tests
 - Real Blender mesh-analysis smoke tests
 - Vertex, edge, and face finding-selection coverage
+- Finding-color uniqueness and face/pole statistic coverage
 - Transient viewport-highlight geometry and cleanup coverage
 - Empty-scope readiness and clipboard-report coverage
 - Viewport restoration coverage

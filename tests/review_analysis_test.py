@@ -37,6 +37,12 @@ def review(name, base, evaluated, issues=()):
         evaluated_faces=18,
         evaluated_triangles=evaluated,
         dimensions=(2.0, 3.0, 4.0),
+        triangle_faces=2,
+        quad_faces=4,
+        ngon_faces=1,
+        three_poles=8,
+        five_poles=2,
+        six_plus_poles=1,
         issues=issues,
     )
 
@@ -58,6 +64,8 @@ def main():
     report = format_review_report(summary)
     assert report.startswith("Onyx Review Report\n")
     assert "Crate" in report and "12 base triangles -> 48 evaluated (4.00x)" in report
+    assert "Face mix: 2 triangles, 4 quads, 1 ngons" in report
+    assert "Poles: 8 3-edge, 2 5-edge, 1 6+-edge" in report
     assert "[ERROR] Degenerate faces (2)" in report
     assert "Barrel" in report and "No findings" in report
 

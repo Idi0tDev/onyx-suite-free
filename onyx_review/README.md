@@ -1,4 +1,4 @@
-# Onyx Review 0.1.0
+# Onyx Review 0.2.0
 
 Onyx Review is an independent, reversible mesh-inspection workspace for Blender
 5.2 LTS. It reports source and evaluated geometry statistics, identifies common
@@ -11,6 +11,8 @@ installation is required.
 ## Current review checks
 
 - Base and evaluated vertices, faces, and triangles
+- Triangle, quad, and ngon face composition
+- 3-edge, 5-edge, and 6+-edge topology-pole counts
 - Open boundaries and edges connected to more than two faces
 - Degenerate faces and inconsistent face winding
 - Duplicate faces occupying the same vertex positions
@@ -21,7 +23,8 @@ installation is required.
 - Missing UV maps and material slots
 - Optional evaluated triangle budget
 - Direct element selection for actionable topology findings
-- Through-surface viewport highlights for actionable topology findings
+- Distinct, through-surface viewport colors for every actionable finding type
+- Thicker lines and larger points for error-level findings
 - Combined per-object overview of all actionable findings
 - Copyable plain-text review report
 
@@ -38,6 +41,6 @@ captured viewport.
 
 ## Install
 
-Build `onyx_review-0.1.0.zip` with `tools/package_review.ps1`, then install the
+Build `onyx_review-0.2.0.zip` with `tools/package_review.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.

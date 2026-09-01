@@ -6,7 +6,7 @@ from . import highlight_state, operators, properties, ui, viewport_state
 from ._onyx_core import EmbeddedCore, Lifecycle
 
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 CORE = EmbeddedCore(
     bpy,

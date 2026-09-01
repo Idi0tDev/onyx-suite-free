@@ -125,6 +125,12 @@ def main():
     assert result.object_name == "ReviewedCube"
     assert result.base_triangles == 12
     assert result.evaluated_triangles > result.base_triangles
+    assert result.triangle_faces == 0
+    assert result.quad_faces == 6
+    assert result.ngon_faces == 0
+    assert result.three_poles == 8
+    assert result.five_poles == 0
+    assert result.six_plus_poles == 0
     stored_report = operators.format_review_report(operators._stored_summary(settings))
     assert "Onyx Review Report" in stored_report
     assert "ReviewedCube" in stored_report
@@ -149,7 +155,31 @@ def main():
     issue_counts = {issue.code: issue.count for issue in settings.results[0].issues}
     assert issue_counts["topology.coincident_vertices"] == 5
     assert issue_counts["topology.disconnected_islands"] == 3
+    assert settings.results[0].triangle_faces == 1
+    assert settings.results[0].quad_faces == 0
+    assert settings.results[0].ngon_faces == 2
     assert highlight_state.active_highlight() is None
+
+    palette_codes = (
+        ("topology.non_manifold", "ERROR"),
+        ("topology.degenerate", "ERROR"),
+        ("topology.duplicate_faces", "ERROR"),
+        ("topology.winding", "ERROR"),
+        ("topology.boundary", "WARNING"),
+        ("topology.loose_edges", "WARNING"),
+        ("topology.loose_vertices", "WARNING"),
+        ("topology.coincident_vertices", "WARNING"),
+        ("topology.disconnected_islands", "WARNING"),
+        ("topology.ngons", "WARNING"),
+    )
+    styles = tuple(
+        highlight_state.finding_style(issue_code, severity)
+        for issue_code, severity in palette_codes
+    )
+    assert len({style.name for style in styles}) == len(styles)
+    assert len({style.color for style in styles}) == len(styles)
+    assert highlight_state.finding_style("unknown.error", "ERROR").name == "Red"
+    assert highlight_state.finding_style("unknown.warning", "WARNING").name == "Orange"
 
     assert bpy.ops.onyx.highlight_review_issue(
         object_name=problem.name,
@@ -161,6 +191,7 @@ def main():
     assert highlight.object_name == problem.name
     assert highlight.issue_code == "topology.duplicate_faces"
     assert highlight.domain == "FACE"
+    assert highlight_state.finding_style(highlight.issue_code, highlight.severity).name == "Magenta"
     assert highlight.element_count == 2
     assert len(highlight.points) == 2
     assert len(highlight.lines) == 20
@@ -177,6 +208,12 @@ def main():
     assert highlight_state.is_overview_active(problem.name)
     assert len(highlights) == 7
     assert {highlight.severity for highlight in highlights} == {"ERROR", "WARNING"}
+    assert len(
+        {
+            highlight_state.finding_style(highlight.issue_code, highlight.severity).color
+            for highlight in highlights
+        }
+    ) == len(highlights)
     assert {highlight.issue_code for highlight in highlights} == {
         "topology.degenerate",
         "topology.duplicate_faces",

@@ -52,6 +52,12 @@ def _store_review(settings, obj, review):
     item.evaluated_vertices = review.evaluated_vertices
     item.evaluated_faces = review.evaluated_faces
     item.evaluated_triangles = review.evaluated_triangles
+    item.triangle_faces = review.triangle_faces
+    item.quad_faces = review.quad_faces
+    item.ngon_faces = review.ngon_faces
+    item.three_poles = review.three_poles
+    item.five_poles = review.five_poles
+    item.six_plus_poles = review.six_plus_poles
     multiplier = review.modifier_multiplier
     item.modifier_multiplier = multiplier if math.isfinite(multiplier) else 0.0
     item.dimensions = review.dimensions
@@ -83,6 +89,12 @@ def _stored_summary(settings):
                 evaluated_faces=result.evaluated_faces,
                 evaluated_triangles=result.evaluated_triangles,
                 dimensions=tuple(result.dimensions),
+                triangle_faces=result.triangle_faces,
+                quad_faces=result.quad_faces,
+                ngon_faces=result.ngon_faces,
+                three_poles=result.three_poles,
+                five_poles=result.five_poles,
+                six_plus_poles=result.six_plus_poles,
                 issues=issues,
             )
         )

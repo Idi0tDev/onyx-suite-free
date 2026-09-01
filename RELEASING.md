@@ -29,8 +29,10 @@ checks their archive contents, and writes `dist/SHA256SUMS.txt`.
 Validate both archives with Blender 5.2 LTS:
 
 ```powershell
-& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background --command extension validate dist/onyx_core-0.1.0.zip
-& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background --command extension validate dist/onyx_review-0.1.0.zip
+$coreZip = (Get-ChildItem dist/onyx_core-*.zip).FullName
+$reviewZip = (Get-ChildItem dist/onyx_review-*.zip).FullName
+& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background --command extension validate $coreZip
+& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background --command extension validate $reviewZip
 ```
 
 Replace the example versions with the versions in the manifests.
@@ -41,8 +43,8 @@ Create and push a signed or annotated `vMAJOR.MINOR.PATCH` tag whose version
 matches Onyx Review:
 
 ```powershell
-git tag -a v0.1.0 -m "Onyx Suite Free 0.1.0"
-git push origin v0.1.0
+git tag -a vMAJOR.MINOR.PATCH -m "Onyx Suite Free MAJOR.MINOR.PATCH"
+git push origin vMAJOR.MINOR.PATCH
 ```
 
 The tag workflow rebuilds the artifacts and creates a draft release containing

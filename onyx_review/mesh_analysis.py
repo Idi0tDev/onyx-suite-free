@@ -231,7 +231,12 @@ def _base_mesh_metrics(mesh):
         loose_edges = sum(1 for edge in bm.edges if not edge.link_faces)
         loose_vertices = sum(1 for vertex in bm.verts if not vertex.link_edges)
         degenerate = sum(1 for face in bm.faces if face.calc_area() <= _AREA_EPSILON)
+        triangle_faces = sum(1 for face in bm.faces if len(face.verts) == 3)
+        quad_faces = sum(1 for face in bm.faces if len(face.verts) == 4)
         ngons = sum(1 for face in bm.faces if len(face.verts) > 4)
+        three_poles = sum(1 for vertex in bm.verts if len(vertex.link_edges) == 3)
+        five_poles = sum(1 for vertex in bm.verts if len(vertex.link_edges) == 5)
+        six_plus_poles = sum(1 for vertex in bm.verts if len(vertex.link_edges) >= 6)
         inconsistent = sum(
             1
             for edge in bm.edges
@@ -251,7 +256,12 @@ def _base_mesh_metrics(mesh):
             "duplicate_faces": duplicate_faces,
             "coincident_vertices": coincident_vertices,
             "disconnected_islands": disconnected_islands,
+            "triangle_faces": triangle_faces,
+            "quad_faces": quad_faces,
             "ngons": ngons,
+            "three_poles": three_poles,
+            "five_poles": five_poles,
+            "six_plus_poles": six_plus_poles,
             "inconsistent": inconsistent,
         }
     finally:
@@ -383,5 +393,11 @@ def review_object(obj, depsgraph, *, triangle_budget=100_000):
         evaluated_faces=evaluated_faces,
         evaluated_triangles=evaluated_triangles,
         dimensions=tuple(abs(float(value)) for value in obj.dimensions),
+        triangle_faces=base["triangle_faces"],
+        quad_faces=base["quad_faces"],
+        ngon_faces=base["ngons"],
+        three_poles=base["three_poles"],
+        five_poles=base["five_poles"],
+        six_plus_poles=base["six_plus_poles"],
         issues=tuple(issues),
     )

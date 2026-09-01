@@ -46,6 +46,12 @@ class ObjectReview:
     evaluated_faces: int
     evaluated_triangles: int
     dimensions: tuple[float, float, float]
+    triangle_faces: int = 0
+    quad_faces: int = 0
+    ngon_faces: int = 0
+    three_poles: int = 0
+    five_poles: int = 0
+    six_plus_poles: int = 0
     issues: tuple[Issue, ...] = ()
 
     def __post_init__(self):
@@ -60,6 +66,12 @@ class ObjectReview:
             self.evaluated_vertices,
             self.evaluated_faces,
             self.evaluated_triangles,
+            self.triangle_faces,
+            self.quad_faces,
+            self.ngon_faces,
+            self.three_poles,
+            self.five_poles,
+            self.six_plus_poles,
         )
         if any(int(value) < 0 for value in counts):
             raise ValueError("Geometry counts cannot be negative")
@@ -136,6 +148,14 @@ def format_review_report(summary):
         output.append(
             f"  Geometry: {review.base_triangles:,} base triangles -> "
             f"{review.evaluated_triangles:,} evaluated ({multiplier_text})"
+        )
+        output.append(
+            f"  Face mix: {review.triangle_faces:,} triangles, "
+            f"{review.quad_faces:,} quads, {review.ngon_faces:,} ngons"
+        )
+        output.append(
+            f"  Poles: {review.three_poles:,} 3-edge, {review.five_poles:,} 5-edge, "
+            f"{review.six_plus_poles:,} 6+-edge"
         )
         output.append(
             "  Dimensions: "

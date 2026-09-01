@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.1.0 - Unreleased
+## 0.2.0 - 2026-09-01
+
+- Assign a distinct, stable viewport color to every actionable finding type.
+- Keep error severity readable with thicker lines and larger point markers.
+- Add triangle, quad, and ngon face composition to the panel and text report.
+- Add 3-edge, 5-edge, and 6+-edge topology-pole counts to the panel and report.
+
+## 0.1.0 - 2026-09-01
 
 - Add the initial active, selected, and collection review workflow.
 - Report base and evaluated geometry statistics.

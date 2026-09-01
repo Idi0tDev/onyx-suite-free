@@ -71,10 +71,21 @@ class ONYX_PT_review(bpy.types.Panel):
             if len(active_highlights) == 1 and not highlight_state.is_overview_active(
                 active_highlight.object_name
             ):
-                visual.label(text=active_highlight.message)
+                style = highlight_state.finding_style(
+                    active_highlight.issue_code,
+                    active_highlight.severity,
+                )
+                visual.label(text=f"{style.name} · {active_highlight.message}")
             else:
                 visual.label(text=f"{len(active_highlights):,} actionable findings")
-                visual.label(text="Red errors · Orange warnings")
+                visual.label(text="Errors use thicker marks", icon="INFO")
+                for highlight in active_highlights:
+                    style = highlight_state.finding_style(
+                        highlight.issue_code,
+                        highlight.severity,
+                    )
+                    icon = "ERROR" if highlight.severity == "ERROR" else "INFO"
+                    visual.label(text=f"{style.name} · {highlight.message}", icon=icon)
             visual.operator("onyx.clear_review_highlight", icon="X")
 
         modes = layout.box()
@@ -114,6 +125,18 @@ class ONYX_PT_review(bpy.types.Panel):
                 text=(
                     f"{result.base_vertices:,} verts · {result.base_edges:,} edges · "
                     f"{result.base_faces:,} faces"
+                )
+            )
+            box.label(
+                text=(
+                    f"Face mix {result.triangle_faces:,} tris · "
+                    f"{result.quad_faces:,} quads · {result.ngon_faces:,} ngons"
+                )
+            )
+            box.label(
+                text=(
+                    f"Poles {result.three_poles:,} × 3 · {result.five_poles:,} × 5 · "
+                    f"{result.six_plus_poles:,} × 6+"
                 )
             )
             box.label(
