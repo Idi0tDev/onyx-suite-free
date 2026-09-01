@@ -8,12 +8,11 @@
 4. Set a triangle budget, or use zero to disable the budget warning.
 5. Click **Run Review**.
 
-The panel identifies the current target before the review starts. If the chosen
-scope has no mesh objects, it explains what is missing and keeps the action
-disabled.
+If **Run Review** is greyed out, look at **Review Target** at the top of the
+panel. It tells you what is missing, such as an active mesh or a selected mesh.
 
-Reviewing reads source and evaluated mesh data but does not change objects,
-modifiers, materials, selection, or mesh elements.
+Running a review only reads the mesh. It does not change objects, modifiers,
+materials, selection, or mesh elements.
 
 ## Live Review
 
@@ -65,12 +64,50 @@ panel:
 | Errors | Conditions that usually require correction |
 | Warnings | Contextual conditions that may be intentional |
 | Fixable | Findings with one of Onyx Review's supported simple fixes |
+| Changes | Findings that are new or changed since your saved baseline |
 
 This is a presentation filter: it does not rerun the review or delete hidden
 findings. **Show Visible Findings** uses the same focused set in the 3D
 Viewport, while **Copy Report** always includes every finding. Changing the view
 clears the previous finding overlay so old evidence is not confused with the
 new filter. Face and pole topology maps are independent and remain visible.
+
+If Changes is empty, that is usually good news: nothing new appeared and no
+existing finding changed. Resolved findings are shown in the Review Delta box
+because they are no longer part of the current result.
+
+## Review Delta
+
+Review Delta answers a very practical question: “Did this modeling pass make
+the mesh better, worse, or just different?”
+
+### Save the before snapshot
+
+1. Run Review on the object, selection, or collection you want to track.
+2. In **Review Delta**, press **Save Baseline**.
+3. Make your changes.
+4. Run Review again.
+
+“Baseline” simply means the before snapshot. After the second review, Onyx
+shows:
+
+- **New** — a finding that was not in the baseline;
+- **Fixed** — a baseline finding that is now gone;
+- **Changed** — the same finding is still there, but its count or details
+  changed; and
+- **Same** — the same finding still has the same details.
+
+The box also shows the evaluated triangle change. A positive number means the
+result gained triangles; a negative number means it lost triangles.
+
+Use **Changes** in Finding View to see only introduced and changed findings on
+the current mesh. Use **Copy Delta** when you want a plain-text before-and-after
+summary. When the current result is your new good starting point, press **Use
+Current as Baseline**.
+
+The baseline is temporary. It stays only for the current Blender session and is
+cleared when you load another file, disable the addon, or press **Clear
+Baseline**. It never becomes mesh data and is not saved in the `.blend` file.
 
 ## Simple fixes
 

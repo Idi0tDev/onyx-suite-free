@@ -7,7 +7,15 @@ import math
 import bpy
 from bpy.props import EnumProperty, StringProperty
 
-from .analysis import Issue, ObjectReview, ReviewSummary, Severity, format_review_report
+from .analysis import (
+    FindingDeltaStatus,
+    Issue,
+    ObjectReview,
+    ReviewSummary,
+    Severity,
+    format_review_delta,
+    format_review_report,
+)
 from .mesh_analysis import (
     TOPOLOGY_CLASS_ENUM_ITEMS,
     apply_simple_fix,
@@ -20,7 +28,7 @@ from .mesh_analysis import (
     topology_class_info,
     topology_map_classes,
 )
-from . import highlight_state, viewport_state
+from . import delta_state, highlight_state, viewport_state
 
 
 def scoped_meshes(context, scope):
@@ -56,10 +64,12 @@ def finding_matches_filter(issue, filter_mode):
         return issue.severity == "WARNING"
     if filter_mode == "FIXABLE":
         return simple_fix_info(issue.code) is not None
+    if filter_mode == "CHANGES":
+        return getattr(issue, "delta_status", "NONE") in {"INTRODUCED", "CHANGED"}
     raise ValueError(f"Unknown finding filter: {filter_mode}")
 
 
-def _store_review(settings, obj, review):
+def _store_review(settings, obj, review, delta_statuses):
     item = settings.results.add()
     item.object_ref = obj
     item.object_name = review.object_name
@@ -87,6 +97,16 @@ def _store_review(settings, obj, review):
         stored.message = issue.message
         stored.severity = issue.severity.value
         stored.count = issue.count
+        stored.delta_status = delta_statuses.get(
+            (review.object_name, issue.code),
+            "NONE",
+        )
+
+
+def _clear_delta_markers(settings):
+    for result in settings.results:
+        for issue in result.issues:
+            issue.delta_status = "NONE"
 
 
 def _stored_summary(settings):
@@ -136,8 +156,14 @@ def perform_review(context):
         for obj in objects
     )
     summary = ReviewSummary(reviews)
+    delta = delta_state.compare(context.scene, summary)
+    delta_statuses = {
+        (item.object_name, item.code): item.status.value
+        for item in delta.findings
+        if item.status is not FindingDeltaStatus.RESOLVED
+    } if delta else {}
     for obj, review in zip(objects, reviews):
-        _store_review(settings, obj, review)
+        _store_review(settings, obj, review, delta_statuses)
     settings.last_summary = summary.message
     settings.total_errors = summary.error_count
     settings.total_warnings = summary.warning_count
@@ -178,7 +204,7 @@ class ONYX_OT_run_review(bpy.types.Operator):
 class ONYX_OT_clear_review(bpy.types.Operator):
     bl_idname = "onyx.clear_review"
     bl_label = "Clear Review"
-    bl_description = "Remove the current review results without changing any objects"
+    bl_description = "Clear the current results and temporary baseline without changing any objects"
 
     def execute(self, context):
         settings = context.scene.onyx_review
@@ -188,6 +214,7 @@ class ONYX_OT_clear_review(bpy.types.Operator):
         settings.total_errors = 0
         settings.total_warnings = 0
         settings.total_triangles = 0
+        delta_state.clear_baseline(context.scene)
         if settings.live_review:
             settings.live_status = "Waiting for mesh changes"
         return {"FINISHED"}
@@ -207,6 +234,61 @@ class ONYX_OT_copy_review_report(bpy.types.Operator):
         summary = _stored_summary(context.scene.onyx_review)
         context.window_manager.clipboard = format_review_report(summary)
         self.report({"INFO"}, "Review report copied to the clipboard")
+        return {"FINISHED"}
+
+
+class ONYX_OT_set_review_baseline(bpy.types.Operator):
+    bl_idname = "onyx.set_review_baseline"
+    bl_label = "Save Review Baseline"
+    bl_description = "Save the current review as a session-only before snapshot"
+
+    @classmethod
+    def poll(cls, context):
+        settings = getattr(getattr(context, "scene", None), "onyx_review", None)
+        return bool(settings and settings.results)
+
+    def execute(self, context):
+        settings = context.scene.onyx_review
+        delta_state.set_baseline(context.scene, _stored_summary(settings))
+        _clear_delta_markers(settings)
+        highlight_state.clear_highlight()
+        self.report({"INFO"}, "Review baseline saved for this Blender session")
+        return {"FINISHED"}
+
+
+class ONYX_OT_clear_review_baseline(bpy.types.Operator):
+    bl_idname = "onyx.clear_review_baseline"
+    bl_label = "Clear Review Baseline"
+    bl_description = "Forget the saved before snapshot without changing the review or mesh"
+
+    @classmethod
+    def poll(cls, context):
+        scene = getattr(context, "scene", None)
+        return bool(scene and delta_state.baseline(scene) is not None)
+
+    def execute(self, context):
+        settings = context.scene.onyx_review
+        delta_state.clear_baseline(context.scene)
+        _clear_delta_markers(settings)
+        highlight_state.clear_highlight()
+        self.report({"INFO"}, "Review baseline cleared")
+        return {"FINISHED"}
+
+
+class ONYX_OT_copy_review_delta(bpy.types.Operator):
+    bl_idname = "onyx.copy_review_delta"
+    bl_label = "Copy Delta"
+    bl_description = "Copy the complete before-and-after comparison to the clipboard"
+
+    @classmethod
+    def poll(cls, context):
+        scene = getattr(context, "scene", None)
+        return bool(scene and delta_state.current_delta(scene) is not None)
+
+    def execute(self, context):
+        delta = delta_state.current_delta(context.scene)
+        context.window_manager.clipboard = format_review_delta(delta)
+        self.report({"INFO"}, "Review Delta copied to the clipboard")
         return {"FINISHED"}
 
 
@@ -664,6 +746,9 @@ CLASSES = (
     ONYX_OT_run_review,
     ONYX_OT_clear_review,
     ONYX_OT_copy_review_report,
+    ONYX_OT_set_review_baseline,
+    ONYX_OT_clear_review_baseline,
+    ONYX_OT_copy_review_delta,
     ONYX_OT_select_review_object,
     ONYX_OT_inspect_review_issue,
     ONYX_OT_fix_review_issue,

@@ -12,6 +12,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 import onyx_review  # noqa: E402
 from onyx_review import (  # noqa: E402
+    delta_state,
     highlight_state,
     live_review,
     operators,
@@ -146,6 +147,7 @@ def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     onyx_review.register()
     assert live_review.is_registered()
+    assert delta_state._load_post in bpy.app.handlers.load_post
     assert bpy.app.driver_namespace[BROKER_KEY] is onyx_review.CORE.endpoint
     assert onyx_review.CORE.endpoint.extension("onyx_review") is not None
     check_tooltips()
@@ -176,6 +178,40 @@ def main():
     assert "Onyx Review Report" in stored_report
     assert "ReviewedCube" in stored_report
     assert bpy.ops.onyx.copy_review_report() == {"FINISHED"}
+
+    # Review Delta keeps a session-only before snapshot. It reports new and
+    # resolved findings without touching the mesh, then can be cleared cleanly.
+    assert delta_state.baseline(bpy.context.scene) is None
+    assert bpy.ops.onyx.set_review_baseline() == {"FINISHED"}
+    assert delta_state.baseline(bpy.context.scene) is not None
+    assert delta_state.current_delta(bpy.context.scene) is None
+    assert all(issue.delta_status == "NONE" for issue in settings.results[0].issues)
+
+    material = bpy.data.materials.new("ReviewDeltaMaterial")
+    cube.data.materials.append(material)
+    cube.scale.x = 2.0
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    delta = delta_state.current_delta(bpy.context.scene)
+    assert delta is not None
+    assert {item.code for item in delta.introduced} == {"transform.scale"}
+    assert {item.code for item in delta.resolved} == {"data.material"}
+    assert settings.results[0].issues[0].delta_status == "INTRODUCED"
+    settings.finding_filter = "CHANGES"
+    assert {
+        issue.code
+        for issue in settings.results[0].issues
+        if operators.finding_matches_filter(issue, settings.finding_filter)
+    } == {"transform.scale"}
+    assert bpy.ops.onyx.copy_review_delta() == {"FINISHED"}
+    assert bpy.ops.onyx.clear_review_baseline() == {"FINISHED"}
+    assert delta_state.baseline(bpy.context.scene) is None
+    assert delta_state.current_delta(bpy.context.scene) is None
+    assert all(issue.delta_status == "NONE" for issue in settings.results[0].issues)
+    settings.finding_filter = "ALL"
+    cube.scale.x = 1.0
+    cube.data.materials.clear()
+    bpy.data.materials.remove(material)
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
 
     assert bpy.ops.onyx.highlight_topology_map(
         object_name=cube.name,
@@ -283,7 +319,7 @@ def main():
             for issue in settings.results[0].issues
             if operators.finding_matches_filter(issue, filter_mode)
         }
-        for filter_mode in ("ALL", "ERRORS", "WARNINGS", "FIXABLE")
+        for filter_mode in ("ALL", "ERRORS", "WARNINGS", "FIXABLE", "CHANGES")
     }
     assert filtered_codes["ALL"] == codes
     assert filtered_codes["ERRORS"] == {
@@ -295,6 +331,7 @@ def main():
         "topology.duplicate_faces",
         "topology.loose_vertices",
     }
+    assert filtered_codes["CHANGES"] == set()
 
     settings.finding_filter = "ERRORS"
     assert bpy.ops.onyx.highlight_review_object(object_name=problem.name) == {"FINISHED"}
@@ -601,6 +638,7 @@ def main():
     assert highlight_state.active_highlight() is None
     onyx_review.unregister()
     assert not live_review.is_registered()
+    assert delta_state._load_post not in bpy.app.handlers.load_post
     assert BROKER_KEY not in bpy.app.driver_namespace
     print("ONYX_REVIEW_BLENDER_OK")
 

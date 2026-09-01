@@ -92,6 +92,7 @@ Test-ReleaseArchive -ArchivePath $reviewArchive -RequiredEntries @(
     "docs/USER_GUIDE.md",
     "_onyx_core/embedded.py",
     "_onyx_core/lifecycle.py",
+    "delta_state.py",
     "highlight_state.py"
 )
 

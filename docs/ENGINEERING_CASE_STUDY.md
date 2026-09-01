@@ -57,6 +57,8 @@ UI-neutral ObjectReview and ReviewSummary models
            +--> transient GPU viewport overlays
 
 Dependency-graph changes --> debounce and safety gates --> same review path
+
+Saved session baseline --> pure summary comparison --> delta UI and report
 ```
 
 | Area | Responsibility |
@@ -67,6 +69,7 @@ Dependency-graph changes --> debounce and safety gates --> same review path
 | `highlight_state.py` | One transient GPU draw-handler lifecycle and stable finding colors |
 | `viewport_state.py` | Capture, apply, and exact restoration of per-viewport display settings |
 | `live_review.py` | Dependency-graph observation, debounce, Edit Mode pause, and density guard |
+| `delta_state.py` | Session-only before snapshots, file-load cleanup, and the latest comparison |
 | `ui.py` and `properties.py` | Artist-facing state and layout without owning analysis rules |
 | bundled `_onyx_core` | Transactional lifecycle, compatibility, discovery, and product registration |
 
@@ -114,11 +117,20 @@ period. It pauses while a target is in Edit Mode or when the scope exceeds the
 configured source-vertex ceiling, keeping refresh cost and edit-state behavior
 predictable.
 
+### Review Delta stays out of the file
+
+The baseline is an in-memory `ReviewSummary`, not scene metadata. Loading a file
+or disabling the extension clears it. The actual comparison is a pure function
+over two summaries, which makes introduced, resolved, changed, and unchanged
+classification easy to test without Blender running. Current findings can be
+filtered to new and changed items, while resolved findings remain available in
+the delta box and copied report.
+
 ## Verification strategy
 
 | Layer | What is checked |
 | --- | --- |
-| Pure result tests | Aggregation, severity, filtering, reporting, and compatibility behavior |
+| Pure result tests | Aggregation, severity, filtering, delta comparison, reporting, and compatibility behavior |
 | Blender mesh tests | Real BMesh findings, source/evaluated counts, selection domains, and simple mutations |
 | Viewport tests | Highlight geometry, stable distinct colors, topology maps, and exact state restoration |
 | Lifecycle tests | Registration rollback, embedded Core parity, standalone Core coexistence, and cleanup |
@@ -143,8 +155,6 @@ the real Blender smoke and coexistence suites with a clean factory startup.
 
 ## Next directions
 
-The most useful next step is a **Review Delta**: compare the current evidence
-with a saved baseline and show which findings were introduced, resolved, or
-left unchanged. Other planned directions include configurable review profiles,
-per-check thresholds, evaluated-geometry visualization, and running the full
-Blender smoke suite in hosted continuous integration.
+Likely next steps include configurable review profiles, per-check thresholds,
+evaluated-geometry visualization, and running the full Blender smoke suite in
+hosted continuous integration.

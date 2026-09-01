@@ -55,6 +55,21 @@ Report** intentionally includes every finding from the review so a handoff note
 cannot silently omit hidden evidence. Switch Finding View back to **All** to see
 the complete list in the panel.
 
+## Review Delta disappeared after reopening Blender
+
+That is expected. The baseline is a temporary before snapshot for the current
+Blender session. Onyx does not save it inside the `.blend` file because a review
+tool should not quietly add project data.
+
+Run Review and press **Save Baseline** again when you are ready for another
+before-and-after check.
+
+## Changes is empty but Review Delta says something was resolved
+
+The Changes view shows findings that exist now and are new or changed. A
+resolved finding is gone from the current mesh, so it appears in the Review
+Delta box instead. **Copy Delta** includes both sides of the comparison.
+
 ## The counts changed after adding a modifier
 
 This is expected. Base counts describe the editable source mesh. Evaluated

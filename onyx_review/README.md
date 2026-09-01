@@ -1,12 +1,12 @@
-# Onyx Review 0.6.0
+# Onyx Review 0.7.0
 
-Onyx Review is an independent, reversible mesh-inspection workspace for Blender
-5.2 LTS. It reports source and evaluated geometry statistics, identifies common
-topology and transform concerns, and provides temporary viewport review modes.
+Onyx Review helps you spot mesh problems before they become annoying production
+problems. It checks the editable mesh and the evaluated modifier result, then
+points to useful evidence directly in Blender's 3D Viewport.
 
-It does not repair, remesh, bake, export, or alter mesh data. The extension is
-self-contained and includes the free Onyx Core runtime; no separate framework
-installation is required.
+Running a review does not change the mesh. Onyx does not remesh, bake, export,
+or quietly repair anything. The extension includes the free Onyx Core runtime,
+so there is no second dependency to install.
 
 ## Current review checks
 
@@ -28,7 +28,8 @@ installation is required.
 - Distinct, through-surface viewport colors for every actionable finding type
 - Thicker lines and larger points for error-level findings
 - Combined per-object overview of all actionable findings
-- All, Errors, Warnings, and Fixable finding views for dense reviews
+- All, Errors, Warnings, Fixable, and Changes finding views for dense reviews
+- Session-only before-and-after Review Delta comparisons
 - Copyable plain-text review report
 - Optional debounced Live Review after mesh changes
 - Automatic Live Review pause in Edit Mode and above a configurable source-vertex limit
@@ -62,14 +63,31 @@ keys so a local cleanup cannot silently affect another asset state.
 
 ## Finding view
 
-Use **Finding View** to focus the panel on all findings, errors, contextual
-warnings, or findings with one of the supported simple fixes. **Show Visible
-Findings** draws only that focused set in the viewport. Changing the view clears
-the previous finding overlay so its evidence cannot be mistaken for the new
-filter. Independent face and pole topology maps remain visible.
+Use **Finding View** when the full list feels busy. You can show everything,
+only errors, only warnings, findings with a simple fix, or findings that changed
+since your Review Delta baseline. **Show Visible Findings** draws that same
+focused set in the viewport.
 
-The filter is presentation-only. **Copy Report** always includes every finding
-from the latest review.
+Changing the view clears the old finding overlay so you never mistake stale
+marks for the new filter. Face and pole maps stay independent. **Copy Report**
+still includes every finding from the latest review.
+
+## Review Delta
+
+A baseline is just a before snapshot.
+
+1. Run Review.
+2. Press **Save Baseline**.
+3. Make your changes.
+4. Run Review again.
+
+Onyx shows what is new, what was fixed or disappeared, what changed, and what
+stayed the same. It also shows the evaluated triangle difference. **Copy Delta**
+gives you a plain-text comparison for notes or handoff. **Use Current as
+Baseline** starts a fresh comparison from the current result.
+
+The baseline stays in memory for this Blender session only. It does not add
+anything to the scene and is not saved in the `.blend` file.
 
 ## Viewport modes
 
@@ -84,6 +102,6 @@ captured viewport.
 
 ## Install
 
-Build `onyx_review-0.6.0.zip` with `tools/package_review.ps1`, then install the
+Build `onyx_review-0.7.0.zip` with `tools/package_review.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.

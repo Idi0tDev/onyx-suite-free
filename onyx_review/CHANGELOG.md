@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0 - 2026-09-01
+
+- Add a session-only Review Delta baseline for clear before-and-after checks.
+- Show introduced, resolved, changed, and unchanged findings after a new review.
+- Add a Changes finding view for current findings that need attention.
+- Report evaluated triangle differences alongside finding changes.
+- Add Copy Delta, Use Current as Baseline, and Clear Baseline controls.
+- Clear saved baselines when a file is loaded or the extension is disabled.
+
 ## 0.6.0 - 2026-09-01
 
 - Add All, Errors, Warnings, and Fixable finding views for dense review results.

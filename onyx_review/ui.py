@@ -2,7 +2,7 @@
 
 import bpy
 
-from . import highlight_state, operators
+from . import delta_state, highlight_state, operators
 from .mesh_analysis import issue_selection_domain, simple_fix_info, topology_class_info
 
 
@@ -107,6 +107,63 @@ class ONYX_PT_review(bpy.types.Panel):
         row = summary.row(align=True)
         row.operator("onyx.copy_review_report", icon="COPYDOWN")
         row.operator("onyx.clear_review", icon="X")
+
+        saved_baseline = delta_state.baseline(context.scene)
+        delta = delta_state.current_delta(context.scene)
+        comparison = layout.box()
+        comparison.label(text="Review Delta", icon="TIME")
+        if saved_baseline is None:
+            comparison.label(text="Save this review as your before snapshot.", icon="INFO")
+            comparison.operator(
+                "onyx.set_review_baseline",
+                text="Save Baseline",
+                icon="ADD",
+            )
+        else:
+            comparison.label(text=f"Before: {saved_baseline.message}")
+            if delta is None:
+                comparison.label(text="Make changes, then run Review again.", icon="INFO")
+                row = comparison.row(align=True)
+                row.operator(
+                    "onyx.set_review_baseline",
+                    text="Replace Baseline",
+                )
+                row.operator(
+                    "onyx.clear_review_baseline",
+                    text="Clear Baseline",
+                    icon="X",
+                )
+            else:
+                row = comparison.row(align=True)
+                row.label(text=f"New {len(delta.introduced)}", icon="INFO")
+                row.label(text=f"Fixed {len(delta.resolved)}", icon="CHECKMARK")
+                row = comparison.row(align=True)
+                row.label(text=f"Changed {len(delta.changed)}", icon="INFO")
+                row.label(text=f"Same {len(delta.unchanged)}")
+                triangle_change = delta.triangle_change
+                comparison.label(
+                    text=(
+                        f"Triangles {delta.baseline.evaluated_triangles:,} → "
+                        f"{delta.current.evaluated_triangles:,} ({triangle_change:+,})"
+                    )
+                )
+                if delta.resolved:
+                    comparison.label(text="Fixed or gone since baseline", icon="CHECKMARK")
+                    for item in delta.resolved:
+                        count = f" ({item.baseline_count:,})" if item.baseline_count > 1 else ""
+                        comparison.label(text=item.object_name, icon="MESH_DATA")
+                        comparison.label(text=f"  {item.message}{count}")
+                row = comparison.row(align=True)
+                row.operator("onyx.copy_review_delta", icon="COPYDOWN")
+                row.operator(
+                    "onyx.set_review_baseline",
+                    text="Use Current as Baseline",
+                )
+                comparison.operator(
+                    "onyx.clear_review_baseline",
+                    text="Clear Baseline",
+                    icon="X",
+                )
 
         if settings.total_errors or settings.total_warnings:
             finding_view = layout.box()
@@ -297,18 +354,40 @@ class ONYX_PT_review(bpy.types.Panel):
             if not result.issues:
                 box.label(text="No findings", icon="CHECKMARK")
             elif not visible_issues:
-                box.label(text="No findings match this view", icon="CHECKMARK")
+                if settings.finding_filter == "CHANGES" and saved_baseline is None:
+                    box.label(text="Save a baseline first", icon="INFO")
+                elif settings.finding_filter == "CHANGES" and delta is None:
+                    box.label(text="Run Review again to compare", icon="INFO")
+                elif settings.finding_filter == "CHANGES":
+                    box.label(text="No new or changed findings", icon="CHECKMARK")
+                else:
+                    box.label(text="No findings match this view", icon="CHECKMARK")
             for issue in visible_issues:
                 icon = "ERROR" if issue.severity == "ERROR" else "INFO"
-                suffix = f" ({issue.count:,})" if issue.count > 1 else ""
+                prefix = {
+                    "INTRODUCED": "New · ",
+                    "CHANGED": "Changed · ",
+                }.get(issue.delta_status, "")
+                delta_item = next(
+                    (
+                        item
+                        for item in delta.findings
+                        if item.object_name == result.object_name and item.code == issue.code
+                    ),
+                    None,
+                ) if delta else None
+                if delta_item and issue.delta_status == "CHANGED":
+                    suffix = f" ({delta_item.baseline_count:,} → {delta_item.current_count:,})"
+                else:
+                    suffix = f" ({issue.count:,})" if issue.count > 1 else ""
                 fix_info = simple_fix_info(issue.code)
                 if fix_info:
                     finding = box.column(align=True)
-                    finding.label(text=f"{issue.message}{suffix}", icon=icon)
+                    finding.label(text=f"{prefix}{issue.message}{suffix}", icon=icon)
                     row = finding.row(align=True)
                 else:
                     row = box.row(align=True)
-                    row.label(text=f"{issue.message}{suffix}", icon=icon)
+                    row.label(text=f"{prefix}{issue.message}{suffix}", icon=icon)
                 if issue_selection_domain(issue.code):
                     is_visible = highlight_state.is_active(object_name, issue.code)
                     highlight = row.operator(

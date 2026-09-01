@@ -12,6 +12,13 @@ class Severity(str, Enum):
     ERROR = "ERROR"
 
 
+class FindingDeltaStatus(str, Enum):
+    INTRODUCED = "INTRODUCED"
+    RESOLVED = "RESOLVED"
+    CHANGED = "CHANGED"
+    UNCHANGED = "UNCHANGED"
+
+
 @dataclass(frozen=True)
 class Issue:
     code: str
@@ -129,6 +136,155 @@ class ReviewSummary:
         )
 
 
+@dataclass(frozen=True)
+class FindingDelta:
+    object_name: str
+    code: str
+    message: str
+    severity: Severity
+    status: FindingDeltaStatus
+    baseline_count: int = 0
+    current_count: int = 0
+
+    def __post_init__(self):
+        object_name = str(self.object_name).strip()
+        code = str(self.code).strip()
+        message = str(self.message).strip()
+        baseline_count = int(self.baseline_count)
+        current_count = int(self.current_count)
+        status = FindingDeltaStatus(self.status)
+        if not object_name or not code or not message:
+            raise ValueError("Finding delta identity cannot be empty")
+        if baseline_count < 0 or current_count < 0:
+            raise ValueError("Finding delta counts cannot be negative")
+        if status is FindingDeltaStatus.INTRODUCED and not (
+            baseline_count == 0 and current_count > 0
+        ):
+            raise ValueError("Introduced findings require only a current count")
+        if status is FindingDeltaStatus.RESOLVED and not (
+            baseline_count > 0 and current_count == 0
+        ):
+            raise ValueError("Resolved findings require only a baseline count")
+        if status in (FindingDeltaStatus.CHANGED, FindingDeltaStatus.UNCHANGED) and not (
+            baseline_count > 0 and current_count > 0
+        ):
+            raise ValueError("Persistent findings require baseline and current counts")
+        object.__setattr__(self, "object_name", object_name)
+        object.__setattr__(self, "code", code)
+        object.__setattr__(self, "message", message)
+        object.__setattr__(self, "severity", Severity(self.severity))
+        object.__setattr__(self, "status", status)
+        object.__setattr__(self, "baseline_count", baseline_count)
+        object.__setattr__(self, "current_count", current_count)
+
+    @property
+    def count_change(self):
+        return self.current_count - self.baseline_count
+
+
+@dataclass(frozen=True)
+class ReviewDelta:
+    baseline: ReviewSummary
+    current: ReviewSummary
+    findings: tuple[FindingDelta, ...]
+
+    def __post_init__(self):
+        if not isinstance(self.baseline, ReviewSummary) or not isinstance(
+            self.current, ReviewSummary
+        ):
+            raise TypeError("Review delta requires two ReviewSummary values")
+        object.__setattr__(self, "findings", tuple(self.findings))
+
+    def with_status(self, status):
+        status = FindingDeltaStatus(status)
+        return tuple(item for item in self.findings if item.status is status)
+
+    @property
+    def introduced(self):
+        return self.with_status(FindingDeltaStatus.INTRODUCED)
+
+    @property
+    def resolved(self):
+        return self.with_status(FindingDeltaStatus.RESOLVED)
+
+    @property
+    def changed(self):
+        return self.with_status(FindingDeltaStatus.CHANGED)
+
+    @property
+    def unchanged(self):
+        return self.with_status(FindingDeltaStatus.UNCHANGED)
+
+    @property
+    def triangle_change(self):
+        return self.current.evaluated_triangles - self.baseline.evaluated_triangles
+
+    @property
+    def message(self):
+        return (
+            f"{len(self.introduced)} introduced · {len(self.resolved)} resolved · "
+            f"{len(self.changed)} changed"
+        )
+
+
+def _summary_findings(summary):
+    if not isinstance(summary, ReviewSummary):
+        raise TypeError("Expected a ReviewSummary")
+    findings = {}
+    for review in summary.reviews:
+        for issue in review.issues:
+            key = (review.object_name, issue.code)
+            if key in findings:
+                raise ValueError(
+                    f"Duplicate finding code for {review.object_name}: {issue.code}"
+                )
+            findings[key] = issue
+    return findings
+
+
+def compare_review_summaries(baseline, current):
+    """Compare two complete reviews without depending on Blender UI state."""
+    before = _summary_findings(baseline)
+    after = _summary_findings(current)
+    findings = []
+    for object_name, code in sorted(before.keys() | after.keys()):
+        old = before.get((object_name, code))
+        new = after.get((object_name, code))
+        if old is None:
+            status = FindingDeltaStatus.INTRODUCED
+            issue = new
+            baseline_count = 0
+            current_count = new.count
+        elif new is None:
+            status = FindingDeltaStatus.RESOLVED
+            issue = old
+            baseline_count = old.count
+            current_count = 0
+        else:
+            status = (
+                FindingDeltaStatus.UNCHANGED
+                if old.count == new.count
+                and old.message == new.message
+                and old.severity is new.severity
+                else FindingDeltaStatus.CHANGED
+            )
+            issue = new
+            baseline_count = old.count
+            current_count = new.count
+        findings.append(
+            FindingDelta(
+                object_name=object_name,
+                code=code,
+                message=issue.message,
+                severity=issue.severity,
+                status=status,
+                baseline_count=baseline_count,
+                current_count=current_count,
+            )
+        )
+    return ReviewDelta(baseline, current, tuple(findings))
+
+
 def format_review_report(summary):
     """Format a complete, portable plain-text report."""
     if not isinstance(summary, ReviewSummary):
@@ -168,5 +324,44 @@ def format_review_report(summary):
                 output.append(f"  [{issue.severity.value}] {issue.message}{count}")
         else:
             output.append("  No findings")
+        output.append("")
+    return "\n".join(output).rstrip() + "\n"
+
+
+def format_review_delta(delta):
+    """Format a portable comparison between a saved baseline and the current review."""
+    if not isinstance(delta, ReviewDelta):
+        raise TypeError("Expected a ReviewDelta")
+    triangle_change = delta.triangle_change
+    triangle_change_text = f"{triangle_change:+,}"
+    output = [
+        "Onyx Review Delta",
+        f"Baseline: {delta.baseline.message}",
+        f"Current: {delta.current.message}",
+        (
+            f"Evaluated triangles: {delta.baseline.evaluated_triangles:,} -> "
+            f"{delta.current.evaluated_triangles:,} ({triangle_change_text})"
+        ),
+        delta.message,
+        f"{len(delta.unchanged)} unchanged",
+        "",
+    ]
+    sections = (
+        ("Introduced", delta.introduced),
+        ("Resolved", delta.resolved),
+        ("Changed", delta.changed),
+        ("Unchanged", delta.unchanged),
+    )
+    for heading, findings in sections:
+        if not findings:
+            continue
+        output.append(heading)
+        for item in findings:
+            if item.status is FindingDeltaStatus.CHANGED:
+                count = f" ({item.baseline_count:,} -> {item.current_count:,})"
+            else:
+                value = item.current_count or item.baseline_count
+                count = f" ({value:,})" if value > 1 else ""
+            output.append(f"  {item.object_name} · {item.message}{count}")
         output.append("")
     return "\n".join(output).rstrip() + "\n"

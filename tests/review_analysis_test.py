@@ -15,6 +15,9 @@ Issue = ANALYSIS.Issue
 ObjectReview = ANALYSIS.ObjectReview
 ReviewSummary = ANALYSIS.ReviewSummary
 Severity = ANALYSIS.Severity
+FindingDeltaStatus = ANALYSIS.FindingDeltaStatus
+compare_review_summaries = ANALYSIS.compare_review_summaries
+format_review_delta = ANALYSIS.format_review_delta
 format_review_report = ANALYSIS.format_review_report
 
 
@@ -69,6 +72,45 @@ def main():
     assert "[ERROR] Degenerate faces (2)" in report
     assert "Barrel" in report and "No findings" in report
 
+    stable = Issue("data.uv", "Mesh has no UV map")
+    baseline = ReviewSummary(
+        (
+            review("Crate", 12, 48, (warning, error, stable)),
+            review("Barrel", 20, 20),
+        )
+    )
+    current = ReviewSummary(
+        (
+            review(
+                "Crate",
+                12,
+                60,
+                (
+                    Issue("mesh.boundary", "Open boundary edges", count=6),
+                    stable,
+                    Issue("data.material", "Object has no material slots"),
+                ),
+            ),
+            review("Barrel", 20, 20),
+        )
+    )
+    delta = compare_review_summaries(baseline, current)
+    assert delta.triangle_change == 12
+    assert delta.message == "1 introduced · 1 resolved · 1 changed"
+    assert {item.code for item in delta.introduced} == {"data.material"}
+    assert {item.code for item in delta.resolved} == {"mesh.degenerate"}
+    assert {item.code for item in delta.changed} == {"mesh.boundary"}
+    assert {item.code for item in delta.unchanged} == {"data.uv"}
+    assert delta.changed[0].count_change == 2
+    assert delta.introduced[0].status is FindingDeltaStatus.INTRODUCED
+    delta_report = format_review_delta(delta)
+    assert delta_report.startswith("Onyx Review Delta\n")
+    assert "Evaluated triangles: 68 -> 80 (+12)" in delta_report
+    assert "Introduced\n  Crate · Object has no material slots" in delta_report
+    assert "Resolved\n  Crate · Degenerate faces (2)" in delta_report
+    assert "Changed\n  Crate · Open boundary edges (4 -> 6)" in delta_report
+    assert "Unchanged\n  Crate · Mesh has no UV map" in delta_report
+
     raises(ValueError, Issue, "", "Missing code")
     raises(ValueError, Issue, "bad", "", count=1)
     raises(ValueError, Issue, "bad", "Bad count", count=0)
@@ -86,6 +128,8 @@ def main():
         (0.0, 0.0, 0.0),
     )
     raises(TypeError, format_review_report, object())
+    raises(TypeError, compare_review_summaries, object(), current)
+    raises(TypeError, format_review_delta, object())
     print("ONYX_REVIEW_ANALYSIS_OK")
 
 

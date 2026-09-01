@@ -51,6 +51,16 @@ class OnyxReviewIssue(bpy.types.PropertyGroup):
         description="Importance of the review finding",
     )
     count: IntProperty(default=1, min=1, description="Number of matching elements")
+    delta_status: EnumProperty(
+        items=(
+            ("NONE", "Not Compared", "No baseline comparison is active"),
+            ("INTRODUCED", "New", "This finding was not in the saved baseline"),
+            ("CHANGED", "Changed", "This finding is still present but its details changed"),
+            ("UNCHANGED", "Unchanged", "This finding matches the saved baseline"),
+        ),
+        default="NONE",
+        description="How this finding compares with the saved Review Delta baseline",
+    )
 
 
 class OnyxReviewResult(bpy.types.PropertyGroup):
@@ -134,6 +144,7 @@ class OnyxReviewSettings(bpy.types.PropertyGroup):
             ("ERRORS", "Errors", "Show conditions that usually require correction"),
             ("WARNINGS", "Warnings", "Show contextual conditions that deserve review"),
             ("FIXABLE", "Fixable", "Show findings with a supported deterministic fix"),
+            ("CHANGES", "Changes", "Show findings introduced or changed since the saved baseline"),
         ),
         default="ALL",
         description="Choose which findings to display without changing the complete report",
