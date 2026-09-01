@@ -179,6 +179,34 @@ def main():
     assert "ReviewedCube" in stored_report
     assert bpy.ops.onyx.copy_review_report() == {"FINISHED"}
 
+    # Profiles keep work-in-progress reviews useful without pretending missing
+    # UVs or materials are always a problem. Custom keeps every group explicit.
+    assert settings.last_profile == "General"
+    assert {issue.code for issue in settings.results[0].issues} == {"data.material"}
+    settings.review_profile = "MODELING"
+    assert settings.review_options_dirty
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    assert settings.last_profile == "While Modeling"
+    assert not settings.results[0].issues
+    assert not settings.review_options_dirty
+
+    settings.review_profile = "TOPOLOGY"
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    assert settings.last_profile == "Topology Only"
+    assert not settings.results[0].issues
+
+    settings.review_profile = "CUSTOM"
+    settings.check_topology = False
+    settings.check_transforms = False
+    settings.check_asset_setup = True
+    settings.check_triangle_budget = False
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    assert settings.last_profile == "Custom"
+    assert {issue.code for issue in settings.results[0].issues} == {"data.material"}
+
+    settings.review_profile = "GENERAL"
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+
     # Review Delta keeps a session-only before snapshot. It reports new and
     # resolved findings without touching the mesh, then can be cleared cleanly.
     assert delta_state.baseline(bpy.context.scene) is None
@@ -186,6 +214,16 @@ def main():
     assert delta_state.baseline(bpy.context.scene) is not None
     assert delta_state.current_delta(bpy.context.scene) is None
     assert all(issue.delta_status == "NONE" for issue in settings.results[0].issues)
+
+    # A different profile changes the meaning of a finding, so an old baseline
+    # is cleared instead of showing a misleading improvement.
+    settings.review_profile = "MODELING"
+    assert delta_state.baseline(bpy.context.scene) is None
+    assert settings.review_options_dirty
+    assert not bpy.ops.onyx.set_review_baseline.poll()
+    settings.review_profile = "GENERAL"
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    assert bpy.ops.onyx.set_review_baseline() == {"FINISHED"}
 
     material = bpy.data.materials.new("ReviewDeltaMaterial")
     cube.data.materials.append(material)

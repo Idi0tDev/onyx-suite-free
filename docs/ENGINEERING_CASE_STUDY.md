@@ -47,6 +47,9 @@ The analysis path is deliberately separated from Blender presentation code.
 Blender scope and readiness
            |
            v
+Resolved review profile and finding groups
+           |
+           v
 Base BMesh analysis + evaluated dependency-graph metrics
            |
            v
@@ -70,6 +73,7 @@ Saved session baseline --> pure summary comparison --> delta UI and report
 | `viewport_state.py` | Capture, apply, and exact restoration of per-viewport display settings |
 | `live_review.py` | Dependency-graph observation, debounce, Edit Mode pause, and density guard |
 | `delta_state.py` | Session-only before snapshots, file-load cleanup, and the latest comparison |
+| `review_profiles.py` | UI-neutral presets and custom finding-group resolution |
 | `ui.py` and `properties.py` | Artist-facing state and layout without owning analysis rules |
 | bundled `_onyx_core` | Transactional lifecycle, compatibility, discovery, and product registration |
 
@@ -126,11 +130,20 @@ classification easy to test without Blender running. Current findings can be
 filtered to new and changed items, while resolved findings remain available in
 the delta box and copied report.
 
+### Profiles change expectations, not geometry
+
+General, While Modeling, and Topology Only resolve to small immutable profiles;
+Custom resolves from four explicit switches. The same mesh metrics are still
+reported, while issue creation follows the enabled finding groups. Changing a
+scope, profile, custom switch, or budget invalidates old comparison state and
+marks visible results as needing another run. This prevents a narrower profile
+from being mistaken for a healthier mesh.
+
 ## Verification strategy
 
 | Layer | What is checked |
 | --- | --- |
-| Pure result tests | Aggregation, severity, filtering, delta comparison, reporting, and compatibility behavior |
+| Pure result tests | Aggregation, severity, profile resolution, filtering, delta comparison, reporting, and compatibility behavior |
 | Blender mesh tests | Real BMesh findings, source/evaluated counts, selection domains, and simple mutations |
 | Viewport tests | Highlight geometry, stable distinct colors, topology maps, and exact state restoration |
 | Lifecycle tests | Registration rollback, embedded Core parity, standalone Core coexistence, and cleanup |
@@ -155,6 +168,6 @@ the real Blender smoke and coexistence suites with a clean factory startup.
 
 ## Next directions
 
-Likely next steps include configurable review profiles, per-check thresholds,
-evaluated-geometry visualization, and running the full Blender smoke suite in
-hosted continuous integration.
+Likely next steps include per-check thresholds, evaluated-geometry
+visualization, and running the full Blender smoke suite in hosted continuous
+integration.

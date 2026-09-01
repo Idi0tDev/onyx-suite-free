@@ -93,7 +93,8 @@ Test-ReleaseArchive -ArchivePath $reviewArchive -RequiredEntries @(
     "_onyx_core/embedded.py",
     "_onyx_core/lifecycle.py",
     "delta_state.py",
-    "highlight_state.py"
+    "highlight_state.py",
+    "review_profiles.py"
 )
 
 $checksumPath = Join-Path $distRoot "SHA256SUMS.txt"

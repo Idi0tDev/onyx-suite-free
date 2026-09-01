@@ -5,6 +5,7 @@ from __future__ import annotations
 import bmesh
 
 from .analysis import Issue, ObjectReview, Severity
+from .review_profiles import ReviewProfile, resolve_review_profile
 
 
 _TRANSFORM_EPSILON = 1.0e-4
@@ -433,9 +434,13 @@ def _evaluated_mesh_metrics(obj, depsgraph):
         evaluated.to_mesh_clear()
 
 
-def review_object(obj, depsgraph, *, triangle_budget=100_000):
+def review_object(obj, depsgraph, *, triangle_budget=100_000, profile=None):
     if obj.type != "MESH":
         raise TypeError("Onyx Review can inspect mesh objects only")
+    if profile is None:
+        profile = resolve_review_profile("GENERAL")
+    if not isinstance(profile, ReviewProfile):
+        raise TypeError("Expected a ReviewProfile")
 
     base = _base_mesh_metrics(obj.data)
     evaluated_vertices, evaluated_faces, evaluated_triangles = _evaluated_mesh_metrics(
@@ -443,7 +448,7 @@ def review_object(obj, depsgraph, *, triangle_budget=100_000):
     )
     issues = []
 
-    if base["non_manifold"]:
+    if profile.topology and base["non_manifold"]:
         issues.append(
             _issue(
                 "topology.non_manifold",
@@ -452,7 +457,7 @@ def review_object(obj, depsgraph, *, triangle_budget=100_000):
                 error=True,
             )
         )
-    if base["degenerate"]:
+    if profile.topology and base["degenerate"]:
         issues.append(
             _issue(
                 "topology.degenerate",
@@ -461,7 +466,7 @@ def review_object(obj, depsgraph, *, triangle_budget=100_000):
                 error=True,
             )
         )
-    if base["duplicate_faces"]:
+    if profile.topology and base["duplicate_faces"]:
         issues.append(
             _issue(
                 "topology.duplicate_faces",
@@ -470,7 +475,7 @@ def review_object(obj, depsgraph, *, triangle_budget=100_000):
                 error=True,
             )
         )
-    if base["inconsistent"]:
+    if profile.topology and base["inconsistent"]:
         issues.append(
             _issue(
                 "topology.winding",
@@ -479,7 +484,7 @@ def review_object(obj, depsgraph, *, triangle_budget=100_000):
                 error=True,
             )
         )
-    if base["boundaries"]:
+    if profile.topology and base["boundaries"]:
         issues.append(
             _issue(
                 "topology.boundary",
@@ -487,15 +492,15 @@ def review_object(obj, depsgraph, *, triangle_budget=100_000):
                 base["boundaries"],
             )
         )
-    if base["loose_edges"]:
+    if profile.topology and base["loose_edges"]:
         issues.append(
             _issue("topology.loose_edges", "Loose edges", base["loose_edges"])
         )
-    if base["loose_vertices"]:
+    if profile.topology and base["loose_vertices"]:
         issues.append(
             _issue("topology.loose_vertices", "Loose vertices", base["loose_vertices"])
         )
-    if base["coincident_vertices"]:
+    if profile.topology and base["coincident_vertices"]:
         issues.append(
             _issue(
                 "topology.coincident_vertices",
@@ -503,7 +508,7 @@ def review_object(obj, depsgraph, *, triangle_budget=100_000):
                 base["coincident_vertices"],
             )
         )
-    if base["disconnected_islands"]:
+    if profile.topology and base["disconnected_islands"]:
         issues.append(
             _issue(
                 "topology.disconnected_islands",
@@ -511,26 +516,28 @@ def review_object(obj, depsgraph, *, triangle_budget=100_000):
                 base["disconnected_islands"],
             )
         )
-    if base["ngons"]:
+    if profile.topology and base["ngons"]:
         issues.append(_issue("topology.ngons", "Faces with more than four sides", base["ngons"]))
 
-    scale = tuple(float(value) for value in obj.scale)
-    if obj.matrix_world.to_3x3().determinant() < 0.0:
-        issues.append(
-            _issue(
-                "transform.negative_scale",
-                "World transform has a negative determinant",
-                error=True,
+    if profile.transforms:
+        scale = tuple(float(value) for value in obj.scale)
+        if obj.matrix_world.to_3x3().determinant() < 0.0:
+            issues.append(
+                _issue(
+                    "transform.negative_scale",
+                    "World transform has a negative determinant",
+                    error=True,
+                )
             )
-        )
-    elif any(abs(abs(value) - 1.0) > _TRANSFORM_EPSILON for value in scale):
-        issues.append(_issue("transform.scale", "Scale is not applied"))
+        elif any(abs(abs(value) - 1.0) > _TRANSFORM_EPSILON for value in scale):
+            issues.append(_issue("transform.scale", "Scale is not applied"))
 
-    if not obj.data.uv_layers:
-        issues.append(_issue("data.uv", "Mesh has no UV map"))
-    if not obj.material_slots:
-        issues.append(_issue("data.material", "Object has no material slots"))
-    if triangle_budget > 0 and evaluated_triangles > triangle_budget:
+    if profile.asset_setup:
+        if not obj.data.uv_layers:
+            issues.append(_issue("data.uv", "Mesh has no UV map"))
+        if not obj.material_slots:
+            issues.append(_issue("data.material", "Object has no material slots"))
+    if profile.triangle_budget and triangle_budget > 0 and evaluated_triangles > triangle_budget:
         issues.append(
             _issue(
                 "budget.triangles",

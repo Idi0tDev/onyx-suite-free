@@ -5,14 +5,41 @@
 1. Select a mesh object.
 2. Open the 3D Viewport sidebar and choose **Onyx > Review**.
 3. Choose Active, Selected, or Collection.
-4. Set a triangle budget, or use zero to disable the budget warning.
-5. Click **Run Review**.
+4. Choose a review profile. **General** is a good first run.
+5. If the profile uses it, set a triangle budget or use zero to disable it.
+6. Click **Run Review**.
 
 If **Run Review** is greyed out, look at **Review Target** at the top of the
 panel. It tells you what is missing, such as an active mesh or a selected mesh.
 
 Running a review only reads the mesh. It does not change objects, modifiers,
 materials, selection, or mesh elements.
+
+## Review profiles
+
+A profile answers “what matters at this point in the work?” It changes which
+findings appear, but it never changes the mesh.
+
+| Profile | What it checks |
+| --- | --- |
+| General | Topology, transforms, UVs and materials, and the triangle budget |
+| While Modeling | Topology and transforms, without setup or budget warnings |
+| Topology Only | Mesh-structure findings only |
+| Custom | The finding groups you switch on yourself |
+
+Use **While Modeling** when an asset is still taking shape and missing UVs or
+materials are expected. Use **General** for a broader handoff check. Choose
+**Custom** when a particular job has its own needs.
+
+Face mix, pole counts, dimensions, and source versus evaluated geometry stay
+visible in every profile. The completed profile is shown with the result and in
+**Copy Report**. If you change the scope, profile, custom switches, or triangle
+budget after a review, the panel says the options changed and asks you to run
+Review again.
+
+Those changes also clear a saved Review Delta baseline. A baseline made with
+General should not be compared with a Topology Only result, because missing
+findings could come from the profile instead of a mesh edit.
 
 ## Live Review
 
@@ -107,7 +134,9 @@ Current as Baseline**.
 
 The baseline is temporary. It stays only for the current Blender session and is
 cleared when you load another file, disable the addon, or press **Clear
-Baseline**. It never becomes mesh data and is not saved in the `.blend` file.
+Baseline**. Changing the review scope, profile, custom check groups, or triangle
+budget also clears it. It never becomes mesh data and is not saved in the
+`.blend` file.
 
 ## Simple fixes
 

@@ -22,6 +22,7 @@ if (-not (Test-Path -LiteralPath $PythonPath)) {
 $pureTests = @(
     "tests\core_framework_test.py",
     "tests\review_analysis_test.py",
+    "tests\review_profiles_test.py",
     "tests\core_review_embedding_test.py"
 )
 foreach ($test in $pureTests) {

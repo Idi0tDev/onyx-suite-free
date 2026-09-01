@@ -28,6 +28,7 @@ from .mesh_analysis import (
     topology_class_info,
     topology_map_classes,
 )
+from .review_profiles import resolve_review_profile
 from . import delta_state, highlight_state, viewport_state
 
 
@@ -52,6 +53,17 @@ def review_blocker(context, scope):
     if scope == "SELECTED":
         return "Select one or more mesh objects"
     return "The active collection contains no mesh objects"
+
+
+def active_review_profile(settings):
+    """Resolve the scene's artist-facing profile into finding-group switches."""
+    return resolve_review_profile(
+        settings.review_profile,
+        topology=settings.check_topology,
+        transforms=settings.check_transforms,
+        asset_setup=settings.check_asset_setup,
+        triangle_budget=settings.check_triangle_budget,
+    )
 
 
 def finding_matches_filter(issue, filter_mode):
@@ -151,8 +163,14 @@ def perform_review(context):
     highlight_state.clear_highlight()
     settings.results.clear()
     depsgraph = context.evaluated_depsgraph_get()
+    profile = active_review_profile(settings)
     reviews = tuple(
-        review_object(obj, depsgraph, triangle_budget=settings.triangle_budget)
+        review_object(
+            obj,
+            depsgraph,
+            triangle_budget=settings.triangle_budget,
+            profile=profile,
+        )
         for obj in objects
     )
     summary = ReviewSummary(reviews)
@@ -168,6 +186,8 @@ def perform_review(context):
     settings.total_errors = summary.error_count
     settings.total_warnings = summary.warning_count
     settings.total_triangles = summary.evaluated_triangles
+    settings.last_profile = profile.label
+    settings.review_options_dirty = False
     if settings.live_review:
         settings.live_status = "Up to date"
     return summary
@@ -214,6 +234,8 @@ class ONYX_OT_clear_review(bpy.types.Operator):
         settings.total_errors = 0
         settings.total_warnings = 0
         settings.total_triangles = 0
+        settings.last_profile = ""
+        settings.review_options_dirty = False
         delta_state.clear_baseline(context.scene)
         if settings.live_review:
             settings.live_status = "Waiting for mesh changes"
@@ -231,8 +253,12 @@ class ONYX_OT_copy_review_report(bpy.types.Operator):
         return bool(settings and settings.results)
 
     def execute(self, context):
-        summary = _stored_summary(context.scene.onyx_review)
-        context.window_manager.clipboard = format_review_report(summary)
+        settings = context.scene.onyx_review
+        summary = _stored_summary(settings)
+        context.window_manager.clipboard = format_review_report(
+            summary,
+            profile_name=settings.last_profile or "General",
+        )
         self.report({"INFO"}, "Review report copied to the clipboard")
         return {"FINISHED"}
 
@@ -245,7 +271,12 @@ class ONYX_OT_set_review_baseline(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         settings = getattr(getattr(context, "scene", None), "onyx_review", None)
-        return bool(settings and settings.results)
+        if not settings or not settings.results:
+            return False
+        if settings.review_options_dirty:
+            cls.poll_message_set("Run Review again after changing its options")
+            return False
+        return True
 
     def execute(self, context):
         settings = context.scene.onyx_review

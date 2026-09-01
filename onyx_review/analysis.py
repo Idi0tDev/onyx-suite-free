@@ -285,17 +285,20 @@ def compare_review_summaries(baseline, current):
     return ReviewDelta(baseline, current, tuple(findings))
 
 
-def format_review_report(summary):
+def format_review_report(summary, *, profile_name=""):
     """Format a complete, portable plain-text report."""
     if not isinstance(summary, ReviewSummary):
         raise TypeError("Expected a ReviewSummary")
 
-    lines = (
+    profile_name = str(profile_name).strip()
+
+    lines = [
         "Onyx Review Report",
         summary.message,
-        f"{summary.evaluated_triangles:,} evaluated triangles",
-        "",
-    )
+    ]
+    if profile_name:
+        lines.append(f"Profile: {profile_name}")
+    lines.extend((f"{summary.evaluated_triangles:,} evaluated triangles", ""))
     output = list(lines)
     for review in summary.reviews:
         output.append(review.object_name)

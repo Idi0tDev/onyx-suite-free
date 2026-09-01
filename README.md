@@ -20,12 +20,30 @@
 
 Onyx Suite Free currently contains two closely connected projects:
 
-- **Onyx Review** helps artists find, understand, and revisit mesh problems.
 - **Onyx Core** gives Onyx tools a shared foundation for startup, diagnostics,
   compatibility, and communication.
+- **Onyx Review** helps artists find, understand, and revisit mesh problems.
 
 You can install Review by itself. Its ZIP already contains the Core runtime it
 needs, so there is no extra dependency to set up.
+
+## Onyx Core
+
+<p align="center">
+  <img src="docs/assets/onyx-core-foundation.png" alt="Onyx Core shown as the workflow foundation of the Onyx Suite" width="100%">
+</p>
+
+<p align="center"><em>The common foundation behind Onyx tools. This public repository currently includes Review and the optional standalone Core extension.</em></p>
+
+Every Onyx product is self-contained. Onyx Review bundles the generated
+**Onyx Core** runtime, so artists do not install a separate dependency.
+
+The standalone Core extension in this repository is free and optional. It
+provides the same lifecycle, readiness, discovery, and diagnostics contract used
+inside Review, while staying out of the artist's workspace.
+
+Read the [Core developer guide](onyx_core/docs/DEVELOPER_GUIDE.md) for the public
+framework contract.
 
 ## Onyx Review
 
@@ -58,20 +76,36 @@ Review**. It waits for mesh changes to settle, then refreshes the same findings
 without touching geometry. Live Review pauses while a target is in Edit Mode or
 when the chosen scope exceeds its configurable source-vertex limit.
 
+### Choose the right review
+
+Review profiles keep early modeling checks useful without treating unfinished
+UVs or materials as mistakes:
+
+- **General** runs every finding group.
+- **While Modeling** focuses on topology and transforms.
+- **Topology Only** keeps the review on mesh structure.
+- **Custom** lets you switch topology, transforms, UVs and materials, and the
+  triangle budget on or off yourself.
+
+Changing the profile clears an old Review Delta baseline, because comparing two
+different sets of checks could look like the mesh improved when only the review
+rules changed.
+
 ### A typical review
 
 1. Choose the active object, current selection, or active collection.
-2. Press **Run Review**.
-3. Read per-object findings and compare base versus evaluated triangles.
-4. Focus the list on **All**, **Errors**, **Warnings**, **Fixable**, or recent
+2. Choose a review profile.
+3. Press **Run Review**.
+4. Read per-object findings and compare base versus evaluated triangles.
+5. Focus the list on **All**, **Errors**, **Warnings**, **Fixable**, or recent
    **Changes**.
-5. Optionally enable **Live Review** while iterating on the model.
-6. Open **Topology Detail** to map or select face types and topology poles.
-7. Use **Show Visible Findings** for an overview, or **Show** to isolate one finding.
-8. Use **Inspect** when you want its mesh elements selected in Edit Mode.
-9. Optionally use **Fix** for supported, deterministic cleanup cases.
-10. Switch between Studio, Silhouette, Topology, and Face Orientation views.
-11. Press **Restore View** to return the viewport to its original settings.
+6. Optionally enable **Live Review** while iterating on the model.
+7. Open **Topology Detail** to map or select face types and topology poles.
+8. Use **Show Visible Findings** for an overview, or **Show** to isolate one finding.
+9. Use **Inspect** when you want its mesh elements selected in Edit Mode.
+10. Optionally use **Fix** for supported, deterministic cleanup cases.
+11. Switch between Studio, Silhouette, Topology, and Face Orientation views.
+12. Press **Restore View** to return the viewport to its original settings.
 
 ### Check what changed
 
@@ -148,24 +182,6 @@ The first review mode used in a viewport captures its settings. **Restore View**
 returns them exactly, and disabling the extension restores any remaining saved
 viewports.
 
-## Onyx Core
-
-<p align="center">
-  <img src="docs/assets/onyx-core-foundation.png" alt="Onyx Core shown as the shared foundation of the Onyx Suite" width="100%">
-</p>
-
-<p align="center"><em>The common foundation behind Onyx tools. This public repository currently includes Review and the optional standalone Core extension.</em></p>
-
-Every Onyx product is self-contained. Onyx Review bundles the generated
-**Onyx Core** runtime, so artists do not install a separate dependency.
-
-The standalone Core extension in this repository is free and optional. It
-provides the same lifecycle, readiness, discovery, and diagnostics contract used
-inside Review, while staying out of the artist's workspace.
-
-Read the [Core developer guide](onyx_core/docs/DEVELOPER_GUIDE.md) for the public
-framework contract.
-
 ## Install Onyx Review
 
 For a tagged release, download `onyx_review-x.y.z.zip` from the repository's
@@ -207,6 +223,7 @@ The repository includes:
 - Empty-scope readiness and clipboard-report coverage
 - Debounced Live Review, Edit Mode pause, and density-limit coverage
 - Finding-view filtering and matching viewport-overview coverage
+- Review-profile presets, custom finding groups, and comparison invalidation coverage
 - Session-only Review Delta comparison, filtering, reporting, and cleanup coverage
 - Explicit quick-fix mutation, refusal, and result-refresh coverage
 - Viewport restoration coverage

@@ -71,6 +71,7 @@ def main():
     assert "Poles: 8 3-edge, 2 5-edge, 1 6+-edge" in report
     assert "[ERROR] Degenerate faces (2)" in report
     assert "Barrel" in report and "No findings" in report
+    assert "Profile: General" in format_review_report(summary, profile_name="General")
 
     stable = Issue("data.uv", "Mesh has no UV map")
     baseline = ReviewSummary(

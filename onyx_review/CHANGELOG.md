@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.0 - 2026-09-02
+
+- Add General, While Modeling, Topology Only, and Custom review profiles.
+- Let Custom reviews switch topology, transforms, UV and material setup, and
+  triangle-budget findings on or off.
+- Keep geometry statistics visible regardless of the chosen finding profile.
+- Show which profile produced the current results and flag options changed
+  after a completed review.
+- Include the completed review's profile in copied reports.
+- Treat results kept in memory during an upgrade from an earlier version as a
+  General review instead of showing an empty profile name.
+- Clear temporary Review Delta baselines when the scope, profile, custom check
+  groups, or triangle budget changes so unlike reviews are not compared.
+
 ## 0.7.0 - 2026-09-01
 
 - Add a session-only Review Delta baseline for clear before-and-after checks.

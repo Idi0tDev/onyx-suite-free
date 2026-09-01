@@ -12,6 +12,8 @@ from bpy.props import (
     StringProperty,
 )
 
+from .review_profiles import PROFILE_ENUM_ITEMS
+
 
 def _live_review_changed(_settings, context):
     if context is None:
@@ -26,6 +28,21 @@ def _review_option_changed(_settings, context):
         return
     from . import live_review
 
+    live_review.review_options_changed(context.scene)
+
+
+def _review_semantics_changed(settings, context):
+    """Mark old results as stale and discard comparisons made with other checks."""
+    if context is None:
+        return
+    from . import delta_state, highlight_state, live_review
+
+    settings.review_options_dirty = bool(settings.results)
+    for result in settings.results:
+        for issue in result.issues:
+            issue.delta_status = "NONE"
+    delta_state.clear_baseline(context.scene)
+    highlight_state.clear_highlight()
     live_review.review_options_changed(context.scene)
 
 
@@ -104,7 +121,38 @@ class OnyxReviewSettings(bpy.types.PropertyGroup):
         ),
         default="ACTIVE",
         description="Choose which mesh objects to inspect",
-        update=_review_option_changed,
+        update=_review_semantics_changed,
+    )
+    review_profile: EnumProperty(
+        name="Review Profile",
+        items=PROFILE_ENUM_ITEMS,
+        default="GENERAL",
+        description="Choose which groups of findings matter for this review",
+        update=_review_semantics_changed,
+    )
+    check_topology: BoolProperty(
+        name="Topology",
+        default=True,
+        description="Check mesh structure such as boundaries, loose elements, and ngons",
+        update=_review_semantics_changed,
+    )
+    check_transforms: BoolProperty(
+        name="Transforms",
+        default=True,
+        description="Check negative transforms and unapplied scale",
+        update=_review_semantics_changed,
+    )
+    check_asset_setup: BoolProperty(
+        name="UVs and Materials",
+        default=True,
+        description="Check whether meshes have UV maps and material slots",
+        update=_review_semantics_changed,
+    )
+    check_triangle_budget: BoolProperty(
+        name="Triangle Budget",
+        default=True,
+        description="Use the triangle budget as part of the review",
+        update=_review_semantics_changed,
     )
     triangle_budget: IntProperty(
         name="Triangle Budget",
@@ -112,7 +160,7 @@ class OnyxReviewSettings(bpy.types.PropertyGroup):
         min=0,
         soft_max=1_000_000,
         description="Warn when an evaluated mesh exceeds this count; use zero to disable",
-        update=_review_option_changed,
+        update=_review_semantics_changed,
     )
     live_review: BoolProperty(
         name="Live Review",
@@ -161,6 +209,13 @@ class OnyxReviewSettings(bpy.types.PropertyGroup):
     live_status: StringProperty(
         default="Off",
         description="Current state of the optional live diagnostics",
+    )
+    review_options_dirty: BoolProperty(
+        default=False,
+        description="The current results were made with earlier review options",
+    )
+    last_profile: StringProperty(
+        description="Profile used for the most recent completed review",
     )
 
 

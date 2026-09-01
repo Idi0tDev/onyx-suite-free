@@ -1,4 +1,4 @@
-# Onyx Review 0.7.0
+# Onyx Review 0.8.0
 
 Onyx Review helps you spot mesh problems before they become annoying production
 problems. It checks the editable mesh and the evaluated modifier result, then
@@ -30,10 +30,27 @@ so there is no second dependency to install.
 - Combined per-object overview of all actionable findings
 - All, Errors, Warnings, Fixable, and Changes finding views for dense reviews
 - Session-only before-and-after Review Delta comparisons
+- General, While Modeling, Topology Only, and Custom review profiles
 - Copyable plain-text review report
 - Optional debounced Live Review after mesh changes
 - Automatic Live Review pause in Edit Mode and above a configurable source-vertex limit
 - Explicit, undoable fixes for winding, exact duplicate faces, loose edges, and loose vertices
+
+## Review profiles
+
+Choose a profile before running Review:
+
+- **General** runs every current finding group.
+- **While Modeling** checks topology and transforms without warning about
+  unfinished UVs, materials, or a triangle budget.
+- **Topology Only** focuses on mesh structure.
+- **Custom** lets you choose the finding groups yourself.
+
+Geometry totals, face mix, and pole counts remain visible in every profile.
+The completed profile is shown with the result and included in **Copy Report**.
+Changing the profile, scope, custom switches, or triangle budget clears the
+temporary Review Delta baseline. That prevents a different set of checks from
+looking like a mesh improvement.
 
 ## Live Review
 
@@ -102,6 +119,6 @@ captured viewport.
 
 ## Install
 
-Build `onyx_review-0.7.0.zip` with `tools/package_review.ps1`, then install the
+Build `onyx_review-0.8.0.zip` with `tools/package_review.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.

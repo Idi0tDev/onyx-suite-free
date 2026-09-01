@@ -42,6 +42,7 @@ try {
         "onyx_missing",
         "onyx_review",
         "onyx_review_analysis_test_module",
+        "onyx_review_profiles_test_module",
         "onyx_smoke",
         "onyx_source_name"
     )

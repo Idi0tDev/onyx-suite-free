@@ -73,7 +73,18 @@ class ONYX_PT_review(bpy.types.Panel):
         options = layout.box()
         options.label(text="Review Options", icon="PREFERENCES")
         options.prop(settings, "scope", expand=True)
-        options.prop(settings, "triangle_budget")
+        options.prop(settings, "review_profile", text="Profile")
+        profile = operators.active_review_profile(settings)
+        options.label(text=profile.short_summary, icon="CHECKMARK")
+        if settings.review_profile == "CUSTOM":
+            checks = options.column(align=True)
+            checks.prop(settings, "check_topology")
+            checks.prop(settings, "check_transforms")
+            checks.prop(settings, "check_asset_setup")
+            checks.prop(settings, "check_triangle_budget")
+        budget = options.row()
+        budget.enabled = profile.triangle_budget
+        budget.prop(settings, "triangle_budget")
         options.prop(settings, "live_review", toggle=True)
         if settings.live_review:
             live_options = options.column(align=True)
@@ -83,6 +94,8 @@ class ONYX_PT_review(bpy.types.Panel):
                 text=settings.live_status,
                 icon=_live_status_icon(settings.live_status),
             )
+        if settings.review_options_dirty:
+            options.label(text="Options changed · run Review again", icon="INFO")
 
         row = layout.row(align=True)
         row.scale_y = 1.25
@@ -103,6 +116,7 @@ class ONYX_PT_review(bpy.types.Panel):
 
         summary = layout.box()
         summary.label(text=settings.last_summary, icon=_status_icon(settings))
+        summary.label(text=f"Profile: {settings.last_profile or 'General'}")
         summary.label(text=f"{settings.total_triangles:,} evaluated triangles")
         row = summary.row(align=True)
         row.operator("onyx.copy_review_report", icon="COPYDOWN")
@@ -112,7 +126,9 @@ class ONYX_PT_review(bpy.types.Panel):
         delta = delta_state.current_delta(context.scene)
         comparison = layout.box()
         comparison.label(text="Review Delta", icon="TIME")
-        if saved_baseline is None:
+        if settings.review_options_dirty:
+            comparison.label(text="Run Review again before saving a baseline.", icon="INFO")
+        elif saved_baseline is None:
             comparison.label(text="Save this review as your before snapshot.", icon="INFO")
             comparison.operator(
                 "onyx.set_review_baseline",

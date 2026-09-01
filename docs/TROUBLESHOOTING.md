@@ -55,6 +55,15 @@ Report** intentionally includes every finding from the review so a handoff note
 cannot silently omit hidden evidence. Switch Finding View back to **All** to see
 the complete list in the panel.
 
+## Some findings disappeared after I changed the profile
+
+That is expected when the new profile does not include the same finding groups.
+For example, **While Modeling** skips missing UV, missing material, and triangle
+budget warnings. Geometry totals and topology statistics still remain visible.
+
+The panel marks the old result as needing another run. Review Delta also clears
+its before snapshot so a profile change cannot look like a mesh fix.
+
 ## Review Delta disappeared after reopening Blender
 
 That is expected. The baseline is a temporary before snapshot for the current
