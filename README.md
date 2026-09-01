@@ -16,6 +16,12 @@
   <img alt="Early preview" src="https://img.shields.io/badge/status-early%20preview-c58b36">
 </p>
 
+<p align="center">
+  <img src="docs/assets/onyx-review-in-blender.png" alt="Onyx Review displaying color-coded mesh findings and finding filters inside Blender 5.2 LTS" width="100%">
+</p>
+
+<p align="center"><em>A real Blender 5.2 LTS capture: one review, distinct problem colors, and the full evidence legend beside the mesh.</em></p>
+
 ## Meet Onyx Review
 
 **Onyx Review** is a reversible mesh-inspection workspace for Blender 5.2 LTS.
@@ -142,6 +148,10 @@ pure Python and requests no extension permissions.
 
 For complete controls and interpretation guidance, see the
 [Onyx Review user guide](onyx_review/docs/USER_GUIDE.md).
+
+For the reasoning behind the architecture and safety boundaries, read the
+[engineering case study](docs/ENGINEERING_CASE_STUDY.md). Installation and
+workflow answers are collected in [Troubleshooting and FAQ](docs/TROUBLESHOOTING.md).
 
 ## Quality is part of the product
 

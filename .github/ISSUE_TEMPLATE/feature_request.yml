@@ -1,0 +1,56 @@
+name: Feature request
+description: Propose an improvement to an Onyx workflow.
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start with the workflow problem. A clear use case is more useful than a long feature list.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Onyx Review
+        - Onyx Core
+        - Documentation or release workflow
+        - Unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Workflow problem
+      description: What are you trying to accomplish, and where does the current workflow fall short?
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_workaround
+    attributes:
+      label: Current workaround
+      description: Describe how you handle this today, if applicable.
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should Onyx show or do from the artist's point of view?
+    validations:
+      required: true
+
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety and scene impact
+      description: Note any expected mesh, selection, viewport, file, or performance changes.
+
+  - type: checkboxes
+    id: existing
+    attributes:
+      label: Existing requests
+      options:
+        - label: I searched the open issues for a similar request.
+          required: true

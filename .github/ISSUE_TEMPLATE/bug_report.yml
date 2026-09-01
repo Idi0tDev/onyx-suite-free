@@ -1,0 +1,98 @@
+name: Bug report
+description: Report a reproducible problem in Onyx Review or Onyx Core.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Onyx. Please describe one reproducible problem per issue.
+
+  - type: input
+    id: extension_version
+    attributes:
+      label: Onyx version
+      description: The version shown in the installed extension or release filename.
+      placeholder: "0.6.0"
+    validations:
+      required: true
+
+  - type: input
+    id: blender_version
+    attributes:
+      label: Blender version
+      placeholder: "5.2.0 LTS"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: operating_system
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Onyx Review
+        - Onyx Core
+        - Installation or packaging
+        - Unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Start from a new Blender session when possible and list each action in order.
+      placeholder: |
+        1. Add or open...
+        2. Choose...
+        3. Run...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: Include the full Blender console message if one appeared.
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: Minimal sample or screenshots
+      description: Attach a minimal .blend file or image only when you are allowed to share it.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Sharing check
+      options:
+        - label: I have removed private, sensitive, and unlicensed production data from anything attached.
+          required: true
+
+  - type: checkboxes
+    id: existing
+    attributes:
+      label: Existing reports
+      options:
+        - label: I searched the open issues for the same problem.
+          required: true
