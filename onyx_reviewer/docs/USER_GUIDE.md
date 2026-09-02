@@ -85,11 +85,11 @@ available whenever an immediate manual refresh is useful.
 
 Two safeguards keep the workflow predictable:
 
-- Live Review pauses while any target is in Edit Mode. Leave Edit Mode and the
-  pending review resumes without altering the edit mesh.
+- Live Review works in Object Mode and Edit Mode. In Edit Mode it reads the
+  current editable mesh, keeps you in the mode, and leaves the selection alone.
 - Live Review pauses when the scope exceeds the **Live Vertex Limit**, measured
-  from source-mesh vertices. Increase the limit for a known asset or set it to
-  zero to disable the ceiling.
+  from the current source mesh rather than its modifier result. Increase the
+  limit for a known asset or set it to zero to disable the ceiling.
 
 The status below the controls reports **Changes pending**, **Up to date**, or
 the reason a refresh is paused. A refresh clears any viewport highlight because

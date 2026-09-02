@@ -307,7 +307,8 @@ def main():
     bpy.ops.object.mode_set(mode="OBJECT")
 
     # Live Review reuses the same inspection path, invalidates stale overlays,
-    # and pauses instead of reading or changing a mesh in Edit Mode.
+    # and reads the current Edit Mode mesh without leaving the mode or changing
+    # its selection.
     settings.live_review = True
     assert live_review.has_pending(bpy.context.scene)
     assert live_review.flush_scene(bpy.context.scene)
@@ -332,18 +333,41 @@ def main():
     assert settings.live_status.startswith("Paused:")
     assert not live_review.has_pending(bpy.context.scene)
 
-    settings.live_max_vertices = 250_000
+    settings.live_max_vertices = 8
+    assert live_review.flush_scene(bpy.context.scene)
     bpy.ops.object.mode_set(mode="EDIT")
+    live_review.cancel_scene(bpy.context.scene)
+    edit_mesh = bmesh.from_edit_mesh(cube.data)
+    added_vertex = edit_mesh.verts.new((3.0, 3.0, 3.0))
+    added_vertex.select_set(True)
+    bmesh.update_edit_mesh(cube.data, loop_triangles=False, destructive=True)
+    bpy.context.view_layer.update()
     assert live_review.has_pending(bpy.context.scene)
     assert not live_review.flush_scene(bpy.context.scene)
-    assert "Edit Mode" in settings.live_status
+    assert "9 source vertices exceed the 8 live limit" in settings.live_status
+    assert not live_review.has_pending(bpy.context.scene)
+
+    settings.live_max_vertices = 250_000
     assert live_review.has_pending(bpy.context.scene)
-    bpy.ops.object.mode_set(mode="OBJECT")
     assert live_review.flush_scene(bpy.context.scene)
     assert settings.live_status == "Up to date"
+    assert bpy.context.mode == "EDIT_MESH"
+    assert settings.results[0].base_vertices == 9
+    assert any(
+        issue.code == "topology.loose_vertices" and issue.count == 1
+        for issue in settings.results[0].issues
+    )
+    edit_mesh = bmesh.from_edit_mesh(cube.data)
+    assert added_vertex.is_valid and added_vertex.select
+    assert live_review.schedule(bpy.context.scene, immediate=True)
+    assert live_review.has_pending(bpy.context.scene)
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    assert not live_review.has_pending(bpy.context.scene)
+    assert bpy.context.mode == "EDIT_MESH"
     settings.live_review = False
     assert settings.live_status == "Off"
     assert not live_review.has_pending(bpy.context.scene)
+    bpy.ops.object.mode_set(mode="OBJECT")
 
     problem = make_problem_mesh()
     for obj in tuple(bpy.context.selected_objects):

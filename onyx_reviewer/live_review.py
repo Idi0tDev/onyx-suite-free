@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 
+import bmesh
 import bpy
 from bpy.app.handlers import persistent
 
@@ -12,7 +13,6 @@ from . import operators
 
 _PENDING_SCENE = None
 _DUE_AT = 0.0
-_RUNNING = False
 
 
 def _scene_pointer(scene):
@@ -81,17 +81,18 @@ def review_options_changed(scene):
         schedule(scene, immediate=True)
 
 
-def _target_is_being_edited(objects):
-    return any(obj.mode != "OBJECT" for obj in objects)
-
-
 def _source_vertex_count(objects):
-    return sum(len(obj.data.vertices) for obj in objects)
+    return sum(
+        len(bmesh.from_edit_mesh(obj.data).verts)
+        if obj.mode == "EDIT"
+        else len(obj.data.vertices)
+        for obj in objects
+    )
 
 
 def flush_scene(scene):
     """Run a queued scene refresh now, or report why it is safely paused."""
-    global _PENDING_SCENE, _DUE_AT, _RUNNING
+    global _PENDING_SCENE, _DUE_AT
     if scene is None or scene != getattr(bpy.context, "scene", None):
         return False
     settings = getattr(scene, "onyx_reviewer", None)
@@ -104,10 +105,6 @@ def flush_scene(scene):
         cancel_scene(scene)
         settings.live_status = operators.review_blocker(bpy.context, settings.scope)
         return False
-    if _target_is_being_edited(objects):
-        settings.live_status = "Paused while a target is in Edit Mode"
-        return False
-
     vertex_count = _source_vertex_count(objects)
     if settings.live_max_vertices and vertex_count > settings.live_max_vertices:
         cancel_scene(scene)
@@ -118,14 +115,11 @@ def flush_scene(scene):
         return False
 
     cancel_scene(scene)
-    _RUNNING = True
     try:
         operators.perform_review(bpy.context)
     except Exception as exc:  # Keep Blender responsive if a live pass cannot finish.
         settings.live_status = f"Paused: {exc}"
         return False
-    finally:
-        _RUNNING = False
     settings.live_status = "Up to date"
     return True
 
@@ -147,8 +141,8 @@ def _timer():
     if flush_scene(scene):
         return None if _PENDING_SCENE is None else 0.1
     if has_pending(scene):
-        # Edit Mode pauses instead of discarding the pending refresh. Leaving
-        # the mode lets the same request complete without modifying the mesh.
+        # A refresh can leave newer work queued if Blender reports another
+        # relevant dependency update while the timer is finishing.
         return 0.5
     return None
 
@@ -161,7 +155,7 @@ def _updated_id_pointer(update):
 
 @persistent
 def _depsgraph_updated(scene, depsgraph):
-    if _RUNNING or scene != getattr(bpy.context, "scene", None):
+    if operators.review_is_running() or scene != getattr(bpy.context, "scene", None):
         return
     settings = getattr(scene, "onyx_reviewer", None)
     if settings is None or not settings.live_review:
@@ -182,11 +176,10 @@ def register():
 
 
 def unregister():
-    global _PENDING_SCENE, _DUE_AT, _RUNNING
+    global _PENDING_SCENE, _DUE_AT
     if is_registered():
         bpy.app.handlers.depsgraph_update_post.remove(_depsgraph_updated)
     if _timer_is_registered():
         bpy.app.timers.unregister(_timer)
     _PENDING_SCENE = None
     _DUE_AT = 0.0
-    _RUNNING = False

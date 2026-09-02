@@ -67,8 +67,9 @@ changed behind your back.
 
 When you want the panel to follow an active modeling pass, enable **Live
 Review**. It waits for mesh changes to settle, then refreshes the same findings
-without touching geometry. Live Review pauses while a target is in Edit Mode or
-when the chosen scope exceeds its configurable source-vertex limit.
+without touching geometry. It works in Object Mode and Edit Mode without
+changing the active mode or selection, and pauses when the chosen scope exceeds
+its configurable source-vertex limit.
 
 ### Choose the right review
 
@@ -232,7 +233,7 @@ The repository includes:
 - Face-map, pole-map, and topology-class selection coverage
 - Transient viewport-highlight geometry and cleanup coverage
 - Empty-scope readiness and clipboard-report coverage
-- Debounced Live Review, Edit Mode pause, and density-limit coverage
+- Debounced Live Review in Object and Edit Mode, plus density-limit coverage
 - Finding-view filtering and matching viewport-overview coverage
 - Review-profile presets, custom finding groups, and comparison invalidation coverage
 - Session-only Review Delta comparison, filtering, reporting, and cleanup coverage

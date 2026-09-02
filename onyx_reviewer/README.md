@@ -1,4 +1,4 @@
-# Onyx Reviewer 0.10.1
+# Onyx Reviewer 0.11.0
 
 Onyx Reviewer helps you spot mesh problems before they become annoying production
 problems. It checks the editable mesh and the evaluated modifier result, then
@@ -35,7 +35,7 @@ so there is no second dependency to install.
 - Optional allowances for intentionally open boundary edges and ngons
 - Copyable plain-text review report
 - Optional debounced Live Review after mesh changes
-- Automatic Live Review pause in Edit Mode and above a configurable source-vertex limit
+- Live Review in Object and Edit Mode with a configurable source-vertex safety limit
 - Explicit, undoable fixes for winding, exact duplicate faces, loose edges, and loose vertices
 
 ## Review profiles
@@ -68,11 +68,14 @@ Press **Live** beside the main Review button when you want diagnostics to follow
 a modeling pass. It refreshes the same inspection-only results after detected
 mesh changes settle. It does not repair or otherwise edit geometry.
 
-Live Review pauses while a target is in Edit Mode, because the editable mesh may
-not yet match its stored object data. It also pauses when the chosen scope
-exceeds the **Live Vertex Limit**. Use zero only when you deliberately want no
-density ceiling. Open **More Settings** for those limits. The manual **Run Now**
-action remains available at all times.
+Live Review reads your current editable mesh without leaving Edit Mode or
+changing its selection. It waits until your latest action settles, then updates
+the same diagnostics and evaluated modifier totals you get in Object Mode.
+
+It pauses when the chosen scope exceeds the **Live Vertex Limit**. Use zero only
+when you deliberately want no density ceiling. Open **More Settings** for that
+limit and the refresh delay. The manual **Run Now** action remains available at
+all times.
 
 ## Simple fixes
 
@@ -138,7 +141,7 @@ captured viewport.
 
 ## Install
 
-Build `onyx_reviewer-0.10.1.zip` with `tools/package_reviewer.ps1`, then install the
+Build `onyx_reviewer-0.11.0.zip` with `tools/package_reviewer.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.
 

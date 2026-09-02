@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.0 - 2026-09-02
+
+- Refresh Live Review from the current editable mesh while staying in Edit
+  Mode.
+- Keep Edit Mode selection and geometry unchanged during live inspection.
+- Count current Edit Mode vertices before applying the live density limit.
+- Refresh evaluated modifier totals from synchronized edit geometry instead of
+  reporting the last Object Mode state.
+- Avoid queuing a duplicate live pass when a manual review already synchronized
+  the current Edit Mode mesh.
+
 ## 0.10.1 - 2026-09-02
 
 - Declare the clipboard permission used by Copy Report and Copy Delta.

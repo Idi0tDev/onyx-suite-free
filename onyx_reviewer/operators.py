@@ -32,6 +32,14 @@ from .review_profiles import resolve_review_profile
 from . import delta_state, highlight_state, viewport_state
 
 
+_REVIEW_RUNNING = False
+
+
+def review_is_running():
+    """Return whether the shared inspection engine is currently refreshing."""
+    return _REVIEW_RUNNING
+
+
 def scoped_meshes(context, scope):
     if scope == "ACTIVE":
         candidates = (context.active_object,) if context.active_object else ()
@@ -53,6 +61,16 @@ def review_blocker(context, scope):
     if scope == "SELECTED":
         return "Select one or more mesh objects"
     return "The active collection contains no mesh objects"
+
+
+def _sync_edit_meshes(context, objects):
+    """Expose current Edit Mode geometry to read-only mesh evaluation."""
+    edited = tuple(obj for obj in objects if obj.mode == "EDIT")
+    for obj in edited:
+        if not obj.update_from_editmode():
+            raise RuntimeError(f"Could not read the current Edit Mode mesh: {obj.name}")
+    if edited:
+        context.view_layer.update()
 
 
 def active_review_profile(settings):
@@ -182,6 +200,22 @@ def _stored_summary(settings):
 
 
 def perform_review(context):
+    """Run one guarded review without scheduling a duplicate live refresh."""
+    global _REVIEW_RUNNING
+    if _REVIEW_RUNNING:
+        raise RuntimeError("A mesh review is already running")
+    _REVIEW_RUNNING = True
+    try:
+        if context.scene.onyx_reviewer.live_review:
+            from . import live_review
+
+            live_review.cancel_scene(context.scene)
+        return _perform_review(context)
+    finally:
+        _REVIEW_RUNNING = False
+
+
+def _perform_review(context):
     """Run the current scene review and return its reusable summary."""
     settings = context.scene.onyx_reviewer
     objects = scoped_meshes(context, settings.scope)
@@ -192,6 +226,7 @@ def perform_review(context):
     # stale evidence visible after either a manual or live refresh.
     highlight_state.clear_highlight()
     settings.results.clear()
+    _sync_edit_meshes(context, objects)
     depsgraph = context.evaluated_depsgraph_get()
     profile = active_review_profile(settings)
     reviews = tuple(
