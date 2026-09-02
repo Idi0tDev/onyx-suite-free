@@ -53,12 +53,6 @@ framework contract.
 
 <p align="center"><em>Mesh analysis and diagnostics, with the problem areas pointed out on the model.</em></p>
 
-<p align="center">
-  <img src="docs/assets/onyx-reviewer-in-blender.png" alt="Onyx Reviewer displaying color-coded mesh findings and finding filters inside Blender 5.2 LTS" width="100%">
-</p>
-
-<p align="center"><em>A real Blender 5.2 LTS capture: one review, distinct problem colors, and the full evidence legend beside the mesh.</em></p>
-
 **Onyx Reviewer** is a reversible mesh-inspection workspace for Blender 5.2 LTS.
 It gives artists a clear answer to three everyday questions:
 
