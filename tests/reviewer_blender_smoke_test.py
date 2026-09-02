@@ -161,9 +161,12 @@ def main():
     modifier.levels = 1
     settings = bpy.context.scene.onyx_reviewer
     assert not settings.more_settings_expanded
+    assert not settings.topology_rules_expanded
     assert not settings.delta_expanded
     assert not settings.viewport_tools_expanded
     assert not settings.highlight_legend_expanded
+    assert settings.allowed_boundary_edges == 0
+    assert settings.allowed_ngons == 0
     settings.scope = "ACTIVE"
     settings.triangle_budget = 1_000_000
     assert bpy.ops.onyx.run_review() == {"FINISHED"}
@@ -421,6 +424,21 @@ def main():
     assert settings.results[0].quad_faces == 0
     assert settings.results[0].ngon_faces == 2
     assert highlight_state.active_highlight() is None
+
+    # Intentional open topology can be allowed without hiding the underlying
+    # mesh statistics or disabling the rest of the topology review.
+    settings.allowed_boundary_edges = issue_counts["topology.boundary"]
+    settings.allowed_ngons = settings.results[0].ngon_faces
+    assert settings.review_options_dirty
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    allowed_codes = {issue.code for issue in settings.results[0].issues}
+    assert "topology.boundary" not in allowed_codes
+    assert "topology.ngons" not in allowed_codes
+    assert settings.results[0].ngon_faces == 2
+    settings.allowed_boundary_edges = 0
+    settings.allowed_ngons = 0
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    assert {issue.code for issue in settings.results[0].issues} == codes
 
     # The compact navigator follows the finding filter, opens the matching
     # result, selects its object, and cycles focused viewport evidence.

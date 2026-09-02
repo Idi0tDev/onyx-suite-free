@@ -121,6 +121,18 @@ class ONYX_PT_review(bpy.types.Panel):
                 checks.prop(settings, "check_transforms")
                 checks.prop(settings, "check_asset_setup")
                 checks.prop(settings, "check_triangle_budget")
+            if profile.topology:
+                rules = optional.box()
+                if _draw_disclosure(
+                    rules,
+                    settings,
+                    "topology_rules_expanded",
+                    "Topology Allowances",
+                    "MODIFIER",
+                ):
+                    rules.label(text="Set what is intentional for this asset")
+                    rules.prop(settings, "allowed_boundary_edges")
+                    rules.prop(settings, "allowed_ngons")
             budget = optional.row()
             budget.enabled = profile.triangle_budget
             budget.prop(settings, "triangle_budget")

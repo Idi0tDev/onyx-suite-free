@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.0 - 2026-09-02
+
+- Add optional allowances for intentionally open boundary edges and ngons.
+- Keep both allowances at zero by default so existing reviews stay strict.
+- Hide the matching warning only when its count is within the allowance while
+  keeping the complete mesh statistics available.
+- Put the new rules inside a collapsed Topology Allowances section so the main
+  review workflow stays compact.
+
 ## 0.9.0 - 2026-09-02
 
 - Add compact previous and next controls for stepping through the mesh problems

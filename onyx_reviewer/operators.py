@@ -199,6 +199,8 @@ def perform_review(context):
             obj,
             depsgraph,
             triangle_budget=settings.triangle_budget,
+            allowed_boundary_edges=settings.allowed_boundary_edges,
+            allowed_ngons=settings.allowed_ngons,
             profile=profile,
         )
         for obj in objects

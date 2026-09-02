@@ -91,6 +91,12 @@ Changing the profile clears an old Review Delta baseline, because comparing two
 different sets of checks could look like the mesh improved when only the review
 rules changed.
 
+Open meshes and ngons are not automatically mistakes. If they are intentional
+for a particular asset, open **More Settings > Topology Allowances** and enter
+how many open boundary edges or ngons are acceptable. Both values start at zero,
+so the default review remains strict. The warning is hidden only while the
+actual count stays inside your allowance; the mesh statistics are still there.
+
 ### A typical review
 
 1. Choose the active object, current selection, or active collection.
@@ -132,7 +138,7 @@ the mesh or saved inside the `.blend` file.
 | Area | Review evidence |
 | --- | --- |
 | Geometry | Base and evaluated vertices, faces, and triangles; triangle, quad, and ngon face composition |
-| Topology | Boundaries, non-manifold edges, duplicate or degenerate faces, coincident vertices, disconnected islands, loose geometry, ngons, inconsistent winding, and 3/5/6+ edge pole counts |
+| Topology | Boundaries, non-manifold edges, duplicate or degenerate faces, coincident vertices, disconnected islands, loose geometry, ngons, inconsistent winding, optional boundary/ngon allowances, and 3/5/6+ edge pole counts |
 | Transforms | Negative transforms and unapplied scale |
 | Asset setup | UV-map and material-slot presence |
 | Budget | Optional evaluated triangle warning |

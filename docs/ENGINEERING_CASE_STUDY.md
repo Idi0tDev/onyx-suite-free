@@ -168,6 +168,7 @@ the real Blender smoke and coexistence suites with a clean factory startup.
 
 ## Next directions
 
-Likely next steps include per-check thresholds, evaluated-geometry
-visualization, and running the full Blender smoke suite in hosted continuous
-integration.
+Likely next steps include evaluated-geometry visualization and running the full
+Blender smoke suite in hosted continuous integration. The first per-check rules
+now ship as explicit allowances for open boundary edges and ngons, kept inside
+the collapsed settings instead of expanding the everyday workflow.

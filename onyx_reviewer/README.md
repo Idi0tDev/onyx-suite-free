@@ -1,4 +1,4 @@
-# Onyx Reviewer 0.9.0
+# Onyx Reviewer 0.10.0
 
 Onyx Reviewer helps you spot mesh problems before they become annoying production
 problems. It checks the editable mesh and the evaluated modifier result, then
@@ -32,6 +32,7 @@ so there is no second dependency to install.
 - All, Errors, Warnings, Fixable, and Changes finding views for dense reviews
 - Session-only before-and-after Review Delta comparisons
 - General, While Modeling, Topology Only, and Custom review profiles
+- Optional allowances for intentionally open boundary edges and ngons
 - Copyable plain-text review report
 - Optional debounced Live Review after mesh changes
 - Automatic Live Review pause in Edit Mode and above a configurable source-vertex limit
@@ -52,6 +53,14 @@ The completed profile is shown with the result and included in **Copy Report**.
 Changing the profile, scope, custom switches, or triangle budget clears the
 temporary Review Delta baseline. That prevents a different set of checks from
 looking like a mesh improvement.
+
+### Allow intentional topology
+
+Some assets are meant to be open or contain a small number of ngons. Open
+**More Settings > Topology Allowances** and enter how many open boundary edges
+or ngons are acceptable for the current review. Zero means flag any amount.
+The matching warning disappears only while the real count is within your
+allowance; the mesh statistics remain available.
 
 ## Live Review
 
@@ -129,6 +138,6 @@ captured viewport.
 
 ## Install
 
-Build `onyx_reviewer-0.9.0.zip` with `tools/package_reviewer.ps1`, then install the
+Build `onyx_reviewer-0.10.0.zip` with `tools/package_reviewer.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.

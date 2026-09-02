@@ -434,7 +434,15 @@ def _evaluated_mesh_metrics(obj, depsgraph):
         evaluated.to_mesh_clear()
 
 
-def review_object(obj, depsgraph, *, triangle_budget=100_000, profile=None):
+def review_object(
+    obj,
+    depsgraph,
+    *,
+    triangle_budget=100_000,
+    allowed_boundary_edges=0,
+    allowed_ngons=0,
+    profile=None,
+):
     if obj.type != "MESH":
         raise TypeError("Onyx Reviewer can inspect mesh objects only")
     if profile is None:
@@ -484,11 +492,16 @@ def review_object(obj, depsgraph, *, triangle_budget=100_000, profile=None):
                 error=True,
             )
         )
-    if profile.topology and base["boundaries"]:
+    if profile.topology and base["boundaries"] > allowed_boundary_edges:
+        message = "Open boundary edges"
+        if allowed_boundary_edges:
+            message = (
+                f"Open boundary edges exceed the {allowed_boundary_edges:,}-edge allowance"
+            )
         issues.append(
             _issue(
                 "topology.boundary",
-                "Open boundary edges",
+                message,
                 base["boundaries"],
             )
         )
@@ -516,8 +529,11 @@ def review_object(obj, depsgraph, *, triangle_budget=100_000, profile=None):
                 base["disconnected_islands"],
             )
         )
-    if profile.topology and base["ngons"]:
-        issues.append(_issue("topology.ngons", "Faces with more than four sides", base["ngons"]))
+    if profile.topology and base["ngons"] > allowed_ngons:
+        message = "Faces with more than four sides"
+        if allowed_ngons:
+            message = f"Ngons exceed the {allowed_ngons:,}-face allowance"
+        issues.append(_issue("topology.ngons", message, base["ngons"]))
 
     if profile.transforms:
         scale = tuple(float(value) for value in obj.scale)

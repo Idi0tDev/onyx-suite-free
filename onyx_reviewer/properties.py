@@ -120,6 +120,10 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
         default=False,
         description="Show optional review controls",
     )
+    topology_rules_expanded: BoolProperty(
+        default=False,
+        description="Show allowances for intentionally open edges and ngons",
+    )
     delta_expanded: BoolProperty(
         default=False,
         description="Show before-and-after comparison controls",
@@ -172,6 +176,22 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
         name="Triangle Budget",
         default=True,
         description="Use the triangle budget as part of the review",
+        update=_review_semantics_changed,
+    )
+    allowed_boundary_edges: IntProperty(
+        name="Allowed Open Edges",
+        default=0,
+        min=0,
+        soft_max=1_000,
+        description="Ignore the open-edge warning up to this count; zero flags any open edge",
+        update=_review_semantics_changed,
+    )
+    allowed_ngons: IntProperty(
+        name="Allowed Ngons",
+        default=0,
+        min=0,
+        soft_max=1_000,
+        description="Ignore the ngon warning up to this count; zero flags any ngon",
         update=_review_semantics_changed,
     )
     triangle_budget: IntProperty(

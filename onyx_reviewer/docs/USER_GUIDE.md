@@ -52,6 +52,25 @@ Those changes also clear a saved Review Delta baseline. A baseline made with
 General should not be compared with a Topology Only result, because missing
 findings could come from the profile instead of a mesh edit.
 
+### Allow intentional open edges or ngons
+
+Some models are meant to have open edges. A cloth panel, hair card, trim sheet,
+or other flat asset should not need a noisy warning on every review. The same
+can be true for a small number of deliberate ngons.
+
+Open **More Settings > Topology Allowances** and set:
+
+- **Allowed Open Edges** — how many boundary edges can exist before the open-edge
+  warning appears; and
+- **Allowed Ngons** — how many faces with more than four sides can exist before
+  the ngon warning appears.
+
+Both start at zero, which means flag any amount. A count exactly equal to the
+allowance is accepted; the warning returns as soon as the mesh goes over it.
+These values change only the warnings. Face mix and the other mesh statistics
+stay visible, and no geometry is edited. Changing either allowance marks an old
+review as out of date and clears its temporary comparison baseline.
+
 ## Live Review
 
 **Live Review** is optional and off by default. Press **Live** beside the main
