@@ -20,6 +20,7 @@ if (-not (Test-Path -LiteralPath $PythonPath)) {
 & (Join-Path $PSScriptRoot "sync_embedded_core.ps1") | Write-Output
 
 $pureTests = @(
+    "tests\extension_manifest_test.py",
     "tests\core_framework_test.py",
     "tests\review_analysis_test.py",
     "tests\review_profiles_test.py",

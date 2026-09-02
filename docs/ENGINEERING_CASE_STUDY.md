@@ -147,7 +147,7 @@ from being mistaken for a healthier mesh.
 | Blender mesh tests | Real BMesh findings, source/evaluated counts, selection domains, and simple mutations |
 | Viewport tests | Highlight geometry, stable distinct colors, topology maps, and exact state restoration |
 | Lifecycle tests | Registration rollback, embedded Core parity, standalone Core coexistence, and cleanup |
-| Release checks | Public-source audit, deterministic packaging, archive inspection, and SHA-256 output |
+| Release checks | Manifest/runtime version parity, public-source audit, deterministic packaging, archive inspection, SHA-256 output, and native Blender ZIP validation |
 | Manual product pass | Installation, panel flow, real viewport overlays, filters, fixes, undo, and scene restoration in Blender 5.2 LTS |
 
 Hosted checks run the portable result, framework, embedding, source-audit, and

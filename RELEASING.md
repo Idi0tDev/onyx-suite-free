@@ -21,21 +21,14 @@ From the repository root in PowerShell:
 ```powershell
 tools/test.ps1
 tools/build_release.ps1
+tools/validate_release.ps1
 ```
 
 The release build audits the tracked public source, builds both extensions,
-checks their archive contents, and writes `dist/SHA256SUMS.txt`.
-
-Validate both archives with Blender 5.2 LTS:
-
-```powershell
-$coreZip = (Get-ChildItem dist/onyx_core-*.zip).FullName
-$reviewZip = (Get-ChildItem dist/onyx_review-*.zip).FullName
-& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background --command extension validate $coreZip
-& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background --command extension validate $reviewZip
-```
-
-Replace the example versions with the versions in the manifests.
+checks their archive contents, and writes `dist/SHA256SUMS.txt`. The final
+command asks Blender itself to validate the exact Core and Review ZIPs that
+will be uploaded. Pass `-BlenderPath` if Blender 5.2 is installed somewhere
+else.
 
 ## 3. Prepare the GitHub draft
 

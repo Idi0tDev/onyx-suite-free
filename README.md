@@ -229,8 +229,10 @@ The repository includes:
 - Viewport restoration coverage
 - Core embedding verification
 - Standalone Core and bundled-product coexistence tests
+- Manifest and runtime version consistency checks
 - Public-source leakage checks
 - Deterministic extension packaging, archive inspection, and SHA-256 checksums
+- Native Blender validation of the finished extension ZIPs
 - Tag-driven draft releases with manual publication
 
 Run the local suite with Blender 5.2 and its bundled Python:
@@ -243,6 +245,7 @@ Maintainers can build the complete verified release candidate with:
 
 ```powershell
 tools/build_release.ps1
+tools/validate_release.ps1
 ```
 
 The full release gate is documented in [RELEASING.md](RELEASING.md).

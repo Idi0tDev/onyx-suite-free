@@ -26,10 +26,14 @@ jobs:
       - name: Synchronize embedded Core
         shell: pwsh
         run: ./tools/sync_embedded_core.ps1
+      - name: Validate extension manifests
+        run: python tests/extension_manifest_test.py
       - name: Run framework tests
         run: python tests/core_framework_test.py
       - name: Run review model tests
         run: python tests/review_analysis_test.py
+      - name: Run review profile tests
+        run: python tests/review_profiles_test.py
       - name: Verify embedded Core
         run: python tests/core_review_embedding_test.py
 
