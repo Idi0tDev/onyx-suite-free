@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.1 - 2026-09-02
+
+- Declare the clipboard permission used by Copy Report and Copy Delta.
+- Explain that clipboard access is only used for user-requested plain-text
+  copies and that Reviewer does not need network or file access.
+- Add manifest coverage for Reviewer permissions so release metadata cannot
+  silently drift from the feature.
+
 ## 0.10.0 - 2026-09-02
 
 - Add optional allowances for intentionally open boundary edges and ngons.

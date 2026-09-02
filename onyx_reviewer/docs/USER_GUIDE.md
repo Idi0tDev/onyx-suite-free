@@ -285,7 +285,8 @@ data, and they do not change the active object, mode, or selection.
 
 Use **Copy Report** after a review to place a complete plain-text summary on the
 clipboard for handoff notes, issue reports, or production checklists. This does
-not write a file or change the scene.
+not write a file or change the scene. This is the only reason Reviewer asks for
+clipboard permission; it does not need network or file access.
 
 ## Viewport review
 

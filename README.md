@@ -210,7 +210,9 @@ The package is written to `dist/onyx_reviewer-x.y.z.zip`.
 Then open **Onyx → Review** in the 3D Viewport sidebar.
 
 Onyx Reviewer targets Blender 5.2 LTS on Windows, macOS, and Linux. It is
-pure Python and requests no extension permissions.
+pure Python and asks only for clipboard access so **Copy Report** and **Copy
+Delta** can put their plain-text summaries on your clipboard. It does not need
+network or file access.
 
 For complete controls and interpretation guidance, see the
 [Onyx Reviewer user guide](onyx_reviewer/docs/USER_GUIDE.md).

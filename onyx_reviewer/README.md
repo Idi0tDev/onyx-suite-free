@@ -1,4 +1,4 @@
-# Onyx Reviewer 0.10.0
+# Onyx Reviewer 0.10.1
 
 Onyx Reviewer helps you spot mesh problems before they become annoying production
 problems. It checks the editable mesh and the evaluated modifier result, then
@@ -138,6 +138,10 @@ captured viewport.
 
 ## Install
 
-Build `onyx_reviewer-0.10.0.zip` with `tools/package_reviewer.ps1`, then install the
+Build `onyx_reviewer-0.10.1.zip` with `tools/package_reviewer.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.
+
+Blender will show that Reviewer needs clipboard access. That permission is used
+only when you press **Copy Report** or **Copy Delta**. Reviewer does not need
+network or file access.

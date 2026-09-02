@@ -70,7 +70,12 @@ def read_version_assignment(path: Path, assignment_name: str) -> str:
     raise AssertionError(f"Could not find Version assignment {assignment_name} in {path}")
 
 
-def validate_manifest(extension_id: str, expected_name: str) -> dict[str, object]:
+def validate_manifest(
+    extension_id: str,
+    expected_name: str,
+    *,
+    expected_permissions: dict[str, str] | None = None,
+) -> dict[str, object]:
     manifest = read_manifest(extension_id)
     missing = REQUIRED_FIELDS - manifest.keys()
     assert not missing, f"{extension_id} manifest is missing: {sorted(missing)}"
@@ -85,12 +90,23 @@ def validate_manifest(extension_id: str, expected_name: str) -> dict[str, object
     assert isinstance(manifest["maintainer"], str) and manifest["maintainer"].strip()
     assert isinstance(manifest["tags"], list) and manifest["tags"]
     assert "SPDX:GPL-3.0-or-later" in manifest["license"]
-    assert "permissions" not in manifest, f"{extension_id} should not request permissions"
+    permissions = manifest.get("permissions", {})
+    assert permissions == (expected_permissions or {}), (
+        f"{extension_id} permissions do not match its reviewed feature set"
+    )
+    for reason in permissions.values():
+        assert isinstance(reason, str) and reason.strip()
+        assert len(reason) <= 64
+        assert not reason.endswith(".")
     return manifest
 
 
 core_manifest = validate_manifest("onyx_core", "Onyx Core")
-reviewer_manifest = validate_manifest("onyx_reviewer", "Onyx Reviewer")
+reviewer_manifest = validate_manifest(
+    "onyx_reviewer",
+    "Onyx Reviewer",
+    expected_permissions={"clipboard": "Copy review reports and comparisons"},
+)
 
 core_runtime_version = read_version_assignment(ROOT / "onyx_core" / "api.py", "CORE_VERSION")
 reviewer_runtime_version = read_string_assignment(ROOT / "onyx_reviewer" / "__init__.py", "VERSION")
