@@ -7,7 +7,8 @@
 3. Use the two small menus below the mesh name to choose the scope and review
    profile. **Active** and **General** are good for a first run.
 4. Click **Run Review**.
-5. Open the reviewed object's card to see its findings.
+5. Press **Next** to see each visual mesh problem, or open the reviewed object's
+   card to browse the full list.
 
 If **Run Review** is greyed out, the message at the top tells you what is
 missing, such as an active mesh or a selected mesh.
@@ -112,6 +113,21 @@ new filter. Face and pole topology maps are independent and remain visible.
 If Changes is empty, that is usually good news: nothing new appeared and no
 existing finding changed. Resolved findings are shown in **Compare Changes**
 because they are no longer part of the current result.
+
+### Step through mesh problems
+
+When the current Show view contains findings that can be pointed out on the
+mesh, a small problem navigator appears below the filter. Press **Next** or the
+back arrow to move through them. Onyx selects the matching object, opens its
+result card, closes the other result cards, frames it in the current 3D
+Viewport, and draws that finding in its usual color.
+
+The navigator follows the active Show view. Choose **Errors** to walk only
+through error-level mesh problems, **Fixable** to check the simple-fix cases,
+or **Changes** to inspect visual problems introduced or changed since the
+baseline. Findings such as a missing material are still listed and reported,
+but are not part of this navigator because there is no mesh element to point at.
+Moving past the last visual finding wraps back to the first.
 
 ## Review Delta
 

@@ -225,6 +225,34 @@ class ONYX_PT_review(bpy.types.Panel):
             finding_view.label(text="Show", icon="FILTER")
             finding_view.prop(settings, "finding_filter", text="")
 
+        visual_findings = operators.visible_actionable_findings(settings)
+        if visual_findings:
+            active_index = operators.active_visual_finding_index(
+                settings,
+                visual_findings,
+            )
+            navigator = layout.row(align=True)
+            navigator.label(
+                text=(
+                    f"Mesh problem {active_index + 1} of {len(visual_findings)}"
+                    if active_index >= 0
+                    else f"{len(visual_findings)} mesh problems"
+                ),
+                icon="HIDE_OFF",
+            )
+            previous = navigator.operator(
+                "onyx.step_review_finding",
+                text="",
+                icon="TRIA_LEFT",
+            )
+            previous.direction = "PREVIOUS"
+            next_finding = navigator.operator(
+                "onyx.step_review_finding",
+                text="Next",
+                icon="TRIA_RIGHT",
+            )
+            next_finding.direction = "NEXT"
+
         active_highlights = highlight_state.active_highlights()
         if active_highlights:
             active_highlight = active_highlights[0]

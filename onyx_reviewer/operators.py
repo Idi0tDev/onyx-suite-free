@@ -81,6 +81,36 @@ def finding_matches_filter(issue, filter_mode):
     raise ValueError(f"Unknown finding filter: {filter_mode}")
 
 
+def visible_actionable_findings(settings):
+    """Return filtered findings that can be pointed out on the mesh."""
+    findings = []
+    for result in settings.results:
+        object_name = result.object_ref.name if result.object_ref else result.object_name
+        for issue in result.issues:
+            if (
+                finding_matches_filter(issue, settings.finding_filter)
+                and issue_selection_domain(issue.code)
+            ):
+                findings.append((result, issue, object_name))
+    return tuple(findings)
+
+
+def active_visual_finding_index(settings, findings=None):
+    """Return the active single-finding overlay's position, or -1."""
+    findings = visible_actionable_findings(settings) if findings is None else findings
+    active = highlight_state.active_highlight()
+    if active is None or highlight_state.active_overview_key():
+        return -1
+    return next(
+        (
+            index
+            for index, (_, issue, object_name) in enumerate(findings)
+            if active.object_name == object_name and active.issue_code == issue.code
+        ),
+        -1,
+    )
+
+
 def _store_review(settings, obj, review, delta_statuses):
     item = settings.results.add()
     item.object_ref = obj
@@ -339,6 +369,94 @@ class ONYX_OT_select_review_object(bpy.types.Operator):
             selected.select_set(False)
         obj.select_set(True)
         context.view_layer.objects.active = obj
+        return {"FINISHED"}
+
+
+class ONYX_OT_step_review_finding(bpy.types.Operator):
+    bl_idname = "onyx.step_review_finding"
+    bl_label = "Step Through Mesh Problems"
+    bl_description = "Select the reviewed object and show the previous or next visible mesh problem"
+
+    direction: EnumProperty(
+        items=(
+            ("PREVIOUS", "Previous", "Show the previous visible mesh problem"),
+            ("NEXT", "Next", "Show the next visible mesh problem"),
+        ),
+        default="NEXT",
+        description="Direction to move through visible mesh problems",
+    )
+
+    @classmethod
+    def poll(cls, context):
+        settings = getattr(getattr(context, "scene", None), "onyx_reviewer", None)
+        if settings is None:
+            return False
+        return bool(visible_actionable_findings(settings))
+
+    def execute(self, context):
+        settings = context.scene.onyx_reviewer
+        findings = visible_actionable_findings(settings)
+        if not findings:
+            self.report({"INFO"}, "This view has no mesh problems to show")
+            return {"CANCELLED"}
+
+        active_index = active_visual_finding_index(settings, findings)
+        if active_index < 0:
+            index = 0 if self.direction == "NEXT" else len(findings) - 1
+        else:
+            step = 1 if self.direction == "NEXT" else -1
+            index = (active_index + step) % len(findings)
+        result, issue, object_name = findings[index]
+
+        obj = bpy.data.objects.get(object_name)
+        if obj is None or obj.type != "MESH" or obj.name not in context.view_layer.objects:
+            self.report({"WARNING"}, "The reviewed mesh is no longer in the active view layer")
+            return {"CANCELLED"}
+        if obj.hide_get() or obj.hide_viewport:
+            self.report({"WARNING"}, "Show the reviewed mesh before highlighting its problems")
+            return {"CANCELLED"}
+
+        active_object = context.view_layer.objects.active
+        if active_object is not None and active_object.mode != "OBJECT":
+            bpy.ops.object.mode_set(mode="OBJECT")
+        for selected in tuple(context.selected_objects):
+            selected.select_set(False)
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
+        for stored_result in settings.results:
+            stored_result.expanded = stored_result.object_name == result.object_name
+
+        domain, points, lines, count = issue_overlay_geometry(obj, issue.code)
+        if not count:
+            highlight_state.clear_highlight()
+            self.report({"INFO"}, "This problem changed; run Review again")
+            return {"FINISHED"}
+
+        highlight_state.show_highlight(
+            obj.name,
+            issue.code,
+            issue.message,
+            issue.severity,
+            domain,
+            count,
+            points,
+            lines,
+        )
+
+        area = getattr(context, "area", None)
+        if area is not None and area.type == "VIEW_3D":
+            window_region = next(
+                (region for region in area.regions if region.type == "WINDOW"),
+                None,
+            )
+            if window_region is not None:
+                with context.temp_override(area=area, region=window_region):
+                    bpy.ops.view3d.view_selected(use_all_regions=False)
+
+        self.report(
+            {"INFO"},
+            f"Mesh problem {index + 1} of {len(findings)}: {issue.message}",
+        )
         return {"FINISHED"}
 
 
@@ -781,6 +899,7 @@ CLASSES = (
     ONYX_OT_clear_review_baseline,
     ONYX_OT_copy_review_delta,
     ONYX_OT_select_review_object,
+    ONYX_OT_step_review_finding,
     ONYX_OT_inspect_review_issue,
     ONYX_OT_fix_review_issue,
     ONYX_OT_inspect_topology_class,

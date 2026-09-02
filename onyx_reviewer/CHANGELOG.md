@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.0 - 2026-09-02
+
+- Add compact previous and next controls for stepping through the mesh problems
+  visible in the current finding filter.
+- Select the matching object, open its result card, and show the finding's
+  color-coded viewport evidence in one action.
+- Keep only the current object's result card open while navigating a multi-object
+  review so the compact panel does not grow with every step.
+- Keep navigation filter-aware and wrap cleanly from the last visual finding
+  back to the first.
+
 ## 0.8.0 - 2026-09-02
 
 - Rename the product, extension ID, source package, and release ZIP to Onyx

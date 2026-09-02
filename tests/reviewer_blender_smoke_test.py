@@ -422,6 +422,31 @@ def main():
     assert settings.results[0].ngon_faces == 2
     assert highlight_state.active_highlight() is None
 
+    # The compact navigator follows the finding filter, opens the matching
+    # result, selects its object, and cycles focused viewport evidence.
+    settings.results[0].expanded = False
+    settings.finding_filter = "ERRORS"
+    visual_findings = operators.visible_actionable_findings(settings)
+    assert [issue.code for _, issue, _ in visual_findings] == [
+        "topology.degenerate",
+        "topology.duplicate_faces",
+    ]
+    assert operators.active_visual_finding_index(settings, visual_findings) == -1
+    assert bpy.ops.onyx.step_review_finding(direction="NEXT") == {"FINISHED"}
+    assert settings.results[0].expanded
+    assert bpy.context.view_layer.objects.active == problem
+    assert highlight_state.active_highlight().issue_code == "topology.degenerate"
+    assert operators.active_visual_finding_index(settings) == 0
+    assert bpy.ops.onyx.step_review_finding(direction="NEXT") == {"FINISHED"}
+    assert highlight_state.active_highlight().issue_code == "topology.duplicate_faces"
+    assert operators.active_visual_finding_index(settings) == 1
+    assert bpy.ops.onyx.step_review_finding(direction="NEXT") == {"FINISHED"}
+    assert highlight_state.active_highlight().issue_code == "topology.degenerate"
+    assert bpy.ops.onyx.step_review_finding(direction="PREVIOUS") == {"FINISHED"}
+    assert highlight_state.active_highlight().issue_code == "topology.duplicate_faces"
+    highlight_state.clear_highlight()
+    settings.finding_filter = "ALL"
+
     palette_codes = (
         ("topology.non_manifold", "ERROR"),
         ("topology.degenerate", "ERROR"),

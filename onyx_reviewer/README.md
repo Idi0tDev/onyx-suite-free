@@ -1,4 +1,4 @@
-# Onyx Reviewer 0.8.0
+# Onyx Reviewer 0.9.0
 
 Onyx Reviewer helps you spot mesh problems before they become annoying production
 problems. It checks the editable mesh and the evaluated modifier result, then
@@ -28,6 +28,7 @@ so there is no second dependency to install.
 - Distinct, through-surface viewport colors for every actionable finding type
 - Thicker lines and larger points for error-level findings
 - Combined per-object overview of all actionable findings
+- Previous and next navigation through the currently visible mesh problems
 - All, Errors, Warnings, Fixable, and Changes finding views for dense reviews
 - Session-only before-and-after Review Delta comparisons
 - General, While Modeling, Topology Only, and Custom review profiles
@@ -90,6 +91,11 @@ Changing the view clears the old finding overlay so you never mistake stale
 marks for the new filter. Face and pole maps stay independent. **Copy Report**
 still includes every finding from the latest review.
 
+When the current view contains problems that can be drawn on the mesh, use the
+compact arrow controls to step through them. Onyx selects the right object,
+opens its result card, and shows that problem's color-coded evidence. The
+navigator wraps around, so you can keep checking without returning to the list.
+
 ## Review Delta
 
 A baseline is just a before snapshot.
@@ -123,6 +129,6 @@ captured viewport.
 
 ## Install
 
-Build `onyx_reviewer-0.8.0.zip` with `tools/package_reviewer.ps1`, then install the
+Build `onyx_reviewer-0.9.0.zip` with `tools/package_reviewer.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.

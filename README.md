@@ -101,11 +101,14 @@ rules changed.
    **Changes**.
 6. Optionally enable **Live Review** while iterating on the model.
 7. Expand an object only when you want its findings or tools.
-8. Use **Show Problems** for an overview, or **Show** to isolate one finding.
-9. Use **Inspect** when you want its mesh elements selected in Edit Mode.
-10. Optionally use **Fix** for supported, deterministic cleanup cases.
-11. Open **Viewport Modes** to switch between Studio, Silhouette, Topology, and Face Orientation views.
-12. Press **Restore View** to return the viewport to its original settings.
+8. Use **Next** to walk through visible mesh problems without hunting through
+   the list.
+9. Use **Show Problems** for an overview, or **Show** to isolate one finding.
+10. Use **Inspect** when you want its mesh elements selected in Edit Mode.
+11. Optionally use **Fix** for supported, deterministic cleanup cases.
+12. Open **Viewport Modes** to switch between Studio, Silhouette, Topology, and
+    Face Orientation views.
+13. Press **Restore View** to return the viewport to its original settings.
 
 ### Check what changed
 
@@ -141,6 +144,12 @@ on a card, cloth panel, or trim sheet.
 Actionable topology findings can select their exact vertices, edges, or faces
 in Edit Mode. This navigation changes the active selection for inspection but
 does not alter the mesh.
+
+The compact problem navigator steps through those visual findings with previous
+and next controls. It follows the active **Show** filter, selects the matching
+object, opens its result card, and draws the correct color-coded evidence. It
+wraps from the last problem back to the first, which makes a full review pass
+easy even across several selected objects.
 
 The compact **Show** menu keeps dense results readable without hiding evidence
 for good. Switch between every finding, errors, warnings, supported simple fixes, or
