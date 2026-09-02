@@ -12,7 +12,7 @@ body:
     attributes:
       label: Component
       options:
-        - Onyx Review
+        - Onyx Reviewer
         - Onyx Core
         - Documentation or release workflow
         - Unsure

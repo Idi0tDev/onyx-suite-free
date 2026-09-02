@@ -1,8 +1,8 @@
 schema_version = "1.0.0"
 
-id = "onyx_review"
+id = "onyx_reviewer"
 version = "0.8.0"
-name = "Onyx Review"
+name = "Onyx Reviewer"
 tagline = "Inspect topology and mesh health without changing the asset"
 maintainer = "Onyx"
 type = "add-on"

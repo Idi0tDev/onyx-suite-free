@@ -30,12 +30,12 @@ jobs:
         run: python tests/extension_manifest_test.py
       - name: Run framework tests
         run: python tests/core_framework_test.py
-      - name: Run review model tests
-        run: python tests/review_analysis_test.py
-      - name: Run review profile tests
-        run: python tests/review_profiles_test.py
+      - name: Run Reviewer model tests
+        run: python tests/reviewer_analysis_test.py
+      - name: Run Reviewer profile tests
+        run: python tests/reviewer_profiles_test.py
       - name: Verify embedded Core
-        run: python tests/core_review_embedding_test.py
+        run: python tests/core_reviewer_embedding_test.py
 
   package:
     needs: pure-python
@@ -53,6 +53,6 @@ jobs:
           name: onyx-suite-free-release-candidate
           path: |
             dist/onyx_core-*.zip
-            dist/onyx_review-*.zip
+            dist/onyx_reviewer-*.zip
             dist/SHA256SUMS.txt
           if-no-files-found: error

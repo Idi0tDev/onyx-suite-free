@@ -1,4 +1,4 @@
-"""Run with Blender 5.2 in background mode to exercise Onyx Review."""
+"""Run with Blender 5.2 in background mode to exercise Onyx Reviewer."""
 
 import sys
 from pathlib import Path
@@ -10,8 +10,8 @@ import bmesh
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-import onyx_review  # noqa: E402
-from onyx_review import (  # noqa: E402
+import onyx_reviewer  # noqa: E402
+from onyx_reviewer import (  # noqa: E402
     delta_state,
     highlight_state,
     live_review,
@@ -19,7 +19,7 @@ from onyx_review import (  # noqa: E402
     properties,
     viewport_state,
 )
-from onyx_review._onyx_core.integration import BROKER_KEY  # noqa: E402
+from onyx_reviewer._onyx_core.integration import BROKER_KEY  # noqa: E402
 
 
 class Bag:
@@ -145,11 +145,11 @@ def check_viewport_restore():
 
 def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    onyx_review.register()
+    onyx_reviewer.register()
     assert live_review.is_registered()
     assert delta_state._load_post in bpy.app.handlers.load_post
-    assert bpy.app.driver_namespace[BROKER_KEY] is onyx_review.CORE.endpoint
-    assert onyx_review.CORE.endpoint.extension("onyx_review") is not None
+    assert bpy.app.driver_namespace[BROKER_KEY] is onyx_reviewer.CORE.endpoint
+    assert onyx_reviewer.CORE.endpoint.extension("onyx_reviewer") is not None
     check_tooltips()
     check_viewport_restore()
     assert not bpy.ops.onyx.run_review.poll()
@@ -159,12 +159,19 @@ def main():
     cube.name = "ReviewedCube"
     modifier = cube.modifiers.new("Subdivision", "SUBSURF")
     modifier.levels = 1
-    settings = bpy.context.scene.onyx_review
+    settings = bpy.context.scene.onyx_reviewer
+    assert not settings.more_settings_expanded
+    assert not settings.delta_expanded
+    assert not settings.viewport_tools_expanded
+    assert not settings.highlight_legend_expanded
     settings.scope = "ACTIVE"
     settings.triangle_budget = 1_000_000
     assert bpy.ops.onyx.run_review() == {"FINISHED"}
     assert len(settings.results) == 1
     result = settings.results[0]
+    assert not result.expanded
+    assert not result.metrics_expanded
+    assert not result.topology_expanded
     assert result.object_name == "ReviewedCube"
     assert result.base_triangles == 12
     assert result.evaluated_triangles > result.base_triangles
@@ -175,7 +182,7 @@ def main():
     assert result.five_poles == 0
     assert result.six_plus_poles == 0
     stored_report = operators.format_review_report(operators._stored_summary(settings))
-    assert "Onyx Review Report" in stored_report
+    assert "Onyx Reviewer Report" in stored_report
     assert "ReviewedCube" in stored_report
     assert bpy.ops.onyx.copy_review_report() == {"FINISHED"}
 
@@ -674,11 +681,11 @@ def main():
     assert bpy.ops.onyx.clear_review() == {"FINISHED"}
     assert not settings.results and not settings.last_summary
     assert highlight_state.active_highlight() is None
-    onyx_review.unregister()
+    onyx_reviewer.unregister()
     assert not live_review.is_registered()
     assert delta_state._load_post not in bpy.app.handlers.load_post
     assert BROKER_KEY not in bpy.app.driver_namespace
-    print("ONYX_REVIEW_BLENDER_OK")
+    print("ONYX_REVIEWER_BLENDER_OK")
 
 
 if __name__ == "__main__":

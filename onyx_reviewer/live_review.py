@@ -1,4 +1,4 @@
-"""Opt-in, debounced refreshes for Onyx Review diagnostics."""
+"""Opt-in, debounced refreshes for Onyx Reviewer diagnostics."""
 
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ def schedule(scene, *, immediate=False):
     global _PENDING_SCENE, _DUE_AT
     if scene is None or scene != getattr(bpy.context, "scene", None):
         return False
-    settings = getattr(scene, "onyx_review", None)
+    settings = getattr(scene, "onyx_reviewer", None)
     if settings is None or not settings.live_review:
         return False
 
@@ -65,7 +65,7 @@ def schedule(scene, *, immediate=False):
 
 
 def settings_changed(scene):
-    settings = getattr(scene, "onyx_review", None)
+    settings = getattr(scene, "onyx_reviewer", None)
     if settings is None:
         return
     if settings.live_review:
@@ -76,7 +76,7 @@ def settings_changed(scene):
 
 
 def review_options_changed(scene):
-    settings = getattr(scene, "onyx_review", None)
+    settings = getattr(scene, "onyx_reviewer", None)
     if settings is not None and settings.live_review:
         schedule(scene, immediate=True)
 
@@ -94,7 +94,7 @@ def flush_scene(scene):
     global _PENDING_SCENE, _DUE_AT, _RUNNING
     if scene is None or scene != getattr(bpy.context, "scene", None):
         return False
-    settings = getattr(scene, "onyx_review", None)
+    settings = getattr(scene, "onyx_reviewer", None)
     if settings is None or not settings.live_review:
         cancel_scene(scene)
         return False
@@ -163,7 +163,7 @@ def _updated_id_pointer(update):
 def _depsgraph_updated(scene, depsgraph):
     if _RUNNING or scene != getattr(bpy.context, "scene", None):
         return
-    settings = getattr(scene, "onyx_review", None)
+    settings = getattr(scene, "onyx_reviewer", None)
     if settings is None or not settings.live_review:
         return
     objects = operators.scoped_meshes(bpy.context, settings.scope)

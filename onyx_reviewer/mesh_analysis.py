@@ -436,7 +436,7 @@ def _evaluated_mesh_metrics(obj, depsgraph):
 
 def review_object(obj, depsgraph, *, triangle_budget=100_000, profile=None):
     if obj.type != "MESH":
-        raise TypeError("Onyx Review can inspect mesh objects only")
+        raise TypeError("Onyx Reviewer can inspect mesh objects only")
     if profile is None:
         profile = resolve_review_profile("GENERAL")
     if not isinstance(profile, ReviewProfile):

@@ -1,6 +1,6 @@
-# Onyx Review 0.8.0
+# Onyx Reviewer 0.8.0
 
-Onyx Review helps you spot mesh problems before they become annoying production
+Onyx Reviewer helps you spot mesh problems before they become annoying production
 problems. It checks the editable mesh and the evaluated modifier result, then
 points to useful evidence directly in Blender's 3D Viewport.
 
@@ -54,14 +54,15 @@ looking like a mesh improvement.
 
 ## Live Review
 
-Enable **Live Review** in Review Options when you want diagnostics to follow a
-modeling pass. It refreshes the same inspection-only results after detected mesh
-changes settle. It does not repair or otherwise edit geometry.
+Press **Live** beside the main Review button when you want diagnostics to follow
+a modeling pass. It refreshes the same inspection-only results after detected
+mesh changes settle. It does not repair or otherwise edit geometry.
 
 Live Review pauses while a target is in Edit Mode, because the editable mesh may
 not yet match its stored object data. It also pauses when the chosen scope
 exceeds the **Live Vertex Limit**. Use zero only when you deliberately want no
-density ceiling. The manual **Run Now** action remains available at all times.
+density ceiling. Open **More Settings** for those limits. The manual **Run Now**
+action remains available at all times.
 
 ## Simple fixes
 
@@ -80,9 +81,9 @@ keys so a local cleanup cannot silently affect another asset state.
 
 ## Finding view
 
-Use **Finding View** when the full list feels busy. You can show everything,
+Use the compact **Show** menu when the full list feels busy. You can show everything,
 only errors, only warnings, findings with a simple fix, or findings that changed
-since your Review Delta baseline. **Show Visible Findings** draws that same
+since your Review Delta baseline. **Show Problems** draws that same
 focused set in the viewport.
 
 Changing the view clears the old finding overlay so you never mistake stale
@@ -101,12 +102,15 @@ A baseline is just a before snapshot.
 Onyx shows what is new, what was fixed or disappeared, what changed, and what
 stayed the same. It also shows the evaluated triangle difference. **Copy Delta**
 gives you a plain-text comparison for notes or handoff. **Use Current as
-Baseline** starts a fresh comparison from the current result.
+Baseline** starts a fresh comparison from the current result. These controls
+stay folded inside **Compare Changes** until you need them.
 
 The baseline stays in memory for this Blender session only. It does not add
 anything to the scene and is not saved in the `.blend` file.
 
 ## Viewport modes
+
+Open **Viewport Modes** to use:
 
 - Studio
 - Silhouette
@@ -119,6 +123,6 @@ captured viewport.
 
 ## Install
 
-Build `onyx_review-0.8.0.zip` with `tools/package_review.ps1`, then install the
+Build `onyx_reviewer-0.8.0.zip` with `tools/package_reviewer.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.

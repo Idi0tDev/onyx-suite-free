@@ -1,4 +1,4 @@
-"""Verify Onyx Review contains an exact generated Core runtime."""
+"""Verify Onyx Reviewer contains an exact generated Core runtime."""
 
 import ast
 from pathlib import Path
@@ -6,7 +6,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CORE_ROOT = PROJECT_ROOT / "onyx_core"
-REVIEW_ROOT = PROJECT_ROOT / "onyx_review"
+REVIEWER_ROOT = PROJECT_ROOT / "onyx_reviewer"
 RUNTIME_FILES = (
     "api.py",
     "assets.py",
@@ -20,7 +20,7 @@ RUNTIME_FILES = (
 
 
 def main():
-    runtime = REVIEW_ROOT / "_onyx_core"
+    runtime = REVIEWER_ROOT / "_onyx_core"
     assert runtime.is_dir(), "Run tools/sync_embedded_core.ps1"
     assert (runtime / "__init__.py").read_bytes() == (CORE_ROOT / "embedded_init.py").read_bytes()
     for filename in RUNTIME_FILES:
@@ -28,7 +28,7 @@ def main():
             f"Stale embedded Core file: {filename}"
         )
 
-    tree = ast.parse((REVIEW_ROOT / "__init__.py").read_text(encoding="utf-8"))
+    tree = ast.parse((REVIEWER_ROOT / "__init__.py").read_text(encoding="utf-8"))
     core_imports = {
         alias.name
         for node in ast.walk(tree)
@@ -42,10 +42,9 @@ def main():
     }
     assert {"EmbeddedCore", "Lifecycle"} <= core_imports
     assert {"EmbeddedCore", "Lifecycle"} <= calls
-    assert "includes the free Onyx Core runtime" in (REVIEW_ROOT / "README.md").read_text(encoding="utf-8")
-    print("ONYX_CORE_REVIEW_EMBEDDING_OK")
+    assert "includes the free Onyx Core runtime" in (REVIEWER_ROOT / "README.md").read_text(encoding="utf-8")
+    print("ONYX_CORE_REVIEWER_EMBEDDING_OK")
 
 
 if __name__ == "__main__":
     main()
-

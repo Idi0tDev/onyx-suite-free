@@ -1,6 +1,6 @@
-# Onyx Review Engineering Case Study
+# Onyx Reviewer Engineering Case Study
 
-Onyx Review is a Blender mesh-inspection extension built around a simple
+Onyx Reviewer is a Blender mesh-inspection extension built around a simple
 promise: useful evidence should not come at the cost of an artist's scene.
 It compares source and evaluated geometry, reports topology and setup
 conditions, and points to the affected mesh elements directly in the 3D
@@ -36,7 +36,7 @@ The implementation was shaped by five constraints.
    materials, collections, or saved metadata.
 4. **Simple fixes stay narrow.** Only deterministic cases with a clear local
    operation receive a Fix button. There is no Fix All path.
-5. **The extension is self-contained.** Review bundles its compatible Onyx Core
+5. **The extension is self-contained.** Reviewer bundles its compatible Onyx Core
    runtime and does not require a separately installed framework.
 
 ## Architecture

@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible problem in Onyx Review or Onyx Core.
+description: Report a reproducible problem in Onyx Reviewer or Onyx Core.
 title: "[Bug]: "
 body:
   - type: markdown
@@ -41,7 +41,7 @@ body:
     attributes:
       label: Component
       options:
-        - Onyx Review
+        - Onyx Reviewer
         - Onyx Core
         - Installation or packaging
         - Unsure

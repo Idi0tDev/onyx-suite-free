@@ -153,7 +153,7 @@ def _stored_summary(settings):
 
 def perform_review(context):
     """Run the current scene review and return its reusable summary."""
-    settings = context.scene.onyx_review
+    settings = context.scene.onyx_reviewer
     objects = scoped_meshes(context, settings.scope)
     if not objects:
         raise ValueError(review_blocker(context, settings.scope))
@@ -200,9 +200,9 @@ class ONYX_OT_run_review(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        settings = getattr(getattr(context, "scene", None), "onyx_review", None)
+        settings = getattr(getattr(context, "scene", None), "onyx_reviewer", None)
         if settings is None:
-            cls.poll_message_set("Onyx Review is not available in this scene")
+            cls.poll_message_set("Onyx Reviewer is not available in this scene")
             return False
         blocker = review_blocker(context, settings.scope)
         if blocker:
@@ -211,7 +211,7 @@ class ONYX_OT_run_review(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        settings = context.scene.onyx_review
+        settings = context.scene.onyx_reviewer
         blocker = review_blocker(context, settings.scope)
         if blocker:
             self.report({"WARNING"}, blocker)
@@ -227,7 +227,7 @@ class ONYX_OT_clear_review(bpy.types.Operator):
     bl_description = "Clear the current results and temporary baseline without changing any objects"
 
     def execute(self, context):
-        settings = context.scene.onyx_review
+        settings = context.scene.onyx_reviewer
         highlight_state.clear_highlight()
         settings.results.clear()
         settings.last_summary = ""
@@ -249,11 +249,11 @@ class ONYX_OT_copy_review_report(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        settings = getattr(getattr(context, "scene", None), "onyx_review", None)
+        settings = getattr(getattr(context, "scene", None), "onyx_reviewer", None)
         return bool(settings and settings.results)
 
     def execute(self, context):
-        settings = context.scene.onyx_review
+        settings = context.scene.onyx_reviewer
         summary = _stored_summary(settings)
         context.window_manager.clipboard = format_review_report(
             summary,
@@ -270,7 +270,7 @@ class ONYX_OT_set_review_baseline(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        settings = getattr(getattr(context, "scene", None), "onyx_review", None)
+        settings = getattr(getattr(context, "scene", None), "onyx_reviewer", None)
         if not settings or not settings.results:
             return False
         if settings.review_options_dirty:
@@ -279,7 +279,7 @@ class ONYX_OT_set_review_baseline(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        settings = context.scene.onyx_review
+        settings = context.scene.onyx_reviewer
         delta_state.set_baseline(context.scene, _stored_summary(settings))
         _clear_delta_markers(settings)
         highlight_state.clear_highlight()
@@ -298,7 +298,7 @@ class ONYX_OT_clear_review_baseline(bpy.types.Operator):
         return bool(scene and delta_state.baseline(scene) is not None)
 
     def execute(self, context):
-        settings = context.scene.onyx_review
+        settings = context.scene.onyx_reviewer
         delta_state.clear_baseline(context.scene)
         _clear_delta_markers(settings)
         highlight_state.clear_highlight()
@@ -432,7 +432,7 @@ class ONYX_OT_fix_review_issue(bpy.types.Operator):
             self.report({"INFO"}, "No exact matching elements remain; run Review again")
             return {"CANCELLED"}
 
-        if not review_blocker(context, context.scene.onyx_review.scope):
+        if not review_blocker(context, context.scene.onyx_reviewer.scope):
             perform_review(context)
         label, _ = info
         self.report({"INFO"}, f"{label}: changed {changed:,} mesh elements")
@@ -555,7 +555,7 @@ class ONYX_OT_highlight_review_object(bpy.types.Operator):
             self.report({"WARNING"}, "Show the reviewed mesh before highlighting its elements")
             return {"CANCELLED"}
 
-        settings = context.scene.onyx_review
+        settings = context.scene.onyx_reviewer
         result = next(
             (
                 item

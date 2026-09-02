@@ -90,16 +90,16 @@ def validate_manifest(extension_id: str, expected_name: str) -> dict[str, object
 
 
 core_manifest = validate_manifest("onyx_core", "Onyx Core")
-review_manifest = validate_manifest("onyx_review", "Onyx Review")
+reviewer_manifest = validate_manifest("onyx_reviewer", "Onyx Reviewer")
 
 core_runtime_version = read_version_assignment(ROOT / "onyx_core" / "api.py", "CORE_VERSION")
-review_runtime_version = read_string_assignment(ROOT / "onyx_review" / "__init__.py", "VERSION")
+reviewer_runtime_version = read_string_assignment(ROOT / "onyx_reviewer" / "__init__.py", "VERSION")
 
 assert core_manifest["version"] == core_runtime_version, (
     f"Core manifest version {core_manifest['version']} does not match runtime {core_runtime_version}"
 )
-assert review_manifest["version"] == review_runtime_version, (
-    f"Review manifest version {review_manifest['version']} does not match runtime {review_runtime_version}"
+assert reviewer_manifest["version"] == reviewer_runtime_version, (
+    f"Reviewer manifest version {reviewer_manifest['version']} does not match runtime {reviewer_runtime_version}"
 )
 
 print("ONYX_EXTENSION_MANIFESTS_OK")

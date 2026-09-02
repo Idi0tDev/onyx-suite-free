@@ -1,6 +1,6 @@
 param(
     [string]$CoreVersion = "",
-    [string]$ReviewVersion = ""
+    [string]$ReviewerVersion = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -64,18 +64,18 @@ function Test-ReleaseArchive {
 if (-not $CoreVersion) {
     $CoreVersion = Get-ManifestVersion (Join-Path $projectRoot "onyx_core\blender_manifest.toml")
 }
-if (-not $ReviewVersion) {
-    $ReviewVersion = Get-ManifestVersion (Join-Path $projectRoot "onyx_review\blender_manifest.toml")
+if (-not $ReviewerVersion) {
+    $ReviewerVersion = Get-ManifestVersion (Join-Path $projectRoot "onyx_reviewer\blender_manifest.toml")
 }
 if ($CoreVersion -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid Core version: $CoreVersion" }
-if ($ReviewVersion -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid Review version: $ReviewVersion" }
+if ($ReviewerVersion -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid Reviewer version: $ReviewerVersion" }
 
 & (Join-Path $PSScriptRoot "check_public_source.ps1") | Write-Output
 & (Join-Path $PSScriptRoot "package_core.ps1") -Version $CoreVersion | Write-Output
-& (Join-Path $PSScriptRoot "package_review.ps1") -Version $ReviewVersion | Write-Output
+& (Join-Path $PSScriptRoot "package_reviewer.ps1") -Version $ReviewerVersion | Write-Output
 
 $coreArchive = Join-Path $distRoot "onyx_core-$CoreVersion.zip"
-$reviewArchive = Join-Path $distRoot "onyx_review-$ReviewVersion.zip"
+$reviewerArchive = Join-Path $distRoot "onyx_reviewer-$ReviewerVersion.zip"
 
 Test-ReleaseArchive -ArchivePath $coreArchive -RequiredEntries @(
     "__init__.py",
@@ -84,7 +84,7 @@ Test-ReleaseArchive -ArchivePath $coreArchive -RequiredEntries @(
     "LICENSE",
     "docs/DEVELOPER_GUIDE.md"
 )
-Test-ReleaseArchive -ArchivePath $reviewArchive -RequiredEntries @(
+Test-ReleaseArchive -ArchivePath $reviewerArchive -RequiredEntries @(
     "__init__.py",
     "blender_manifest.toml",
     "README.md",
@@ -98,7 +98,7 @@ Test-ReleaseArchive -ArchivePath $reviewArchive -RequiredEntries @(
 )
 
 $checksumPath = Join-Path $distRoot "SHA256SUMS.txt"
-$checksumLines = @($coreArchive, $reviewArchive) | ForEach-Object {
+$checksumLines = @($coreArchive, $reviewerArchive) | ForEach-Object {
     $hash = (Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash.ToLowerInvariant()
     "$hash  $([System.IO.Path]::GetFileName($_))"
 }
@@ -109,6 +109,6 @@ $checksumLines = @($coreArchive, $reviewArchive) | ForEach-Object {
 )
 
 Write-Output "Release bundle: $coreArchive"
-Write-Output "Release bundle: $reviewArchive"
+Write-Output "Release bundle: $reviewerArchive"
 Write-Output "Checksums: $checksumPath"
 Write-Output "ONYX_RELEASE_BUNDLE_OK"

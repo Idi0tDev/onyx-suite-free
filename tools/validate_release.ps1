@@ -20,10 +20,10 @@ if (-not (Test-Path -LiteralPath $BlenderPath -PathType Leaf)) {
 }
 
 $coreVersion = Get-ManifestVersion (Join-Path $projectRoot "onyx_core\blender_manifest.toml")
-$reviewVersion = Get-ManifestVersion (Join-Path $projectRoot "onyx_review\blender_manifest.toml")
+$reviewerVersion = Get-ManifestVersion (Join-Path $projectRoot "onyx_reviewer\blender_manifest.toml")
 $archives = @(
     (Join-Path $distRoot "onyx_core-$coreVersion.zip"),
-    (Join-Path $distRoot "onyx_review-$reviewVersion.zip")
+    (Join-Path $distRoot "onyx_reviewer-$reviewerVersion.zip")
 )
 
 foreach ($archive in $archives) {

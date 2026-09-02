@@ -2,6 +2,11 @@
 
 ## 0.8.0 - 2026-09-02
 
+- Rename the product, extension ID, source package, and release ZIP to Onyx
+  Reviewer and `onyx_reviewer` before the public release.
+- Rework the sidebar into a compact, progressive layout with optional settings,
+  comparisons, viewport modes, object findings, statistics, and topology tools
+  collapsed until they are needed.
 - Add General, While Modeling, Topology Only, and Custom review profiles.
 - Let Custom reviews switch topology, transforms, UV and material setup, and
   triangle-budget findings on or off.

@@ -22,9 +22,9 @@ Onyx Suite Free currently contains two closely connected projects:
 
 - **Onyx Core** gives Onyx tools a shared foundation for startup, diagnostics,
   compatibility, and communication.
-- **Onyx Review** helps artists find, understand, and revisit mesh problems.
+- **Onyx Reviewer** helps artists find, understand, and revisit mesh problems.
 
-You can install Review by itself. Its ZIP already contains the Core runtime it
+You can install Reviewer by itself. Its ZIP already contains the Core runtime it
 needs, so there is no extra dependency to set up.
 
 ## Onyx Core
@@ -33,33 +33,33 @@ needs, so there is no extra dependency to set up.
   <img src="docs/assets/onyx-core-foundation.png" alt="Onyx Core shown as the workflow foundation of the Onyx Suite" width="100%">
 </p>
 
-<p align="center"><em>The common foundation behind Onyx tools. This public repository currently includes Review and the optional standalone Core extension.</em></p>
+<p align="center"><em>The common foundation behind Onyx tools. This public repository currently includes Reviewer and the optional standalone Core extension.</em></p>
 
-Every Onyx product is self-contained. Onyx Review bundles the generated
+Every Onyx product is self-contained. Onyx Reviewer bundles the generated
 **Onyx Core** runtime, so artists do not install a separate dependency.
 
 The standalone Core extension in this repository is free and optional. It
 provides the same lifecycle, readiness, discovery, and diagnostics contract used
-inside Review, while staying out of the artist's workspace.
+inside Reviewer, while staying out of the artist's workspace.
 
 Read the [Core developer guide](onyx_core/docs/DEVELOPER_GUIDE.md) for the public
 framework contract.
 
-## Onyx Review
+## Onyx Reviewer
 
 <p align="center">
-  <img src="docs/assets/onyx-review-hero.png" alt="Onyx Review scanning a mesh and identifying geometry problems" width="100%">
+  <img src="docs/assets/onyx-reviewer-hero.png" alt="Onyx Reviewer scanning a mesh and identifying geometry problems" width="100%">
 </p>
 
 <p align="center"><em>Mesh analysis and diagnostics, with the problem areas pointed out on the model.</em></p>
 
 <p align="center">
-  <img src="docs/assets/onyx-review-in-blender.png" alt="Onyx Review displaying color-coded mesh findings and finding filters inside Blender 5.2 LTS" width="100%">
+  <img src="docs/assets/onyx-reviewer-in-blender.png" alt="Onyx Reviewer displaying color-coded mesh findings and finding filters inside Blender 5.2 LTS" width="100%">
 </p>
 
 <p align="center"><em>A real Blender 5.2 LTS capture: one review, distinct problem colors, and the full evidence legend beside the mesh.</em></p>
 
-**Onyx Review** is a reversible mesh-inspection workspace for Blender 5.2 LTS.
+**Onyx Reviewer** is a reversible mesh-inspection workspace for Blender 5.2 LTS.
 It gives artists a clear answer to three everyday questions:
 
 - What did my modifier stack do to the final geometry?
@@ -100,11 +100,11 @@ rules changed.
 5. Focus the list on **All**, **Errors**, **Warnings**, **Fixable**, or recent
    **Changes**.
 6. Optionally enable **Live Review** while iterating on the model.
-7. Open **Topology Detail** to map or select face types and topology poles.
-8. Use **Show Visible Findings** for an overview, or **Show** to isolate one finding.
+7. Expand an object only when you want its findings or tools.
+8. Use **Show Problems** for an overview, or **Show** to isolate one finding.
 9. Use **Inspect** when you want its mesh elements selected in Edit Mode.
 10. Optionally use **Fix** for supported, deterministic cleanup cases.
-11. Switch between Studio, Silhouette, Topology, and Face Orientation views.
+11. Open **Viewport Modes** to switch between Studio, Silhouette, Topology, and Face Orientation views.
 12. Press **Restore View** to return the viewport to its original settings.
 
 ### Check what changed
@@ -142,8 +142,8 @@ Actionable topology findings can select their exact vertices, edges, or faces
 in Edit Mode. This navigation changes the active selection for inspection but
 does not alter the mesh.
 
-**Finding View** keeps dense results readable without hiding evidence for good.
-Switch between every finding, errors, warnings, supported simple fixes, or
+The compact **Show** menu keeps dense results readable without hiding evidence
+for good. Switch between every finding, errors, warnings, supported simple fixes, or
 findings that changed since your saved baseline. The viewport overview follows
 the active view, while topology maps stay independent and **Copy Report** always
 includes the complete review.
@@ -161,14 +161,14 @@ at once. Highlights remain visible through the surface, create no scene data,
 and clear when the review is rerun, cleared, hidden, or the extension is
 disabled.
 
-**Topology Detail** turns the descriptive statistics into navigation. Use a
+**Topology Tools** turns the descriptive statistics into navigation. Use a
 face map to distinguish quads, triangles, and ngons, or a pole map to locate
 3-edge, 5-edge, and 6+-edge vertices. Every class can also be highlighted alone
 or selected exactly in Edit Mode.
 
 ### Built to leave the scene alone
 
-Onyx Review is intentionally an inspection tool—not a cleanup button.
+Onyx Reviewer is intentionally an inspection tool—not a cleanup button.
 
 - No automatic mesh repair
 - No geometry edits from Live Review
@@ -182,9 +182,9 @@ The first review mode used in a viewport captures its settings. **Restore View**
 returns them exactly, and disabling the extension restores any remaining saved
 viewports.
 
-## Install Onyx Review
+## Install Onyx Reviewer
 
-For a tagged release, download `onyx_review-x.y.z.zip` from the repository's
+For a tagged release, download `onyx_reviewer-x.y.z.zip` from the repository's
 [Releases](https://github.com/Idi0tDev/onyx-suite-free/releases) page. Install
 the ZIP without unpacking it through:
 
@@ -193,18 +193,18 @@ the ZIP without unpacking it through:
 To build the current source instead, use a clean Git checkout:
 
 ```powershell
-tools/package_review.ps1
+tools/package_reviewer.ps1
 ```
 
-The package is written to `dist/onyx_review-x.y.z.zip`.
+The package is written to `dist/onyx_reviewer-x.y.z.zip`.
 
 Then open **Onyx → Review** in the 3D Viewport sidebar.
 
-Onyx Review targets Blender 5.2 LTS on Windows, macOS, and Linux. It is
+Onyx Reviewer targets Blender 5.2 LTS on Windows, macOS, and Linux. It is
 pure Python and requests no extension permissions.
 
 For complete controls and interpretation guidance, see the
-[Onyx Review user guide](onyx_review/docs/USER_GUIDE.md).
+[Onyx Reviewer user guide](onyx_reviewer/docs/USER_GUIDE.md).
 
 For the reasoning behind the architecture and safety boundaries, read the
 [engineering case study](docs/ENGINEERING_CASE_STUDY.md). Installation and

@@ -1,4 +1,4 @@
-"""Exercise UI-neutral Onyx Review result aggregation."""
+"""Exercise UI-neutral Onyx Reviewer result aggregation."""
 
 import importlib.util
 import sys
@@ -6,8 +6,8 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ANALYSIS_PATH = PROJECT_ROOT / "onyx_review" / "analysis.py"
-SPEC = importlib.util.spec_from_file_location("onyx_review_analysis_test_module", ANALYSIS_PATH)
+ANALYSIS_PATH = PROJECT_ROOT / "onyx_reviewer" / "analysis.py"
+SPEC = importlib.util.spec_from_file_location("onyx_reviewer_analysis_test_module", ANALYSIS_PATH)
 ANALYSIS = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = ANALYSIS
 SPEC.loader.exec_module(ANALYSIS)
@@ -65,7 +65,7 @@ def main():
     assert summary.warning_count == 4
     assert summary.message == "2 meshes · 2 errors · 4 warnings"
     report = format_review_report(summary)
-    assert report.startswith("Onyx Review Report\n")
+    assert report.startswith("Onyx Reviewer Report\n")
     assert "Crate" in report and "12 base triangles -> 48 evaluated (4.00x)" in report
     assert "Face mix: 2 triangles, 4 quads, 1 ngons" in report
     assert "Poles: 8 3-edge, 2 5-edge, 1 6+-edge" in report
@@ -105,7 +105,7 @@ def main():
     assert delta.changed[0].count_change == 2
     assert delta.introduced[0].status is FindingDeltaStatus.INTRODUCED
     delta_report = format_review_delta(delta)
-    assert delta_report.startswith("Onyx Review Delta\n")
+    assert delta_report.startswith("Onyx Reviewer Delta\n")
     assert "Evaluated triangles: 68 -> 80 (+12)" in delta_report
     assert "Introduced\n  Crate · Object has no material slots" in delta_report
     assert "Resolved\n  Crate · Degenerate faces (2)" in delta_report
@@ -131,7 +131,7 @@ def main():
     raises(TypeError, format_review_report, object())
     raises(TypeError, compare_review_summaries, object(), current)
     raises(TypeError, format_review_delta, object())
-    print("ONYX_REVIEW_ANALYSIS_OK")
+    print("ONYX_REVIEWER_ANALYSIS_OK")
 
 
 if __name__ == "__main__":

@@ -28,17 +28,17 @@ jobs:
             throw "Release tags must use vMAJOR.MINOR.PATCH."
           }
           $coreManifest = Get-Content onyx_core/blender_manifest.toml -Raw
-          $reviewManifest = Get-Content onyx_review/blender_manifest.toml -Raw
+          $reviewerManifest = Get-Content onyx_reviewer/blender_manifest.toml -Raw
           $coreVersion = [regex]::Match($coreManifest, '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
-          $reviewVersion = [regex]::Match($reviewManifest, '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
-          if ($tagVersion -ne $reviewVersion) {
-            throw "Tag version $tagVersion does not match Onyx Review $reviewVersion."
+          $reviewerVersion = [regex]::Match($reviewerManifest, '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
+          if ($tagVersion -ne $reviewerVersion) {
+            throw "Tag version $tagVersion does not match Onyx Reviewer $reviewerVersion."
           }
           "ONYX_CORE_VERSION=$coreVersion" >> $env:GITHUB_ENV
-          "ONYX_REVIEW_VERSION=$reviewVersion" >> $env:GITHUB_ENV
+          "ONYX_REVIEWER_VERSION=$reviewerVersion" >> $env:GITHUB_ENV
       - name: Build verified release bundle
         shell: pwsh
-        run: ./tools/build_release.ps1 -CoreVersion $env:ONYX_CORE_VERSION -ReviewVersion $env:ONYX_REVIEW_VERSION
+        run: ./tools/build_release.ps1 -CoreVersion $env:ONYX_CORE_VERSION -ReviewerVersion $env:ONYX_REVIEWER_VERSION
       - name: Create draft GitHub release
         shell: pwsh
         env:
@@ -46,9 +46,9 @@ jobs:
         run: |
           gh release create "${{ github.ref_name }}" `
             "dist/onyx_core-$env:ONYX_CORE_VERSION.zip#Onyx Core $env:ONYX_CORE_VERSION" `
-            "dist/onyx_review-$env:ONYX_REVIEW_VERSION.zip#Onyx Review $env:ONYX_REVIEW_VERSION" `
+            "dist/onyx_reviewer-$env:ONYX_REVIEWER_VERSION.zip#Onyx Reviewer $env:ONYX_REVIEWER_VERSION" `
             "dist/SHA256SUMS.txt#SHA-256 checksums" `
             --draft `
             --generate-notes `
             --verify-tag `
-            --title "Onyx Suite Free $env:ONYX_REVIEW_VERSION"
+            --title "Onyx Suite Free $env:ONYX_REVIEWER_VERSION"

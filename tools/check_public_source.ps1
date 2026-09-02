@@ -24,7 +24,7 @@ try {
         }
     }
 
-    $publicProducts = @("onyx_core", "onyx_review")
+    $publicProducts = @("onyx_core", "onyx_reviewer")
     $productRoots = $trackedFiles | ForEach-Object {
         if ($_ -match '^(onyx_[a-z0-9_]+)/') { $Matches[1] }
     } | Sort-Object -Unique
@@ -40,9 +40,9 @@ try {
         "onyx_core",
         "onyx_example",
         "onyx_missing",
-        "onyx_review",
-        "onyx_review_analysis_test_module",
-        "onyx_review_profiles_test_module",
+        "onyx_reviewer",
+        "onyx_reviewer_analysis_test_module",
+        "onyx_reviewer_profiles_test_module",
         "onyx_smoke",
         "onyx_source_name"
     )
@@ -58,7 +58,7 @@ try {
     $allowedPackageScripts = @(
         "package_core.ps1",
         "package_extension.ps1",
-        "package_review.ps1"
+        "package_reviewer.ps1"
     )
     $packageReferences = @(& git grep -I -h -o -E 'package_[a-z0-9_]+\.ps1' -- .)
     $grepStatus = $LASTEXITCODE

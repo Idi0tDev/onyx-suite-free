@@ -293,7 +293,7 @@ def format_review_report(summary, *, profile_name=""):
     profile_name = str(profile_name).strip()
 
     lines = [
-        "Onyx Review Report",
+        "Onyx Reviewer Report",
         summary.message,
     ]
     if profile_name:
@@ -338,7 +338,7 @@ def format_review_delta(delta):
     triangle_change = delta.triangle_change
     triangle_change_text = f"{triangle_change:+,}"
     output = [
-        "Onyx Review Delta",
+        "Onyx Reviewer Delta",
         f"Baseline: {delta.baseline.message}",
         f"Current: {delta.current.message}",
         (

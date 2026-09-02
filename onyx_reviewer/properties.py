@@ -1,4 +1,4 @@
-"""Blender RNA properties for Onyx Review."""
+"""Blender RNA properties for Onyx Reviewer."""
 
 import bpy
 from bpy.props import (
@@ -57,7 +57,7 @@ def _finding_filter_changed(_settings, context):
         context.area.tag_redraw()
 
 
-class OnyxReviewIssue(bpy.types.PropertyGroup):
+class OnyxReviewerIssue(bpy.types.PropertyGroup):
     code: StringProperty(description="Stable identifier for this review finding")
     message: StringProperty(description="Artist-facing explanation of the finding")
     severity: EnumProperty(
@@ -80,7 +80,7 @@ class OnyxReviewIssue(bpy.types.PropertyGroup):
     )
 
 
-class OnyxReviewResult(bpy.types.PropertyGroup):
+class OnyxReviewerResult(bpy.types.PropertyGroup):
     object_ref: PointerProperty(type=bpy.types.Object, description="Reviewed mesh object")
     object_name: StringProperty(description="Name captured when the object was reviewed")
     base_vertices: IntProperty(min=0, description="Vertices in the source mesh")
@@ -100,18 +100,38 @@ class OnyxReviewResult(bpy.types.PropertyGroup):
     dimensions: FloatVectorProperty(size=3, min=0.0, subtype="XYZ", description="World-space object dimensions")
     error_count: IntProperty(min=0, description="Number of error-level findings")
     warning_count: IntProperty(min=0, description="Number of warning-level findings")
-    expanded: BoolProperty(default=True, description="Show detailed metrics and findings")
+    expanded: BoolProperty(default=False, description="Show this object's findings and tools")
+    metrics_expanded: BoolProperty(
+        default=False,
+        description="Show detailed mesh counts and dimensions",
+    )
     topology_expanded: BoolProperty(
         default=False,
         description="Show topology-map and class-selection controls",
     )
     issues: CollectionProperty(
-        type=OnyxReviewIssue,
+        type=OnyxReviewerIssue,
         description="Findings recorded for this reviewed object",
     )
 
 
-class OnyxReviewSettings(bpy.types.PropertyGroup):
+class OnyxReviewerSettings(bpy.types.PropertyGroup):
+    more_settings_expanded: BoolProperty(
+        default=False,
+        description="Show optional review controls",
+    )
+    delta_expanded: BoolProperty(
+        default=False,
+        description="Show before-and-after comparison controls",
+    )
+    viewport_tools_expanded: BoolProperty(
+        default=False,
+        description="Show viewport review modes",
+    )
+    highlight_legend_expanded: BoolProperty(
+        default=False,
+        description="Show the color key for the current viewport highlight",
+    )
     scope: EnumProperty(
         name="Review Scope",
         items=(
@@ -199,7 +219,7 @@ class OnyxReviewSettings(bpy.types.PropertyGroup):
         update=_finding_filter_changed,
     )
     results: CollectionProperty(
-        type=OnyxReviewResult,
+        type=OnyxReviewerResult,
         description="Object results from the most recent review",
     )
     last_summary: StringProperty(description="Summary of the most recent review")
@@ -219,17 +239,17 @@ class OnyxReviewSettings(bpy.types.PropertyGroup):
     )
 
 
-CLASSES = (OnyxReviewIssue, OnyxReviewResult, OnyxReviewSettings)
+CLASSES = (OnyxReviewerIssue, OnyxReviewerResult, OnyxReviewerSettings)
 
 
 def register():
     for cls in CLASSES:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.onyx_review = PointerProperty(type=OnyxReviewSettings)
+    bpy.types.Scene.onyx_reviewer = PointerProperty(type=OnyxReviewerSettings)
 
 
 def unregister():
-    if hasattr(bpy.types.Scene, "onyx_review"):
-        del bpy.types.Scene.onyx_review
+    if hasattr(bpy.types.Scene, "onyx_reviewer"):
+        del bpy.types.Scene.onyx_reviewer
     for cls in reversed(CLASSES):
         bpy.utils.unregister_class(cls)

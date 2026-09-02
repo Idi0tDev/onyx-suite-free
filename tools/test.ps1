@@ -22,9 +22,9 @@ if (-not (Test-Path -LiteralPath $PythonPath)) {
 $pureTests = @(
     "tests\extension_manifest_test.py",
     "tests\core_framework_test.py",
-    "tests\review_analysis_test.py",
-    "tests\review_profiles_test.py",
-    "tests\core_review_embedding_test.py"
+    "tests\reviewer_analysis_test.py",
+    "tests\reviewer_profiles_test.py",
+    "tests\core_reviewer_embedding_test.py"
 )
 foreach ($test in $pureTests) {
     & $PythonPath (Join-Path $projectRoot $test)
@@ -33,7 +33,7 @@ foreach ($test in $pureTests) {
 
 $blenderTests = @(
     "tests\core_blender_smoke_test.py",
-    "tests\review_blender_smoke_test.py",
+    "tests\reviewer_blender_smoke_test.py",
     "tests\core_products_blender_test.py"
 )
 foreach ($test in $blenderTests) {

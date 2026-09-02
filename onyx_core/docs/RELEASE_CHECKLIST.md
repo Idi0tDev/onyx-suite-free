@@ -20,11 +20,11 @@
 ## Packages
 
 - [ ] Run `tools/build_release.ps1`.
-- [ ] Confirm `dist` contains the Core ZIP, Review ZIP, and
+- [ ] Confirm `dist` contains the Core ZIP, Reviewer ZIP, and
   `SHA256SUMS.txt`.
 - [ ] Validate both generated ZIPs with Blender's `extension validate`.
-- [ ] Install Review into a clean Blender profile and run a representative
+- [ ] Install Reviewer into a clean Blender profile and run a representative
   review on a mesh with actionable findings.
-- [ ] Install standalone Core alongside Review and repeat the enable/disable
+- [ ] Install standalone Core alongside Reviewer and repeat the enable/disable
   cycle.
 - [ ] Follow the repository-level `RELEASING.md` manual draft-release gate.

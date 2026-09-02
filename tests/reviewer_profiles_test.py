@@ -1,4 +1,4 @@
-"""Exercise UI-neutral Onyx Review profile resolution."""
+"""Exercise UI-neutral Onyx Reviewer profile resolution."""
 
 import importlib.util
 import sys
@@ -6,8 +6,8 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-PROFILE_PATH = PROJECT_ROOT / "onyx_review" / "review_profiles.py"
-SPEC = importlib.util.spec_from_file_location("onyx_review_profiles_test_module", PROFILE_PATH)
+PROFILE_PATH = PROJECT_ROOT / "onyx_reviewer" / "review_profiles.py"
+SPEC = importlib.util.spec_from_file_location("onyx_reviewer_profiles_test_module", PROFILE_PATH)
 PROFILES = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = PROFILES
 SPEC.loader.exec_module(PROFILES)
@@ -53,7 +53,7 @@ def main():
         pass
     else:
         raise AssertionError("Expected an unknown profile to be rejected")
-    print("ONYX_REVIEW_PROFILES_OK")
+    print("ONYX_REVIEWER_PROFILES_OK")
 
 
 if __name__ == "__main__":

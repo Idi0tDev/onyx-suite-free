@@ -1,4 +1,4 @@
-"""Onyx Review Blender extension."""
+"""Onyx Reviewer Blender extension."""
 
 import bpy
 
@@ -10,14 +10,14 @@ VERSION = "0.8.0"
 
 CORE = EmbeddedCore(
     bpy,
-    "onyx_review",
-    "Onyx Review",
+    "onyx_reviewer",
+    "Onyx Reviewer",
     VERSION,
     description="Reversible topology and mesh-health inspection",
     capabilities=("onyx.review.inspect",),
 )
 
-LIFECYCLE = Lifecycle("Onyx Review")
+LIFECYCLE = Lifecycle("Onyx Reviewer")
 LIFECYCLE.add("Core runtime", CORE.register, CORE.unregister)
 LIFECYCLE.add("delta state", delta_state.register, delta_state.unregister)
 LIFECYCLE.add("viewport state", viewport_state.register, viewport_state.unregister)

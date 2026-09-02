@@ -1,16 +1,26 @@
-# Onyx Review User Guide
+# Onyx Reviewer User Guide
 
 ## Quick start
 
 1. Select a mesh object.
 2. Open the 3D Viewport sidebar and choose **Onyx > Review**.
-3. Choose Active, Selected, or Collection.
-4. Choose a review profile. **General** is a good first run.
-5. If the profile uses it, set a triangle budget or use zero to disable it.
-6. Click **Run Review**.
+3. Use the two small menus below the mesh name to choose the scope and review
+   profile. **Active** and **General** are good for a first run.
+4. Click **Run Review**.
+5. Open the reviewed object's card to see its findings.
 
-If **Run Review** is greyed out, look at **Review Target** at the top of the
-panel. It tells you what is missing, such as an active mesh or a selected mesh.
+If **Run Review** is greyed out, the message at the top tells you what is
+missing, such as an active mesh or a selected mesh.
+
+The everyday controls stay visible. Less common controls are folded away:
+
+- **More Settings** contains custom checks, the triangle budget, and Live
+  Review timing limits.
+- **Compare Changes** contains the temporary before-and-after baseline.
+- **Viewport Modes** contains Studio, Silhouette, Topology, Orientation, and
+  Restore View.
+- Each object keeps **Mesh Statistics** and **Topology Tools** collapsed until
+  you need them.
 
 Running a review only reads the mesh. It does not change objects, modifiers,
 materials, selection, or mesh elements.
@@ -43,12 +53,12 @@ findings could come from the profile instead of a mesh edit.
 
 ## Live Review
 
-**Live Review** is optional and off by default. Enable it in **Review Options**
-when you want the results to refresh as a watched mesh changes. The active,
+**Live Review** is optional and off by default. Press **Live** beside the main
+Review button when you want the results to refresh as a watched mesh changes. The active,
 selected, or collection scope is shared with manual review, so both paths report
 the same checks and counts.
 
-The **Debounce** value controls how long Onyx waits after the latest detected
+Open **More Settings** to adjust Live Review. The **Debounce** value controls how long Onyx waits after the latest detected
 change. This prevents a new review from starting for every intermediate update
 while Blender is still evaluating a mesh or modifier stack. **Run Now** remains
 available whenever an immediate manual refresh is useful.
@@ -77,30 +87,30 @@ valid but deserve review, such as open boundaries, ngons, unapplied scale,
 coincident unwelded vertices, disconnected islands, or missing UVs.
 
 An open boundary is not automatically a bad mesh: planes, cards, clothing, and
-other intentionally open surfaces can be correct. Onyx Review reports facts and
+other intentionally open surfaces can be correct. Onyx Reviewer reports facts and
 leaves the production decision to the artist.
 
 ### Finding view
 
-Use **Finding View** after a review to control how much evidence is shown in the
-panel:
+Use the compact **Show** menu after a review to control how much evidence is
+shown in the panel:
 
 | View | Shows |
 | --- | --- |
 | All | Every finding from the latest review |
 | Errors | Conditions that usually require correction |
 | Warnings | Contextual conditions that may be intentional |
-| Fixable | Findings with one of Onyx Review's supported simple fixes |
+| Fixable | Findings with one of Onyx Reviewer's supported simple fixes |
 | Changes | Findings that are new or changed since your saved baseline |
 
 This is a presentation filter: it does not rerun the review or delete hidden
-findings. **Show Visible Findings** uses the same focused set in the 3D
+findings. **Show Problems** uses the same focused set in the 3D
 Viewport, while **Copy Report** always includes every finding. Changing the view
 clears the previous finding overlay so old evidence is not confused with the
 new filter. Face and pole topology maps are independent and remain visible.
 
 If Changes is empty, that is usually good news: nothing new appeared and no
-existing finding changed. Resolved findings are shown in the Review Delta box
+existing finding changed. Resolved findings are shown in **Compare Changes**
 because they are no longer part of the current result.
 
 ## Review Delta
@@ -111,7 +121,7 @@ the mesh better, worse, or just different?”
 ### Save the before snapshot
 
 1. Run Review on the object, selection, or collection you want to track.
-2. In **Review Delta**, press **Save Baseline**.
+2. Open **Compare Changes** and press **Save Baseline**.
 3. Make your changes.
 4. Run Review again.
 
@@ -127,7 +137,7 @@ shows:
 The box also shows the evaluated triangle change. A positive number means the
 result gained triangles; a negative number means it lost triangles.
 
-Use **Changes** in Finding View to see only introduced and changed findings on
+Choose **Changes** in the Show menu to see only introduced and changed findings on
 the current mesh. Use **Copy Delta** when you want a plain-text before-and-after
 summary. When the current result is your new good starting point, press **Use
 Current as Baseline**.
@@ -179,7 +189,7 @@ on how the asset will deform, shade, or be edited.
 
 ## Topology detail
 
-Expand **Topology Detail** inside an object card to turn those statistics into
+Expand **Topology Tools** inside an object card to turn those statistics into
 viewport navigation.
 
 **Show Face Map** displays every available face class together:
@@ -227,13 +237,14 @@ edge findings as lines, and face findings as outlines with center markers. The
 overlay remains visible through the mesh so problems on the far side are not
 hidden.
 
-Use **Show Visible Findings** in an object card to see its actionable findings
-from the current Finding View together. The highlight summary acts as a color
-legend and retains an error or warning icon beside each entry. Pressing **Show**
-on an individual finding switches the overview to that focused finding.
+Use **Show Problems** in an object card to see its actionable findings
+from the current Show filter together. The highlight summary acts as a color
+legend when **Color Key** is opened and retains an error or warning icon beside
+each entry. Pressing **Show** on an individual finding switches the overview to
+that focused finding.
 
-Press **Hide**, **Hide All Findings**, or **Clear Highlight** to remove the
-overlay. Rerunning or clearing the review and disabling the extension also
+Press **Hide** in the highlight summary, or **Hide Problems** in the object
+card, to remove the overlay. Rerunning or clearing the review and disabling the extension also
 clear it. Highlights create no objects, materials, collections, or saved mesh
 data, and they do not change the active object, mode, or selection.
 
@@ -243,6 +254,6 @@ not write a file or change the scene.
 
 ## Viewport review
 
-Viewport modes affect only the 3D Viewport where their button was pressed. The
+Open **Viewport Modes** for these controls. They affect only the 3D Viewport where their button was pressed. The
 first mode captures the original viewport settings. Switch freely between modes,
-then press **Restore View**. Disabling Onyx Review also restores saved viewports.
+then press **Restore View**. Disabling Onyx Reviewer also restores saved viewports.
