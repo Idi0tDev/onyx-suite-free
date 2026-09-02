@@ -264,7 +264,8 @@ the surface, and create no objects, materials, or saved mesh data.
 ## Viewport highlights
 
 Use **Show** beside an actionable topology finding to draw its affected geometry
-directly over the model. Each finding type keeps the same color:
+directly over the model. The dot beside the finding shows the exact color that
+will appear in the viewport. Each finding type keeps the same color:
 
 | Finding | Color |
 | --- | --- |
@@ -287,11 +288,10 @@ edge findings as lines, and face findings as outlines with center markers. The
 overlay remains visible through the mesh so problems on the far side are not
 hidden.
 
-Use **Show Problems** in an object card to see its actionable findings
-from the current Show filter together. The highlight summary acts as a color
-legend when **Color Key** is opened and retains an error or warning icon beside
-each entry. Pressing **Show** on an individual finding switches the overview to
-that focused finding.
+Use **Show Problems** in an object card to see its actionable findings from the
+current Show filter together. Open **Colors** in the highlight summary to see a
+compact list of the same real color dots and their problems. Pressing **Show**
+on an individual finding switches the overview to that focused finding.
 
 Press **Hide** in the highlight summary, or **Hide Problems** in the object
 card, to remove the overlay. Rerunning or clearing the review and disabling the extension also

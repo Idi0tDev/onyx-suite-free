@@ -167,7 +167,9 @@ refuses them on linked, shared, or shape-key mesh data.
 They can also draw temporary, color-coded highlights directly in the 3D
 Viewport. Each problem type has a distinct color, while error-level findings use
 thicker marks. Show a single finding or every actionable finding for one object
-at once. Highlights remain visible through the surface and create no scene data.
+at once. A matching color dot beside every drawable result makes it easy to
+connect the list to the mesh without memorizing color names. Highlights remain
+visible through the surface and create no scene data.
 During Live Review, the visible highlight or map is rebuilt from the changed
 mesh so it stays useful without becoming stale. Reviewer reuses the evidence
 from that same review pass, avoiding a second mesh scan just to redraw the

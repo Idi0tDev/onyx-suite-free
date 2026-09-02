@@ -134,7 +134,7 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
     )
     highlight_legend_expanded: BoolProperty(
         default=False,
-        description="Show the color key for the current viewport highlight",
+        description="Show the exact viewport colors for the current highlight",
     )
     scope: EnumProperty(
         name="Review Scope",

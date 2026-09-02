@@ -8,7 +8,9 @@ from .mesh_analysis import issue_selection_domain, simple_fix_info, topology_cla
 
 def _draw_topology_class(layout, object_name, topology_class, count):
     issue_code, label, _ = topology_class_info(topology_class)
+    style = highlight_state.finding_style(issue_code, "INFO")
     row = layout.row(align=True)
+    row.template_node_socket(color=style.color)
     row.label(text=f"{label} ({count:,})")
     actions = row.row(align=True)
     actions.enabled = count > 0
@@ -59,6 +61,15 @@ def _draw_disclosure(layout, owner, property_name, label, icon):
     )
     row.label(text=label, icon=icon)
     return expanded
+
+
+def _draw_color_label(layout, text, issue_code, severity):
+    """Draw the exact viewport color beside a short human-readable label."""
+    style = highlight_state.finding_style(issue_code, severity)
+    row = layout.row(align=True)
+    row.template_node_socket(color=style.color)
+    row.label(text=text)
+    return row
 
 
 class ONYX_PT_review(bpy.types.Panel):
@@ -274,27 +285,28 @@ class ONYX_PT_review(bpy.types.Panel):
             row.label(text=active_highlight.object_name, icon="HIDE_OFF")
             row.operator("onyx.clear_review_highlight", text="Hide", icon="X")
             if len(active_highlights) == 1 and not overview_key:
-                style = highlight_state.finding_style(
+                _draw_color_label(
+                    visual,
+                    active_highlight.message,
                     active_highlight.issue_code,
                     active_highlight.severity,
                 )
-                visual.label(text=f"{style.name} · {active_highlight.message}")
             elif overview_key == "FINDINGS":
-                visual.label(text=f"{len(active_highlights):,} problems highlighted")
+                visual.label(text=f"{len(active_highlights):,} problems shown")
                 if _draw_disclosure(
                     visual,
                     settings,
                     "highlight_legend_expanded",
-                    "Color Key",
+                    "Colors",
                     "INFO",
                 ):
                     for highlight in active_highlights:
-                        style = highlight_state.finding_style(
+                        _draw_color_label(
+                            visual,
+                            highlight.message,
                             highlight.issue_code,
                             highlight.severity,
                         )
-                        icon = "ERROR" if highlight.severity == "ERROR" else "INFO"
-                        visual.label(text=f"{style.name} · {highlight.message}", icon=icon)
             else:
                 map_name = "Face Topology Map" if overview_key == "FACE_MAP" else "Pole Topology Map"
                 visual.label(text=map_name, icon="OVERLAY")
@@ -302,15 +314,16 @@ class ONYX_PT_review(bpy.types.Panel):
                     visual,
                     settings,
                     "highlight_legend_expanded",
-                    "Color Key",
+                    "Colors",
                     "INFO",
                 ):
                     for highlight in active_highlights:
-                        style = highlight_state.finding_style(
+                        _draw_color_label(
+                            visual,
+                            highlight.message,
                             highlight.issue_code,
                             highlight.severity,
                         )
-                        visual.label(text=f"{style.name} · {highlight.message}", icon="INFO")
 
         modes = layout.box()
         if _draw_disclosure(
@@ -397,7 +410,12 @@ class ONYX_PT_review(bpy.types.Panel):
                 selection_domain = issue_selection_domain(issue.code)
                 if selection_domain:
                     finding = box.column(align=True)
-                    finding.label(text=f"{prefix}{issue.message}{suffix}", icon=icon)
+                    _draw_color_label(
+                        finding,
+                        f"{prefix}{issue.message}{suffix}",
+                        issue.code,
+                        issue.severity,
+                    )
                     row = finding.row(align=True)
                 else:
                     row = box.row(align=True)

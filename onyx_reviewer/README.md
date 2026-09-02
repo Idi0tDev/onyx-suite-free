@@ -1,4 +1,4 @@
-# Onyx Reviewer 0.12.2
+# Onyx Reviewer 0.13.0
 
 Onyx Reviewer helps you spot mesh problems before they become annoying production
 problems. It checks the editable mesh and the evaluated modifier result, then
@@ -27,6 +27,7 @@ so there is no second dependency to install.
 - Missing UV maps and material slots
 - Optional evaluated triangle budget
 - Direct element selection for actionable topology findings
+- Exact color dots beside drawable findings and topology classes
 - Distinct, through-surface viewport colors for every actionable finding type
 - Thicker lines and larger points for error-level findings
 - Combined per-object overview of all actionable findings
@@ -150,7 +151,7 @@ captured viewport.
 
 ## Install
 
-Build `onyx_reviewer-0.12.2.zip` with `tools/package_reviewer.ps1`, then install the
+Build `onyx_reviewer-0.13.0.zip` with `tools/package_reviewer.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.0 - 2026-09-02
+
+- Replace written color names in the Blender interface with small native color
+  dots that match the viewport evidence exactly.
+- Put the color dot beside each drawable finding and topology class, so artists
+  can connect a result to its viewport marks before pressing Show.
+- Tighten the active-highlight summary and rename Color Key to the simpler
+  Colors disclosure.
+
 ## 0.12.2 - 2026-09-02
 
 - Reuse the current review's mesh evidence when Live Review redraws a visible
