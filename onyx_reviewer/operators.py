@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import textwrap
 
 import bpy
 from bpy.props import EnumProperty, StringProperty
@@ -18,13 +19,12 @@ from .analysis import (
 )
 from .mesh_analysis import (
     TOPOLOGY_CLASS_ENUM_ITEMS,
-    apply_simple_fix,
     issue_overlay_geometry,
     issue_overlays_geometry,
+    issue_recommendation,
     issue_selection_domain,
     review_object,
     select_issue_elements,
-    simple_fix_info,
     topology_class_info,
     topology_map_classes,
 )
@@ -38,6 +38,20 @@ _REVIEW_RUNNING = False
 def review_is_running():
     """Return whether the shared inspection engine is currently refreshing."""
     return _REVIEW_RUNNING
+
+
+def _ensure_hover_help(context):
+    """Start one lightweight pointer listener for this 3D Viewport."""
+    area = getattr(context, "area", None)
+    window = getattr(context, "window", None)
+    if area is None or area.type != "VIEW_3D" or window is None:
+        return
+    try:
+        bpy.ops.onyx.review_hover_help("INVOKE_DEFAULT")
+    except RuntimeError:
+        # Background tests and unusual temporary contexts have no interactive
+        # window region. Highlights remain fully usable without hover help.
+        pass
 
 
 def scoped_meshes(context, scope):
@@ -93,7 +107,7 @@ def finding_matches_filter(issue, filter_mode):
     if filter_mode == "WARNINGS":
         return issue.severity == "WARNING"
     if filter_mode == "FIXABLE":
-        return simple_fix_info(issue.code) is not None
+        return bool(issue_selection_domain(issue.code))
     if filter_mode == "CHANGES":
         return getattr(issue, "delta_status", "NONE") in {"INTRODUCED", "CHANGED"}
     raise ValueError(f"Unknown finding filter: {filter_mode}")
@@ -723,6 +737,7 @@ class ONYX_OT_step_review_finding(bpy.types.Operator):
             points,
             lines,
         )
+        _ensure_hover_help(context)
 
         area = getattr(context, "area", None)
         if area is not None and area.type == "VIEW_3D":
@@ -787,55 +802,124 @@ class ONYX_OT_inspect_review_issue(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ONYX_OT_fix_review_issue(bpy.types.Operator):
-    bl_idname = "onyx.fix_review_issue"
-    bl_label = "Fix Finding"
-    bl_description = "Apply one explicit, undoable fix for a supported mesh finding"
-    bl_options = {"REGISTER", "UNDO"}
+class ONYX_OT_show_review_recommendation(bpy.types.Operator):
+    bl_idname = "onyx.show_review_recommendation"
+    bl_label = "Finding Guide"
+    bl_description = "Show a recommended way to deal with this finding"
+    bl_options = {"INTERNAL"}
 
-    object_name: StringProperty(description="Name of the reviewed mesh to fix")
-    issue_code: StringProperty(description="Stable identifier of the finding to fix")
+    issue_code: StringProperty(description="Stable identifier of the finding")
 
     @classmethod
     def description(cls, _context, properties):
-        info = simple_fix_info(properties.issue_code)
-        return info[1] if info else cls.bl_description
+        recommendation = issue_recommendation(properties.issue_code)
+        return recommendation or cls.bl_description
 
-    def execute(self, context):
-        info = simple_fix_info(self.issue_code)
-        if info is None:
-            self.report({"WARNING"}, "This finding has no simple fix")
-            return {"CANCELLED"}
-
-        obj = bpy.data.objects.get(self.object_name)
-        if obj is None or obj.type != "MESH" or obj.name not in context.view_layer.objects:
-            self.report({"WARNING"}, "The reviewed mesh is no longer in the active view layer")
-            return {"CANCELLED"}
-        if obj.mode != "OBJECT":
-            self.report({"WARNING"}, "Leave Edit Mode before applying a fix")
+    def invoke(self, context, _event):
+        recommendation = issue_recommendation(self.issue_code)
+        if not recommendation:
+            self.report({"INFO"}, "No guide is available for this finding yet")
             return {"CANCELLED"}
 
-        mesh = obj.data
-        if mesh.library is not None or not mesh.is_editable:
-            self.report({"WARNING"}, "Linked mesh data cannot be fixed")
-            return {"CANCELLED"}
-        if mesh.users > 1:
-            self.report({"WARNING"}, "Make the mesh data single-user before applying a fix")
-            return {"CANCELLED"}
-        if mesh.shape_keys is not None:
-            self.report({"WARNING"}, "Simple fixes are disabled for meshes with shape keys")
-            return {"CANCELLED"}
+        lines = textwrap.wrap(recommendation, width=58)
 
-        changed = apply_simple_fix(mesh, self.issue_code)
-        if not changed:
-            self.report({"INFO"}, "No exact matching elements remain; run Review again")
-            return {"CANCELLED"}
+        def draw(menu, _context):
+            menu.layout.label(text="Recommended approach", icon="INFO")
+            for line in lines:
+                menu.layout.label(text=line)
 
-        if not review_blocker(context, context.scene.onyx_reviewer.scope):
-            perform_review(context)
-        label, _ = info
-        self.report({"INFO"}, f"{label}: changed {changed:,} mesh elements")
+        context.window_manager.popup_menu(
+            draw,
+            title="How to Fix It",
+            icon="QUESTION",
+        )
         return {"FINISHED"}
+
+    def execute(self, _context):
+        recommendation = issue_recommendation(self.issue_code)
+        if not recommendation:
+            return {"CANCELLED"}
+        self.report({"INFO"}, recommendation)
+        return {"FINISHED"}
+
+
+class ONYX_OT_review_hover_help(bpy.types.Operator):
+    """Pass mouse positions to the viewport overlay without taking input focus."""
+
+    bl_idname = "onyx.review_hover_help"
+    bl_label = "Review Hover Help"
+    bl_description = "Show fix guidance when the pointer rests over viewport evidence"
+    bl_options = {"INTERNAL"}
+
+    def _finish(self):
+        highlight_state.release_hover_monitor(self._key)
+        highlight_state.clear_hover_position(self._region_pointer)
+
+    def invoke(self, context, event):
+        area = getattr(context, "area", None)
+        window = getattr(context, "window", None)
+        if area is None or area.type != "VIEW_3D" or window is None:
+            return {"CANCELLED"}
+        window_region = next(
+            (region for region in area.regions if region.type == "WINDOW"),
+            None,
+        )
+        if window_region is None:
+            return {"CANCELLED"}
+
+        self._key = (window.as_pointer(), area.as_pointer())
+        self._region_pointer = window_region.as_pointer()
+        if not highlight_state.claim_hover_monitor(self._key):
+            return {"CANCELLED"}
+
+        context.window_manager.modal_handler_add(self)
+        self._update_pointer(event, window_region)
+        return {"RUNNING_MODAL"}
+
+    def _update_pointer(self, event, region):
+        x = event.mouse_x - region.x
+        y = event.mouse_y - region.y
+        if 0 <= x < region.width and 0 <= y < region.height:
+            highlight_state.set_hover_position(region.as_pointer(), x, y)
+        else:
+            highlight_state.clear_hover_position(region.as_pointer())
+
+    def modal(self, context, event):
+        if not highlight_state.active_highlights():
+            self._finish()
+            return {"FINISHED"}
+
+        window = getattr(context, "window", None)
+        if window is None or window.as_pointer() != self._key[0]:
+            self._finish()
+            return {"FINISHED"}
+        area = next(
+            (
+                candidate
+                for candidate in window.screen.areas
+                if candidate.as_pointer() == self._key[1]
+            ),
+            None,
+        )
+        if area is None or area.type != "VIEW_3D":
+            self._finish()
+            return {"FINISHED"}
+        region = next(
+            (candidate for candidate in area.regions if candidate.type == "WINDOW"),
+            None,
+        )
+        if region is None:
+            self._finish()
+            return {"FINISHED"}
+
+        if event.type == "MOUSEMOVE":
+            self._region_pointer = region.as_pointer()
+            self._update_pointer(event, region)
+            area.tag_redraw()
+        return {"PASS_THROUGH"}
+
+    def cancel(self, _context):
+        self._finish()
 
 
 class ONYX_OT_inspect_topology_class(bpy.types.Operator):
@@ -929,6 +1013,7 @@ class ONYX_OT_highlight_review_issue(bpy.types.Operator):
             points,
             lines,
         )
+        _ensure_hover_help(context)
         self.report({"INFO"}, f"Showing {count:,} matching mesh elements")
         return {"FINISHED"}
 
@@ -966,6 +1051,7 @@ class ONYX_OT_highlight_review_object(bpy.types.Operator):
             return {"FINISHED"}
 
         highlight_state.show_overview(obj.name, highlights)
+        _ensure_hover_help(context)
         self.report({"INFO"}, f"Showing {len(highlights):,} findings")
         return {"FINISHED"}
 
@@ -1124,7 +1210,8 @@ CLASSES = (
     ONYX_OT_select_review_object,
     ONYX_OT_step_review_finding,
     ONYX_OT_inspect_review_issue,
-    ONYX_OT_fix_review_issue,
+    ONYX_OT_show_review_recommendation,
+    ONYX_OT_review_hover_help,
     ONYX_OT_inspect_topology_class,
     ONYX_OT_highlight_review_issue,
     ONYX_OT_highlight_review_object,

@@ -77,40 +77,6 @@ def make_problem_mesh():
     return obj
 
 
-def make_simple_fix_mesh():
-    mesh = bpy.data.meshes.new("SimpleFixMesh")
-    mesh.from_pydata(
-        (
-            (0.0, 0.0, 0.0),
-            (1.0, 0.0, 0.0),
-            (0.0, 1.0, 0.0),
-            (0.0, -1.0, 0.0),
-            (3.0, 0.0, 0.0),
-            (4.0, 0.0, 0.0),
-            (4.0, 1.0, 0.0),
-            (3.0, 1.0, 0.0),
-            (3.0, 0.0, 0.0),
-            (4.0, 0.0, 0.0),
-            (4.0, 1.0, 0.0),
-            (3.0, 1.0, 0.0),
-            (6.0, 0.0, 0.0),
-            (7.0, 0.0, 0.0),
-            (8.0, 0.0, 0.0),
-        ),
-        ((12, 13),),
-        (
-            (0, 1, 2),
-            (0, 1, 3),
-            (4, 5, 6, 7),
-            (8, 9, 10, 11),
-        ),
-    )
-    mesh.update()
-    obj = bpy.data.objects.new("SimpleFixAsset", mesh)
-    bpy.context.collection.objects.link(obj)
-    return obj
-
-
 def make_normal_outlier_mesh():
     mesh = bpy.data.meshes.new("NormalOutlierMesh")
     mesh.from_pydata(
@@ -465,8 +431,7 @@ def main():
     }
     assert filtered_codes["WARNINGS"] == codes - filtered_codes["ERRORS"]
     assert filtered_codes["FIXABLE"] == {
-        "topology.duplicate_faces",
-        "topology.loose_vertices",
+        code for code in codes if operators.issue_selection_domain(code)
     }
     assert filtered_codes["CHANGES"] == set()
 
@@ -490,8 +455,13 @@ def main():
     assert not highlight_state.active_highlights()
     assert bpy.ops.onyx.highlight_review_object(object_name=problem.name) == {"FINISHED"}
     assert {highlight.issue_code for highlight in highlight_state.active_highlights()} == {
+        "topology.degenerate",
         "topology.duplicate_faces",
+        "topology.boundary",
         "topology.loose_vertices",
+        "topology.coincident_vertices",
+        "topology.disconnected_islands",
+        "topology.ngons",
     }
     settings.finding_filter = "ALL"
     assert not highlight_state.active_highlights()
@@ -643,6 +613,12 @@ def main():
     assert highlight.object_name == problem.name
     assert highlight.issue_code == "topology.duplicate_faces"
     assert highlight.domain == "FACE"
+    assert highlight_state._PIXEL_HANDLER is not None
+    assert highlight_state._distance_squared_to_segment(
+        (1.0, 1.0),
+        (0.0, 0.0),
+        (2.0, 0.0),
+    ) == 1.0
     assert highlight_state.finding_style(highlight.issue_code, highlight.severity).name == "Magenta"
     assert highlight.element_count == 2
     assert len(highlight.points) == 2
@@ -654,6 +630,7 @@ def main():
         severity="ERROR",
     ) == {"FINISHED"}
     assert highlight_state.active_highlight() is None
+    assert highlight_state._PIXEL_HANDLER is None
 
     assert bpy.ops.onyx.highlight_review_object(object_name=problem.name) == {"FINISHED"}
     highlights = highlight_state.active_highlights()
@@ -757,7 +734,9 @@ def main():
     assert normal_issues["topology.normal_outliers"] == 1
     assert "topology.winding" not in normal_issues
     assert operators.issue_selection_domain("topology.normal_outliers") == "FACE"
-    assert operators.simple_fix_info("topology.normal_outliers") is None
+    assert "Recalculate Outside" in operators.issue_recommendation(
+        "topology.normal_outliers"
+    )
     assert bpy.ops.onyx.highlight_review_issue(
         object_name=normal_asset.name,
         issue_code="topology.normal_outliers",
@@ -831,7 +810,7 @@ def main():
     assert overlap_issues["topology.overlapping_faces"] == 4
     assert "topology.duplicate_faces" not in overlap_issues
     assert operators.issue_selection_domain("topology.overlapping_faces") == "FACE"
-    assert operators.simple_fix_info("topology.overlapping_faces") is None
+    assert operators.issue_recommendation("topology.overlapping_faces")
     assert bpy.ops.onyx.highlight_review_issue(
         object_name=overlap_asset.name,
         issue_code="topology.overlapping_faces",
@@ -872,70 +851,36 @@ def main():
     assert sum(1 for face in edit_mesh.faces if face.select) == 4
     bpy.ops.object.mode_set(mode="OBJECT")
 
-    fix_asset = make_simple_fix_mesh()
-    for obj in tuple(bpy.context.selected_objects):
-        obj.select_set(False)
-    fix_asset.select_set(True)
-    bpy.context.view_layer.objects.active = fix_asset
-    settings.scope = "ACTIVE"
-    assert bpy.ops.onyx.run_review() == {"FINISHED"}
-    fix_codes = {issue.code for issue in settings.results[0].issues}
-    assert {
+    recommendation_codes = {
+        "topology.non_manifold",
+        "topology.degenerate",
         "topology.duplicate_faces",
+        "topology.overlapping_faces",
+        "topology.normal_outliers",
         "topology.winding",
+        "topology.boundary",
         "topology.loose_edges",
         "topology.loose_vertices",
-    }.issubset(fix_codes)
-    assert operators.simple_fix_info("topology.boundary") is None
-    assert "UNDO" in operators.ONYX_OT_fix_review_issue.bl_options
-
-    shared_fix_asset = bpy.data.objects.new("SimpleFixSharedAsset", fix_asset.data)
-    bpy.context.collection.objects.link(shared_fix_asset)
-    assert fix_asset.data.users == 2
-    assert bpy.ops.onyx.fix_review_issue(
-        object_name=fix_asset.name,
-        issue_code="topology.winding",
-    ) == {"CANCELLED"}
-    assert "topology.winding" in {
-        issue.code for issue in settings.results[0].issues
+        "topology.coincident_vertices",
+        "topology.disconnected_islands",
+        "topology.ngons",
+        "transform.negative_scale",
+        "transform.scale",
+        "data.uv",
+        "data.material",
+        "budget.triangles",
     }
-    bpy.data.objects.remove(shared_fix_asset, do_unlink=True)
-    assert fix_asset.data.users == 1
-
-    face_count = len(fix_asset.data.polygons)
-    assert bpy.ops.onyx.fix_review_issue(
-        object_name=fix_asset.name,
-        issue_code="topology.winding",
+    assert all(operators.issue_recommendation(code) for code in recommendation_codes)
+    assert not operators.issue_recommendation("unknown.finding")
+    guide_properties = Bag()
+    guide_properties.issue_code = "topology.winding"
+    assert "Recalculate Outside" in operators.ONYX_OT_show_review_recommendation.description(
+        None,
+        guide_properties,
+    )
+    assert bpy.ops.onyx.show_review_recommendation(
+        issue_code="topology.winding"
     ) == {"FINISHED"}
-    assert len(fix_asset.data.polygons) == face_count
-    assert "topology.winding" not in {
-        issue.code for issue in settings.results[0].issues
-    }
-
-    assert bpy.ops.onyx.fix_review_issue(
-        object_name=fix_asset.name,
-        issue_code="topology.duplicate_faces",
-    ) == {"FINISHED"}
-    assert len(fix_asset.data.polygons) == face_count - 1
-    assert "topology.duplicate_faces" not in {
-        issue.code for issue in settings.results[0].issues
-    }
-
-    assert bpy.ops.onyx.fix_review_issue(
-        object_name=fix_asset.name,
-        issue_code="topology.loose_edges",
-    ) == {"FINISHED"}
-    assert "topology.loose_edges" not in {
-        issue.code for issue in settings.results[0].issues
-    }
-
-    assert bpy.ops.onyx.fix_review_issue(
-        object_name=fix_asset.name,
-        issue_code="topology.loose_vertices",
-    ) == {"FINISHED"}
-    assert "topology.loose_vertices" not in {
-        issue.code for issue in settings.results[0].issues
-    }
 
     assert bpy.ops.onyx.clear_review() == {"FINISHED"}
     assert not settings.results and not settings.last_summary

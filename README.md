@@ -98,7 +98,7 @@ actual count stays inside your allowance; the mesh statistics are still there.
 2. Choose a review profile.
 3. Press **Run Review**.
 4. Read per-object findings and compare base versus evaluated triangles.
-5. Focus the list on **All**, **Errors**, **Warnings**, **Fixable**, or recent
+5. Focus the list on **All**, **Errors**, **Warnings**, **On Mesh**, or recent
    **Changes**.
 6. Optionally enable **Live Review** while iterating on the model.
 7. Expand an object only when you want its findings or tools.
@@ -106,7 +106,7 @@ actual count stays inside your allowance; the mesh statistics are still there.
    the list.
 9. Use **Show Problems** for an overview, or **Show** to isolate one finding.
 10. Use **Inspect** when you want its mesh elements selected in Edit Mode.
-11. Optionally use **Fix** for supported, deterministic cleanup cases.
+11. Press **Guide** for a recommended fix method. Reviewer never changes the mesh.
 12. Open **Viewport Modes** to switch between Studio, Silhouette, Topology, and
     Face Orientation views.
 13. Press **Restore View** to return the viewport to its original settings.
@@ -117,7 +117,7 @@ actual count stays inside your allowance; the mesh statistics are still there.
 
 1. Run Review on the mesh you want to track.
 2. Press **Save Baseline**. Think of the baseline as your before snapshot.
-3. Keep modeling, or use one of the supported simple fixes.
+3. Keep modeling and use a finding's Guide when you need a suggested next step.
 4. Run Review again.
 
 Onyx now shows which findings are new, which ones are gone, which counts
@@ -153,23 +153,22 @@ wraps from the last problem back to the first, which makes a full review pass
 easy even across several selected objects.
 
 The compact **Show** menu keeps dense results readable without hiding evidence
-for good. Switch between every finding, errors, warnings, supported simple fixes, or
-findings that changed since your saved baseline. The viewport overview follows
-the active view, while topology maps stay independent and **Copy Report** always
-includes the complete review.
+for good. Switch between every finding, errors, warnings, problems Reviewer can
+point out on the mesh, or findings that changed since your saved baseline. The
+viewport overview follows the active view, while topology maps stay independent
+and **Copy Report** always includes the complete review.
 
-Four deliberately narrow findings also offer an explicit **Fix** action:
-inconsistent winding, exact duplicate faces, loose edges, and loose vertices.
-Each action changes only the base mesh, creates one Blender undo step, and
-immediately reruns the review. Fixes are never run automatically, and Onyx
-refuses them on linked, shared, or shape-key mesh data.
+Every finding has a short **Guide** with a sensible way to approach it. These
+are recommendations, not automatic repairs: you stay in control of topology,
+transforms, UVs, materials, and intentional exceptions.
 
 They can also draw temporary, color-coded highlights directly in the 3D
 Viewport. Each problem type has a distinct color, while error-level findings use
 thicker marks. Show a single finding or every actionable finding for one object
 at once. A matching color dot beside every drawable result makes it easy to
 connect the list to the mesh without memorizing color names. Highlights remain
-visible through the surface and create no scene data.
+visible through the surface and create no scene data. Rest the pointer over a
+colored problem in the viewport to see its name and recommended fix method.
 During Live Review, the visible highlight or map is rebuilt from the changed
 mesh so it stays useful without becoming stale. Reviewer reuses the evidence
 from that same review pass, avoiding a second mesh scan just to redraw the

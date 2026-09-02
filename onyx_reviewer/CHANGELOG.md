@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.14.0 - 2026-09-02
+
+- Replace mesh-changing Fix actions with a plain-language Guide for every
+  finding, including topology, transforms, UVs, materials, and triangle budget.
+- Show the finding name, element count, and recommended approach in a floating
+  tooltip when the pointer rests over colored viewport evidence.
+- Rename the old Fixable result filter to On Mesh and use it for findings that
+  Reviewer can point out directly.
+- Keep all guidance diagnosis-only: this release never changes the reviewed
+  mesh or asset setup.
+
 ## 0.13.0 - 2026-09-02
 
 - Replace written color names in the Blender interface with small native color

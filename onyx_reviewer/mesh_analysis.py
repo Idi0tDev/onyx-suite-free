@@ -78,22 +78,74 @@ _TOPOLOGY_MAP_CLASSES = {
     "POLES": ("POLES_3", "POLES_5", "POLES_6_PLUS"),
 }
 
-_SIMPLE_FIXES = {
+_ISSUE_RECOMMENDATIONS = {
+    "topology.non_manifold": (
+        "Inspect the highlighted edge and remove internal faces, or rebuild the join "
+        "so no more than two faces share the edge."
+    ),
+    "topology.degenerate": (
+        "Dissolve or rebuild the zero-area face. If its vertices sit together, merge "
+        "them first and check the surrounding faces."
+    ),
     "topology.duplicate_faces": (
-        "Remove Exact Duplicates",
-        "Delete redundant faces only when every vertex position matches exactly",
+        "Inspect the matching faces, keep the surface you need, and delete only the "
+        "redundant copy."
+    ),
+    "topology.overlapping_faces": (
+        "Move or rebuild the highlighted surfaces so they no longer pass through or "
+        "cover each other. Keep overlaps only when the asset really needs them."
+    ),
+    "topology.normal_outliers": (
+        "Compare the highlighted face with its neighbors. Flip that face, or select "
+        "the connected patch and use Recalculate Outside if the whole patch is wrong."
     ),
     "topology.winding": (
-        "Recalculate Winding",
-        "Make connected face winding consistent using Blender's normal recalculation",
+        "Select the connected surface and use Mesh > Normals > Recalculate Outside. "
+        "Flip intentional inward-facing parts by hand afterward."
+    ),
+    "topology.boundary": (
+        "Close accidental gaps by filling or bridging the open loop, or weld nearby "
+        "vertices. If the opening is intentional, add a topology allowance."
     ),
     "topology.loose_edges": (
-        "Delete Loose Edges",
-        "Delete edges that are not used by any face",
+        "Delete the loose edge if it is leftover construction geometry, or connect it "
+        "to faces if it belongs to the final mesh."
     ),
     "topology.loose_vertices": (
-        "Delete Loose Vertices",
-        "Delete vertices that are not connected to any edge",
+        "Delete the loose vertex if it is accidental, or connect it to the mesh if it "
+        "is meant to contribute to the shape."
+    ),
+    "topology.coincident_vertices": (
+        "Inspect the stacked vertices and use Merge by Distance only where those "
+        "points are meant to be welded."
+    ),
+    "topology.disconnected_islands": (
+        "Remove stray islands, connect pieces that belong together, or separate "
+        "intentional pieces into their own objects."
+    ),
+    "topology.ngons": (
+        "Split the face into clean quads or triangles where it bends or shades badly. "
+        "A flat, stable ngon can be left alone or covered by an allowance."
+    ),
+    "transform.negative_scale": (
+        "In Object Mode, use Apply > Scale when the mirrored result is final, then "
+        "check face orientation and modifier behavior."
+    ),
+    "transform.scale": (
+        "In Object Mode, use Apply > Scale when the current size should become the "
+        "object's new default scale."
+    ),
+    "data.uv": (
+        "Add and unwrap a UV map if the asset uses image textures, baking, or workflows "
+        "that expect UV coordinates."
+    ),
+    "data.material": (
+        "Add a material slot and assign a material, even if it is only a simple "
+        "placeholder for handoff."
+    ),
+    "budget.triangles": (
+        "Reduce dense source geometry or expensive modifiers, or raise the review "
+        "budget when this level of detail is intentional."
     ),
 }
 
@@ -192,24 +244,9 @@ def topology_map_classes(map_kind):
         raise ValueError(f"Unknown topology map: {map_kind}") from exc
 
 
-def simple_fix_info(issue_code):
-    """Return the label and description for a deliberately narrow quick fix."""
-    return _SIMPLE_FIXES.get(issue_code)
-
-
-def _exact_face_position_key(face):
-    return tuple(sorted(tuple(vertex.co) for vertex in face.verts))
-
-
-def _exact_duplicate_faces_to_remove(faces):
-    groups = {}
-    for face in faces:
-        groups.setdefault(_exact_face_position_key(face), []).append(face)
-    return tuple(
-        face
-        for group in groups.values()
-        for face in sorted(group, key=lambda item: item.index)[1:]
-    )
+def issue_recommendation(issue_code):
+    """Return a short, non-destructive next step for a review finding."""
+    return _ISSUE_RECOMMENDATIONS.get(issue_code, "")
 
 
 def _normal_outlier_faces(faces):
@@ -420,45 +457,6 @@ def _overlapping_faces(bm):
 
     face_indices = {index for pair in overlapping_pairs for index in pair}
     return tuple(face for face in bm.faces if face.index in face_indices)
-
-
-def apply_simple_fix(mesh, issue_code):
-    """Apply one deterministic base-mesh fix and return its changed element count."""
-    if issue_code not in _SIMPLE_FIXES:
-        raise ValueError(f"No simple fix is available for {issue_code}")
-
-    bm = bmesh.new()
-    try:
-        bm.from_mesh(mesh)
-        bm.verts.ensure_lookup_table()
-        bm.edges.ensure_lookup_table()
-        bm.faces.ensure_lookup_table()
-
-        if issue_code == "topology.duplicate_faces":
-            elements = _exact_duplicate_faces_to_remove(bm.faces)
-            if elements:
-                bmesh.ops.delete(bm, geom=elements, context="FACES_ONLY")
-        elif issue_code == "topology.winding":
-            elements = _matching_elements(bm, issue_code)
-            if elements:
-                bmesh.ops.recalc_face_normals(bm, faces=tuple(bm.faces))
-        elif issue_code == "topology.loose_edges":
-            elements = _matching_elements(bm, issue_code)
-            if elements:
-                bmesh.ops.delete(bm, geom=elements, context="EDGES")
-        else:
-            elements = _matching_elements(bm, issue_code)
-            if elements:
-                bmesh.ops.delete(bm, geom=elements, context="VERTS")
-
-        changed = len(elements)
-        if changed:
-            bm.normal_update()
-            bm.to_mesh(mesh)
-            mesh.update()
-        return changed
-    finally:
-        bm.free()
 
 
 def _matching_elements(bm, issue_code):

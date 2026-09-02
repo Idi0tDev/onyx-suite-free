@@ -3,7 +3,7 @@
 import bpy
 
 from . import delta_state, highlight_state, operators
-from .mesh_analysis import issue_selection_domain, simple_fix_info, topology_class_info
+from .mesh_analysis import issue_recommendation, issue_selection_domain, topology_class_info
 
 
 def _draw_topology_class(layout, object_name, topology_class, count):
@@ -406,7 +406,6 @@ class ONYX_PT_review(bpy.types.Panel):
                     suffix = f" ({delta_item.baseline_count:,} → {delta_item.current_count:,})"
                 else:
                     suffix = f" ({issue.count:,})" if issue.count > 1 else ""
-                fix_info = simple_fix_info(issue.code)
                 selection_domain = issue_selection_domain(issue.code)
                 if selection_domain:
                     finding = box.column(align=True)
@@ -438,14 +437,13 @@ class ONYX_PT_review(bpy.types.Panel):
                     )
                     inspect.object_name = object_name
                     inspect.issue_code = issue.code
-                    if fix_info:
-                        fix = row.operator(
-                            "onyx.fix_review_issue",
-                            text="Fix",
-                            icon="CHECKMARK",
-                        )
-                        fix.object_name = object_name
-                        fix.issue_code = issue.code
+                if issue_recommendation(issue.code):
+                    guide = row.operator(
+                        "onyx.show_review_recommendation",
+                        text="Guide",
+                        icon="QUESTION",
+                    )
+                    guide.issue_code = issue.code
 
             metrics = box.box()
             if _draw_disclosure(

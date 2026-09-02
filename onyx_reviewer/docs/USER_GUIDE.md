@@ -132,7 +132,7 @@ shown in the panel:
 | All | Every finding from the latest review |
 | Errors | Conditions that usually require correction |
 | Warnings | Contextual conditions that may be intentional |
-| Fixable | Findings with one of Onyx Reviewer's supported simple fixes |
+| On Mesh | Findings Reviewer can point out directly on the mesh |
 | Changes | Findings that are new or changed since your saved baseline |
 
 This is a presentation filter: it does not rerun the review or delete hidden
@@ -154,7 +154,7 @@ result card, closes the other result cards, frames it in the current 3D
 Viewport, and draws that finding in its usual color.
 
 The navigator follows the active Show view. Choose **Errors** to walk only
-through error-level mesh problems, **Fixable** to check the simple-fix cases,
+through error-level mesh problems, **On Mesh** to stay with visual evidence,
 or **Changes** to inspect visual problems introduced or changed since the
 baseline. Findings such as a missing material are still listed and reported,
 but are not part of this navigator because there is no mesh element to point at.
@@ -195,27 +195,17 @@ Baseline**. Changing the review scope, profile, custom check groups, or triangle
 budget also clears it. It never becomes mesh data and is not saved in the
 `.blend` file.
 
-## Simple fixes
+## Fix guides
 
-A **Fix** button appears only for four deliberately narrow cases:
+Every finding includes a **Guide** button. Press it to see a short recommended
+approach. The advice is specific enough to get you moving, but it leaves the
+final modeling decision with you. Reviewer never changes geometry, transforms,
+UVs, materials, or modifiers.
 
-| Finding | Explicit operation |
-| --- | --- |
-| Inconsistent face winding | Recalculate connected face normals for consistent winding |
-| Exact duplicate faces | Keep the first face and delete later faces with exactly matching vertex positions |
-| Loose edges | Delete edges that are not used by any face |
-| Loose vertices | Delete vertices that are not connected to any edge |
-
-Fixes work on the base mesh in Object Mode. Each click is one Blender undo step,
-clears stale viewport evidence, and reruns the current review so the new counts
-are visible immediately. Onyx refuses to run a fix on linked mesh data,
-multi-user mesh data, or a mesh with shape keys.
-
-There is no **Fix All** action and Live Review never runs fixes. Open boundaries,
-degenerate or overlapping faces, normal-direction outliers, ngons, coincident
-vertices, disconnected islands, transforms, UVs, and materials remain
-diagnosis-only because a generic change could destroy intentional modeling
-decisions.
+For a mesh problem, press **Show** or **Show Problems**, then rest the pointer
+over one of its colored viewport marks. A floating guide names the problem,
+shows how many elements match, and suggests the same next step without making
+you search the sidebar again.
 
 Element-level topology findings include an **Inspect** action. It activates the
 reviewed mesh, enters Edit Mode, switches to the matching vertex, edge, or face

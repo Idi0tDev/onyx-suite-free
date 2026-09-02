@@ -1,4 +1,4 @@
-# Onyx Reviewer 0.13.0
+# Onyx Reviewer 0.14.0
 
 Onyx Reviewer helps you spot mesh problems before they become annoying production
 problems. It checks the editable mesh and the evaluated modifier result, then
@@ -32,14 +32,15 @@ so there is no second dependency to install.
 - Thicker lines and larger points for error-level findings
 - Combined per-object overview of all actionable findings
 - Previous and next navigation through the currently visible mesh problems
-- All, Errors, Warnings, Fixable, and Changes finding views for dense reviews
+- All, Errors, Warnings, On Mesh, and Changes finding views for dense reviews
 - Session-only before-and-after Review Delta comparisons
 - General, While Modeling, Topology Only, and Custom review profiles
 - Optional allowances for intentionally open boundary edges and ngons
 - Copyable plain-text review report
 - Optional debounced Live Review after mesh changes
 - Live Review in Object and Edit Mode with a configurable source-vertex safety limit
-- Explicit, undoable fixes for winding, exact duplicate faces, loose edges, and loose vertices
+- A plain-language fix guide for every finding, without automatic mesh changes
+- Hover guidance directly over colored problem marks in the 3D Viewport
 
 ## Review profiles
 
@@ -86,28 +87,24 @@ when you deliberately want no density ceiling. Open **More Settings** for that
 limit and the refresh delay. The manual **Run Now** action remains available at
 all times.
 
-## Simple fixes
+## Fix guides
 
-Supported findings show a **Fix** button for four deterministic operations:
+Every finding has a **Guide** button. It explains a practical next step in plain
+language, whether the problem is topology, transforms, UVs, materials, or the
+triangle budget. Reviewer does not press Blender buttons for you or change the
+mesh behind your back.
 
-- Recalculate inconsistent face winding
-- Remove redundant faces whose vertex positions match exactly
-- Delete edges that are not used by a face
-- Delete vertices that are not connected to an edge
-
-Every fix is explicit, creates one Blender undo step, and refreshes the review.
-There is no automatic cleanup pass. Onyx does not offer generic fixes for holes,
-overlapping faces, normal-direction outliers, ngons, coincident vertices,
-disconnected islands, transforms, UVs, or materials.
-Fixes are also refused for linked data, multi-user meshes, and meshes with shape
-keys so a local cleanup cannot silently affect another asset state.
+When colored evidence is visible, rest the pointer over a mark in the viewport.
+A small floating guide shows which problem it belongs to and the same recommended
+approach. This makes the viewport useful without repeatedly jumping back to the
+sidebar.
 
 ## Finding view
 
 Use the compact **Show** menu when the full list feels busy. You can show everything,
-only errors, only warnings, findings with a simple fix, or findings that changed
-since your Review Delta baseline. **Show Problems** draws that same
-focused set in the viewport.
+only errors, only warnings, findings that can be pointed out on the mesh, or
+findings that changed since your Review Delta baseline. **Show Problems** draws
+that same focused set in the viewport.
 
 Changing the view clears the old finding overlay so you never mistake stale
 marks for the new filter. Face and pole maps stay independent. **Copy Report**
@@ -151,7 +148,7 @@ captured viewport.
 
 ## Install
 
-Build `onyx_reviewer-0.13.0.zip` with `tools/package_reviewer.ps1`, then install the
+Build `onyx_reviewer-0.14.0.zip` with `tools/package_reviewer.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.
 

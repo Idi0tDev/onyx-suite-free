@@ -231,7 +231,11 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
             ("ALL", "All", "Show every finding from the latest review"),
             ("ERRORS", "Errors", "Show conditions that usually require correction"),
             ("WARNINGS", "Warnings", "Show contextual conditions that deserve review"),
-            ("FIXABLE", "Fixable", "Show findings with a supported deterministic fix"),
+            (
+                "FIXABLE",
+                "On Mesh",
+                "Show findings that Reviewer can point out directly on the mesh",
+            ),
             ("CHANGES", "Changes", "Show findings introduced or changed since the saved baseline"),
         ),
         default="ALL",

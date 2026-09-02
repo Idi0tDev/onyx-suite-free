@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import textwrap
 
+import blf
 import bpy
 import gpu
+from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
+from mathutils import Vector
+
+from .mesh_analysis import issue_recommendation
 
 
 @dataclass(frozen=True)
@@ -61,8 +67,15 @@ _ACTIVE = ()
 _OVERVIEW_OBJECT = ""
 _OVERVIEW_KEY = ""
 _HANDLER = None
+_PIXEL_HANDLER = None
 _SHADER = None
 _BATCHES = None
+_HOVER_POSITION = None
+_HOVER_MONITORS = set()
+
+_HOVER_RADIUS = 15.0
+_MAX_HOVER_POINTS = 2_048
+_MAX_HOVER_SEGMENTS = 2_048
 
 
 def active_highlight():
@@ -109,6 +122,184 @@ def _tag_redraw():
         for area in window.screen.areas:
             if area.type == "VIEW_3D":
                 area.tag_redraw()
+
+
+def claim_hover_monitor(key):
+    """Reserve one passive mouse listener for a window and 3D Viewport."""
+    key = tuple(key)
+    if key in _HOVER_MONITORS:
+        return False
+    _HOVER_MONITORS.add(key)
+    return True
+
+
+def release_hover_monitor(key):
+    _HOVER_MONITORS.discard(tuple(key))
+
+
+def set_hover_position(region_pointer, x, y):
+    global _HOVER_POSITION
+    _HOVER_POSITION = (int(region_pointer), float(x), float(y))
+
+
+def clear_hover_position(region_pointer=None):
+    global _HOVER_POSITION
+    if (
+        region_pointer is None
+        or _HOVER_POSITION is None
+        or _HOVER_POSITION[0] == int(region_pointer)
+    ):
+        _HOVER_POSITION = None
+
+
+def _distance_squared_to_segment(point, start, end):
+    segment_x = end[0] - start[0]
+    segment_y = end[1] - start[1]
+    length_squared = segment_x * segment_x + segment_y * segment_y
+    if length_squared == 0.0:
+        return (point[0] - start[0]) ** 2 + (point[1] - start[1]) ** 2
+    amount = (
+        (point[0] - start[0]) * segment_x
+        + (point[1] - start[1]) * segment_y
+    ) / length_squared
+    amount = max(0.0, min(1.0, amount))
+    nearest = (start[0] + amount * segment_x, start[1] + amount * segment_y)
+    return (point[0] - nearest[0]) ** 2 + (point[1] - nearest[1]) ** 2
+
+
+def _project(region, region_data, coordinate):
+    value = view3d_utils.location_3d_to_region_2d(
+        region,
+        region_data,
+        Vector(coordinate),
+        default=None,
+    )
+    return tuple(value) if value is not None else None
+
+
+def _hovered_highlight(region, region_data, mouse):
+    best = None
+    best_distance = _HOVER_RADIUS * _HOVER_RADIUS
+    highlight_count = max(len(_ACTIVE), 1)
+    point_limit = max(64, _MAX_HOVER_POINTS // highlight_count)
+    segment_limit = max(64, _MAX_HOVER_SEGMENTS // highlight_count)
+    # Reverse order matches the marks drawn last when several issue types overlap.
+    for highlight in reversed(_ACTIVE):
+        if not issue_recommendation(highlight.issue_code):
+            continue
+
+        point_step = max(1, (len(highlight.points) + point_limit - 1) // point_limit)
+        for index in range(0, len(highlight.points), point_step):
+            projected = _project(region, region_data, highlight.points[index])
+            if projected is None:
+                continue
+            distance = (mouse[0] - projected[0]) ** 2 + (mouse[1] - projected[1]) ** 2
+            if distance < best_distance:
+                best = highlight
+                best_distance = distance
+
+        segment_count = len(highlight.lines) // 2
+        segment_step = max(
+            1,
+            (segment_count + segment_limit - 1) // segment_limit,
+        )
+        for segment_index in range(0, segment_count, segment_step):
+            start_index = segment_index * 2
+            start = _project(region, region_data, highlight.lines[start_index])
+            end = _project(region, region_data, highlight.lines[start_index + 1])
+            if start is None or end is None:
+                continue
+            distance = _distance_squared_to_segment(mouse, start, end)
+            if distance < best_distance:
+                best = highlight
+                best_distance = distance
+    return best
+
+
+def _draw_rectangle(shader, x, y, width, height, color):
+    batch = batch_for_shader(
+        shader,
+        "TRIS",
+        {
+            "pos": (
+                (x, y),
+                (x + width, y),
+                (x + width, y + height),
+                (x, y),
+                (x + width, y + height),
+                (x, y + height),
+            )
+        },
+    )
+    shader.bind()
+    shader.uniform_float("color", color)
+    batch.draw(shader)
+
+
+def _draw_tooltip(region, mouse, highlight):
+    recommendation = issue_recommendation(highlight.issue_code)
+    if not recommendation:
+        return
+
+    ui_scale = max(float(bpy.context.preferences.system.ui_scale), 0.75)
+    font_id = 0
+    font_size = max(11, round(13 * ui_scale))
+    blf.size(font_id, font_size)
+    title_lines = textwrap.wrap(
+        f"{highlight.message} ({highlight.element_count:,})",
+        width=48,
+    )
+    guide_lines = textwrap.wrap(f"Try: {recommendation}", width=58)
+    lines = (*title_lines, "", *guide_lines)
+    line_height = 18 * ui_scale
+    padding = 12 * ui_scale
+    widest = max((blf.dimensions(font_id, line)[0] for line in lines), default=0.0)
+    width = min(max(widest + padding * 2, 260 * ui_scale), region.width - 16)
+    height = line_height * len(lines) + padding * 2
+
+    x = mouse[0] + 18 * ui_scale
+    y = mouse[1] + 18 * ui_scale
+    if x + width > region.width - 8:
+        x = mouse[0] - width - 18 * ui_scale
+    if y + height > region.height - 8:
+        y = mouse[1] - height - 18 * ui_scale
+    x = max(8.0, min(x, region.width - width - 8.0))
+    y = max(8.0, min(y, region.height - height - 8.0))
+
+    shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+    gpu.state.blend_set("ALPHA")
+    try:
+        _draw_rectangle(shader, x, y, width, height, (0.025, 0.025, 0.025, 0.94))
+        style = finding_style(highlight.issue_code, highlight.severity)
+        _draw_rectangle(shader, x, y + height - 3 * ui_scale, width, 3 * ui_scale, style.color)
+
+        cursor_y = y + height - padding - line_height
+        for index, line in enumerate(lines):
+            blf.position(font_id, x + padding, cursor_y, 0)
+            if index < len(title_lines):
+                blf.color(font_id, 1.0, 1.0, 1.0, 1.0)
+            else:
+                blf.color(font_id, 0.82, 0.82, 0.82, 1.0)
+            if line:
+                blf.draw(font_id, line)
+            cursor_y -= line_height
+    finally:
+        gpu.state.blend_set("NONE")
+
+
+def _draw_hover():
+    if not _ACTIVE or _HOVER_POSITION is None:
+        return
+    region = getattr(bpy.context, "region", None)
+    region_data = getattr(bpy.context, "region_data", None)
+    if region is None or region_data is None:
+        return
+    if region.as_pointer() != _HOVER_POSITION[0]:
+        return
+    mouse = _HOVER_POSITION[1:]
+    highlight = _hovered_highlight(region, region_data, mouse)
+    if highlight is not None:
+        _draw_tooltip(region, mouse, highlight)
 
 
 def _draw_highlight():
@@ -179,7 +370,8 @@ def make_highlight(
 
 
 def _show(highlights, overview_object="", overview_key=""):
-    global _ACTIVE, _OVERVIEW_OBJECT, _OVERVIEW_KEY, _HANDLER, _SHADER, _BATCHES
+    global _ACTIVE, _OVERVIEW_OBJECT, _OVERVIEW_KEY, _HANDLER, _PIXEL_HANDLER
+    global _SHADER, _BATCHES
     highlights = tuple(highlights)
     if not highlights:
         raise ValueError("At least one viewport highlight is required")
@@ -194,6 +386,13 @@ def _show(highlights, overview_object="", overview_key=""):
             (),
             "WINDOW",
             "POST_VIEW",
+        )
+    if _PIXEL_HANDLER is None:
+        _PIXEL_HANDLER = bpy.types.SpaceView3D.draw_handler_add(
+            _draw_hover,
+            (),
+            "WINDOW",
+            "POST_PIXEL",
         )
     _tag_redraw()
 
@@ -241,7 +440,8 @@ def show_overview(object_name, highlights, overview_key="FINDINGS"):
 
 
 def clear_highlight():
-    global _ACTIVE, _OVERVIEW_OBJECT, _OVERVIEW_KEY, _HANDLER, _SHADER, _BATCHES
+    global _ACTIVE, _OVERVIEW_OBJECT, _OVERVIEW_KEY, _HANDLER, _PIXEL_HANDLER
+    global _SHADER, _BATCHES
     _ACTIVE = ()
     _OVERVIEW_OBJECT = ""
     _OVERVIEW_KEY = ""
@@ -253,6 +453,13 @@ def clear_highlight():
         except (ReferenceError, ValueError):
             pass
         _HANDLER = None
+    if _PIXEL_HANDLER is not None:
+        try:
+            bpy.types.SpaceView3D.draw_handler_remove(_PIXEL_HANDLER, "WINDOW")
+        except (ReferenceError, ValueError):
+            pass
+        _PIXEL_HANDLER = None
+    clear_hover_position()
     _tag_redraw()
 
 
@@ -262,3 +469,4 @@ def register():
 
 def unregister():
     clear_highlight()
+    _HOVER_MONITORS.clear()
