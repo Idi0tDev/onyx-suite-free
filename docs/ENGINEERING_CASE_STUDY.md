@@ -95,8 +95,10 @@ can actually edit while still exposing modifier-driven cost.
 Finding and topology maps use a `SpaceView3D` GPU draw handler. Vertex evidence
 is drawn as points, edge evidence as lines, and face evidence as outlines with
 center markers. The overlay ignores surface depth so a problem on the far side
-does not disappear. Cleanup removes the handler when evidence is hidden,
-rerun, cleared, or the extension is disabled.
+does not disappear. A live pass snapshots the active visual view, removes its old
+coordinates, then rebuilds the same finding, overview, or topology map against
+the current mesh. Cleanup removes the handler when evidence is hidden, cleared,
+resolved, or the extension is disabled.
 
 ### A strange normal needs local context
 

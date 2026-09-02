@@ -92,9 +92,10 @@ Two safeguards keep the workflow predictable:
   limit for a known asset or set it to zero to disable the ceiling.
 
 The status below the controls reports **Changes pending**, **Up to date**, or
-the reason a refresh is paused. A refresh clears any viewport highlight because
-that overlay described the previous mesh state. Live Review only refreshes
-diagnostic evidence: it never selects components, applies modifiers, repairs
+the reason a refresh is paused. If a finding, problem overview, face map, or pole
+map is visible, Live Review rebuilds it from the changed mesh after each
+successful refresh. A focused error disappears when the new review confirms it
+is fixed. Live Review never selects components, applies modifiers, repairs
 topology, or edits geometry.
 
 ## Findings

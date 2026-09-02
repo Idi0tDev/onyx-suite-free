@@ -113,6 +113,179 @@ def visible_actionable_findings(settings):
     return tuple(findings)
 
 
+def _stored_result_for_object(settings, obj, object_name):
+    return next(
+        (
+            item
+            for item in settings.results
+            if item.object_ref == obj or item.object_name == object_name
+        ),
+        None,
+    )
+
+
+def _highlight_for_issue(obj, issue):
+    domain, points, lines, count = issue_overlay_geometry(obj, issue.code)
+    if not count:
+        return None
+    return highlight_state.make_highlight(
+        obj.name,
+        issue.code,
+        issue.message,
+        issue.severity,
+        domain,
+        count,
+        points,
+        lines,
+    )
+
+
+def _visible_result_highlights(settings, obj, result):
+    actionable = tuple(
+        issue
+        for issue in result.issues
+        if finding_matches_filter(issue, settings.finding_filter)
+        and issue_selection_domain(issue.code)
+    )
+    geometry = {
+        issue_code: (domain, points, lines, count)
+        for issue_code, domain, points, lines, count in issue_overlays_geometry(
+            obj,
+            (issue.code for issue in actionable),
+        )
+    }
+    highlights = []
+    for issue in actionable:
+        domain, points, lines, count = geometry[issue.code]
+        if count:
+            highlights.append(
+                highlight_state.make_highlight(
+                    obj.name,
+                    issue.code,
+                    issue.message,
+                    issue.severity,
+                    domain,
+                    count,
+                    points,
+                    lines,
+                )
+            )
+    return tuple(highlights)
+
+
+def _topology_map_highlights(obj, map_kind):
+    classes = topology_map_classes(map_kind)
+    descriptions = {
+        issue_code: (label, description)
+        for class_id in classes
+        for issue_code, label, description in (topology_class_info(class_id),)
+    }
+    highlights = []
+    for issue_code, domain, points, lines, count in issue_overlays_geometry(
+        obj,
+        descriptions,
+    ):
+        if not count:
+            continue
+        label, _ = descriptions[issue_code]
+        highlights.append(
+            highlight_state.make_highlight(
+                obj.name,
+                issue_code,
+                f"{label} ({count:,})",
+                "INFO",
+                domain,
+                count,
+                points,
+                lines,
+            )
+        )
+    return tuple(highlights)
+
+
+def _refresh_previous_highlight(context, previous, overview_key):
+    """Rebuild live overlay geometry after a successful mesh refresh."""
+    if not previous:
+        return False
+    obj = bpy.data.objects.get(previous[0].object_name)
+    if (
+        obj is None
+        or obj.type != "MESH"
+        or obj.name not in context.view_layer.objects
+        or obj.hide_get()
+        or obj.hide_viewport
+    ):
+        return False
+
+    settings = context.scene.onyx_reviewer
+    if overview_key == "FINDINGS":
+        result = _stored_result_for_object(settings, obj, obj.name)
+        highlights = (
+            _visible_result_highlights(settings, obj, result) if result else ()
+        )
+        if highlights:
+            highlight_state.show_overview(obj.name, highlights)
+            return True
+        return False
+
+    if overview_key in {"FACE_MAP", "POLE_MAP"}:
+        map_kind = "FACES" if overview_key == "FACE_MAP" else "POLES"
+        highlights = _topology_map_highlights(obj, map_kind)
+        if highlights:
+            highlight_state.show_overview(
+                obj.name,
+                highlights,
+                overview_key=overview_key,
+            )
+            return True
+        return False
+
+    active = previous[0]
+    if active.issue_code.startswith("topology_map."):
+        domain, points, lines, count = issue_overlay_geometry(
+            obj,
+            active.issue_code,
+        )
+        if not count:
+            return False
+        label = active.message.rsplit(" (", 1)[0]
+        highlight_state.show_highlight(
+            obj.name,
+            active.issue_code,
+            f"{label} ({count:,})",
+            "INFO",
+            domain,
+            count,
+            points,
+            lines,
+        )
+        return True
+
+    result = _stored_result_for_object(settings, obj, obj.name)
+    issue = None
+    if result:
+        issue = next(
+            (item for item in result.issues if item.code == active.issue_code),
+            None,
+        )
+    if issue is None:
+        return False
+    highlight = _highlight_for_issue(obj, issue)
+    if highlight is None:
+        return False
+    highlight_state.show_highlight(
+        highlight.object_name,
+        highlight.issue_code,
+        highlight.message,
+        highlight.severity,
+        highlight.domain,
+        highlight.element_count,
+        highlight.points,
+        highlight.lines,
+    )
+    return True
+
+
 def active_visual_finding_index(settings, findings=None):
     """Return the active single-finding overlay's position, or -1."""
     findings = visible_actionable_findings(settings) if findings is None else findings
@@ -222,8 +395,14 @@ def _perform_review(context):
     if not objects:
         raise ValueError(review_blocker(context, settings.scope))
 
-    # Any existing overlay represents the previous mesh state. Never leave
-    # stale evidence visible after either a manual or live refresh.
+    previous_highlights = (
+        highlight_state.active_highlights() if settings.live_review else ()
+    )
+    previous_overview_key = (
+        highlight_state.active_overview_key() if previous_highlights else ""
+    )
+    # Remove old coordinates before reading the changed mesh. Live Review
+    # rebuilds the same visual view from fresh evidence after storing results.
     highlight_state.clear_highlight()
     settings.results.clear()
     _sync_edit_meshes(context, objects)
@@ -257,6 +436,11 @@ def _perform_review(context):
     settings.review_options_dirty = False
     if settings.live_review:
         settings.live_status = "Up to date"
+        _refresh_previous_highlight(
+            context,
+            previous_highlights,
+            previous_overview_key,
+        )
     return summary
 
 
@@ -711,47 +895,12 @@ class ONYX_OT_highlight_review_object(bpy.types.Operator):
             return {"CANCELLED"}
 
         settings = context.scene.onyx_reviewer
-        result = next(
-            (
-                item
-                for item in settings.results
-                if item.object_ref == obj or item.object_name == self.object_name
-            ),
-            None,
-        )
+        result = _stored_result_for_object(settings, obj, self.object_name)
         if result is None:
             self.report({"WARNING"}, "Run Review again before showing this mesh")
             return {"CANCELLED"}
 
-        actionable = tuple(
-            issue
-            for issue in result.issues
-            if finding_matches_filter(issue, settings.finding_filter)
-            and issue_selection_domain(issue.code)
-        )
-        geometry = {
-            issue_code: (domain, points, lines, count)
-            for issue_code, domain, points, lines, count in issue_overlays_geometry(
-                obj,
-                (issue.code for issue in actionable),
-            )
-        }
-        highlights = []
-        for issue in actionable:
-            domain, points, lines, count = geometry[issue.code]
-            if count:
-                highlights.append(
-                    highlight_state.make_highlight(
-                        obj.name,
-                        issue.code,
-                        issue.message,
-                        issue.severity,
-                        domain,
-                        count,
-                        points,
-                        lines,
-                    )
-                )
+        highlights = _visible_result_highlights(settings, obj, result)
         if not highlights:
             self.report({"INFO"}, "This view has no actionable findings to show")
             return {"FINISHED"}
@@ -837,30 +986,7 @@ class ONYX_OT_highlight_topology_map(bpy.types.Operator):
             self.report({"WARNING"}, "Show the reviewed mesh before highlighting its topology")
             return {"CANCELLED"}
 
-        classes = topology_map_classes(self.map_kind)
-        descriptions = {
-            issue_code: (label, description)
-            for class_id in classes
-            for issue_code, label, description in (topology_class_info(class_id),)
-        }
-        geometry = issue_overlays_geometry(obj, descriptions)
-        highlights = []
-        for issue_code, domain, points, lines, count in geometry:
-            if not count:
-                continue
-            label, _ = descriptions[issue_code]
-            highlights.append(
-                highlight_state.make_highlight(
-                    obj.name,
-                    issue_code,
-                    f"{label} ({count:,})",
-                    "INFO",
-                    domain,
-                    count,
-                    points,
-                    lines,
-                )
-            )
+        highlights = _topology_map_highlights(obj, self.map_kind)
         if not highlights:
             self.report({"INFO"}, "This mesh has no matching topology classes")
             return {"FINISHED"}

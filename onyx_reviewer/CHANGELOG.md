@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.12.1 - 2026-09-02
+
+- Keep a visible finding, problem overview, face map, or pole map on screen while
+  Live Review refreshes changed geometry.
+- Rebuild the overlay from the current mesh after every successful live pass so
+  its positions and counts do not become stale.
+- Remove a focused error overlay only when that error is resolved or no longer
+  belongs to the reviewed scope.
+- Preserve Edit Mode and component selection while refreshing both results and
+  their visual evidence.
+
 ## 0.12.0 - 2026-09-02
 
 - Flag faces that point against a coherent group of connected face normals.

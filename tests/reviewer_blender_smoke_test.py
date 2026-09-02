@@ -362,7 +362,7 @@ def main():
     assert sum(1 for vertex in edit_mesh.verts if vertex.select) == 8
     bpy.ops.object.mode_set(mode="OBJECT")
 
-    # Live Review reuses the same inspection path, invalidates stale overlays,
+    # Live Review reuses the same inspection path, rebuilds visible overlays,
     # and reads the current Edit Mode mesh without leaving the mode or changing
     # its selection.
     settings.live_review = True
@@ -376,18 +376,22 @@ def main():
         map_kind="FACES",
     ) == {"FINISHED"}
     assert highlight_state.active_highlights()
+    live_map_highlight = highlight_state.active_highlight()
     modifier.levels = 2
     bpy.context.view_layer.update()
     assert live_review.has_pending(bpy.context.scene)
     assert live_review.flush_scene(bpy.context.scene)
     assert settings.results[0].evaluated_triangles > live_triangles
-    assert not highlight_state.active_highlights()
+    assert highlight_state.is_overview_active(cube.name, "FACE_MAP")
+    assert highlight_state.active_highlight().element_count == 6
+    assert highlight_state.active_highlight() is not live_map_highlight
 
     settings.live_max_vertices = 1
     assert live_review.has_pending(bpy.context.scene)
     assert not live_review.flush_scene(bpy.context.scene)
     assert settings.live_status.startswith("Paused:")
     assert not live_review.has_pending(bpy.context.scene)
+    assert highlight_state.is_overview_active(cube.name, "FACE_MAP")
 
     settings.live_max_vertices = 8
     assert live_review.flush_scene(bpy.context.scene)
@@ -402,6 +406,7 @@ def main():
     assert not live_review.flush_scene(bpy.context.scene)
     assert "9 source vertices exceed the 8 live limit" in settings.live_status
     assert not live_review.has_pending(bpy.context.scene)
+    assert highlight_state.is_overview_active(cube.name, "FACE_MAP")
 
     settings.live_max_vertices = 250_000
     assert live_review.has_pending(bpy.context.scene)
@@ -415,11 +420,13 @@ def main():
     )
     edit_mesh = bmesh.from_edit_mesh(cube.data)
     assert added_vertex.is_valid and added_vertex.select
+    assert highlight_state.is_overview_active(cube.name, "FACE_MAP")
     assert live_review.schedule(bpy.context.scene, immediate=True)
     assert live_review.has_pending(bpy.context.scene)
     assert bpy.ops.onyx.run_review() == {"FINISHED"}
     assert not live_review.has_pending(bpy.context.scene)
     assert bpy.context.mode == "EDIT_MESH"
+    assert highlight_state.is_overview_active(cube.name, "FACE_MAP")
     settings.live_review = False
     assert settings.live_status == "Off"
     assert not live_review.has_pending(bpy.context.scene)
@@ -767,6 +774,49 @@ def main():
     ) == {"FINISHED"}
     edit_mesh = bmesh.from_edit_mesh(normal_asset.data)
     assert sum(1 for face in edit_mesh.faces if face.select) == 1
+    settings.live_review = True
+    assert live_review.has_pending(bpy.context.scene)
+    assert live_review.flush_scene(bpy.context.scene)
+    assert highlight_state.is_active(
+        normal_asset.name,
+        "topology.normal_outliers",
+    )
+    live_error_highlight = highlight_state.active_highlight()
+    edit_mesh = bmesh.from_edit_mesh(normal_asset.data)
+    added_normal_vertex = edit_mesh.verts.new((4.0, 4.0, 4.0))
+    bmesh.update_edit_mesh(
+        normal_asset.data,
+        loop_triangles=False,
+        destructive=True,
+    )
+    bpy.context.view_layer.update()
+    assert live_review.has_pending(bpy.context.scene)
+    assert live_review.flush_scene(bpy.context.scene)
+    assert bpy.context.mode == "EDIT_MESH"
+    edit_mesh = bmesh.from_edit_mesh(normal_asset.data)
+    assert added_normal_vertex.is_valid
+    assert sum(1 for face in edit_mesh.faces if face.select) == 1
+    assert highlight_state.is_active(
+        normal_asset.name,
+        "topology.normal_outliers",
+    )
+    assert highlight_state.active_highlight().element_count == 1
+    assert highlight_state.active_highlight() is not live_error_highlight
+    selected_face = next(face for face in edit_mesh.faces if face.select)
+    selected_face.normal_flip()
+    bmesh.update_edit_mesh(
+        normal_asset.data,
+        loop_triangles=False,
+        destructive=False,
+    )
+    bpy.context.view_layer.update()
+    assert live_review.has_pending(bpy.context.scene)
+    assert live_review.flush_scene(bpy.context.scene)
+    assert "topology.normal_outliers" not in {
+        issue.code for issue in settings.results[0].issues
+    }
+    assert not highlight_state.active_highlights()
+    settings.live_review = False
     bpy.ops.object.mode_set(mode="OBJECT")
 
     overlap_asset = make_overlapping_faces_mesh()

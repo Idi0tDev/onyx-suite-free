@@ -40,10 +40,12 @@ that is the intended production change. Onyx does not do this automatically.
 
 ## The highlight disappeared
 
-Highlights describe the geometry at the time of the latest review. They are
-cleared when the result is rerun, refreshed by Live Review, cleared, hidden, or
-when a Show-filter change would make the old overlay misleading. Run **Show**
-or **Show Problems** again to draw evidence from the current result.
+Live Review rebuilds a visible highlight from the latest mesh instead of leaving
+stale marks behind. A focused highlight disappears when that problem is fixed,
+the object leaves the reviewed scope, the object is hidden, or a Show-filter
+change excludes it. A manual review with Live switched off also starts with a
+clean viewport. Run **Show** or **Show Problems** again whenever you want to draw
+evidence from the current result.
 
 Topology face and pole maps are independent from the Show filter and stay visible
 until another highlight replaces them or they are cleared.

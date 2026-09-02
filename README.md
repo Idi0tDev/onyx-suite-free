@@ -167,9 +167,10 @@ refuses them on linked, shared, or shape-key mesh data.
 They can also draw temporary, color-coded highlights directly in the 3D
 Viewport. Each problem type has a distinct color, while error-level findings use
 thicker marks. Show a single finding or every actionable finding for one object
-at once. Highlights remain visible through the surface, create no scene data,
-and clear when the review is rerun, cleared, hidden, or the extension is
-disabled.
+at once. Highlights remain visible through the surface and create no scene data.
+During Live Review, the visible highlight or map is rebuilt from the changed
+mesh so it stays useful without becoming stale. It disappears when its problem
+is resolved, it is hidden or cleared, or the extension is disabled.
 
 **Topology Tools** turns the descriptive statistics into navigation. Use a
 face map to distinguish quads, triangles, and ngons, or a pole map to locate
