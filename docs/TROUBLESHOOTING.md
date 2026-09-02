@@ -19,14 +19,14 @@ what is missing when a scope is not ready.
 
 ## Live Review says it is paused
 
-Live Review pauses in two intentional situations:
+Live Review normally works in both Object Mode and Edit Mode. It reads the
+current editable mesh without changing your mode or component selection.
 
-- a target mesh is in Edit Mode; or
-- the scope exceeds the configured **Live Vertex Limit**.
-
-Leave Edit Mode to let the pending refresh continue. For a known dense asset,
-raise the vertex limit or set it to zero to disable that guard. Manual **Run
-Now** remains available for an immediate review.
+The usual pause is the chosen scope exceeding the configured **Live Vertex
+Limit**. For a known dense asset, raise the limit or set it to zero to disable
+that guard. The status line shows the current source count. If it shows a
+different reason, **Run Now** can retry immediately and leave the message visible
+for troubleshooting.
 
 ## A finding has no Fix button
 

@@ -100,11 +100,20 @@ topology, or edits geometry.
 ## Findings
 
 Errors identify conditions that usually require correction, such as degenerate
-faces, inconsistent winding, edges shared by more than two faces, or a negative
-world-transform determinant. Exact duplicate faces occupying the same vertex
-positions are also reported as errors. Warnings identify conditions that may be
-valid but deserve review, such as open boundaries, ngons, unapplied scale,
-coincident unwelded vertices, disconnected islands, or missing UVs.
+faces, inconsistent winding, overlapping faces, edges shared by more than two
+faces, or a negative world-transform determinant. Reviewer also flags a face
+when it points against a clear majority of the connected surface around it.
+Exact duplicate faces occupying the same vertex positions stay separate from
+partial overlaps so you know which problem you are looking at. Warnings identify
+conditions that may be valid but deserve review, such as open boundaries,
+ngons, unapplied scale, coincident unwelded vertices, disconnected islands, or
+missing UVs.
+
+The normal-direction check looks for local odd faces, not every hard corner. It
+needs at least three connected neighbors that mostly agree with each other, then
+reports a face only when it points strongly against that group. A normal cube or
+deliberately sharp low-poly model should not light up just because it has hard
+edges.
 
 An open boundary is not automatically a bad mesh: planes, cards, clothing, and
 other intentionally open surfaces can be correct. Onyx Reviewer reports facts and
@@ -200,17 +209,18 @@ are visible immediately. Onyx refuses to run a fix on linked mesh data,
 multi-user mesh data, or a mesh with shape keys.
 
 There is no **Fix All** action and Live Review never runs fixes. Open boundaries,
-degenerate faces, ngons, coincident vertices, disconnected islands, transforms,
-UVs, and materials remain diagnosis-only because a generic change could destroy
-intentional modeling decisions.
+degenerate or overlapping faces, normal-direction outliers, ngons, coincident
+vertices, disconnected islands, transforms, UVs, and materials remain
+diagnosis-only because a generic change could destroy intentional modeling
+decisions.
 
 Element-level topology findings include an **Inspect** action. It activates the
 reviewed mesh, enters Edit Mode, switches to the matching vertex, edge, or face
 selection mode, and selects the elements that currently produce that finding.
-Inspect supports non-manifold and boundary edges, degenerate and duplicate
-faces, inconsistent winding, loose geometry, coincident vertices, disconnected
-islands, and ngons. For disconnected islands, Inspect selects every island
-outside the largest connected component.
+Inspect supports non-manifold and boundary edges, degenerate, duplicate, and
+overlapping faces, local normal-direction outliers, inconsistent winding, loose
+geometry, coincident vertices, disconnected islands, and ngons. For disconnected
+islands, Inspect selects every island outside the largest connected component.
 
 Inspect changes the active object, mode, and selection so the problem is ready
 to examine, but it never edits geometry. Results describe the last review run;
@@ -258,6 +268,8 @@ directly over the model. Each finding type keeps the same color:
 | Edges connected to more than two faces | Red |
 | Degenerate faces | Rose |
 | Duplicate faces | Magenta |
+| Overlapping faces | Mint |
+| Local normal-direction outliers | Indigo |
 | Inconsistent winding | Purple |
 | Open boundary edges | Cyan |
 | Loose edges | Yellow |

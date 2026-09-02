@@ -10,10 +10,10 @@ Viewport.
 
 Production meshes often look acceptable while still carrying expensive
 surprises: modifier-driven triangle growth, inconsistent face winding,
-duplicate faces, loose elements, missing asset setup, or topology that is hard
-to locate from a text count alone. Blender exposes ways to investigate each
-condition, but the artist has to know where to look and repeat the process for
-every object.
+overlapping faces, local normal-direction outliers, duplicate faces, loose
+elements, missing asset setup, or topology that is hard to locate from a text
+count alone. Blender exposes ways to investigate each condition, but the artist
+has to know where to look and repeat the process for every object.
 
 The product goal was therefore narrower than a general cleanup system:
 
@@ -71,7 +71,7 @@ Saved session baseline --> pure summary comparison --> delta UI and report
 | `operators.py` | Scope resolution and explicit Blender actions such as Review, Show, Inspect, and Fix |
 | `highlight_state.py` | One transient GPU draw-handler lifecycle and stable finding colors |
 | `viewport_state.py` | Capture, apply, and exact restoration of per-viewport display settings |
-| `live_review.py` | Dependency-graph observation, debounce, Edit Mode pause, and density guard |
+| `live_review.py` | Dependency-graph observation, debounce, current Edit Mode geometry, and density guard |
 | `delta_state.py` | Session-only before snapshots, file-load cleanup, and the latest comparison |
 | `review_profiles.py` | UI-neutral presets and custom finding-group resolution |
 | `ui.py` and `properties.py` | Artist-facing state and layout without owning analysis rules |
@@ -98,6 +98,23 @@ center markers. The overlay ignores surface depth so a problem on the far side
 does not disappear. Cleanup removes the handler when evidence is hidden,
 rerun, cleared, or the extension is disabled.
 
+### A strange normal needs local context
+
+A face is not suspicious just because it meets another face at a hard angle.
+Reviewer first checks that at least three connected neighbors mostly agree with
+one another. It reports the face only when its normal points strongly against
+that local consensus. This catches a folded or reversed-looking patch without
+painting ordinary cube corners and intentionally sharp low-poly work as errors.
+
+### Overlap detection uses the cheapest useful test first
+
+Crossing faces are found with Blender's spatial tree. Coplanar faces need a
+separate 2D test because two triangles can cover the same area without crossing
+in 3D. Reviewer groups those triangles by plane, performs a small bounding-box
+sweep inside each group, and runs the exact overlap test only on the remaining
+candidates. Exact duplicate faces are removed from this result so their more
+specific finding remains clear.
+
 ### Filtering changes presentation, not truth
 
 All, Errors, Warnings, and Fixable are views over the latest result. Switching
@@ -117,9 +134,9 @@ because a seemingly local change could have wider consequences.
 
 Live Review observes dependency-graph changes but does not own a second
 analysis engine. It schedules the same review path after a configurable quiet
-period. It pauses while a target is in Edit Mode or when the scope exceeds the
-configured source-vertex ceiling, keeping refresh cost and edit-state behavior
-predictable.
+period. In Edit Mode it synchronizes the current editable geometry for analysis,
+then preserves the artist's mode and component selection. A source-vertex
+ceiling keeps accidental refreshes on unexpectedly dense scopes predictable.
 
 ### Review Delta stays out of the file
 
@@ -144,7 +161,7 @@ from being mistaken for a healthier mesh.
 | Layer | What is checked |
 | --- | --- |
 | Pure result tests | Aggregation, severity, profile resolution, filtering, delta comparison, reporting, and compatibility behavior |
-| Blender mesh tests | Real BMesh findings, source/evaluated counts, selection domains, and simple mutations |
+| Blender mesh tests | Real BMesh findings including normal outliers and two kinds of face overlap, source/evaluated counts, selection domains, and simple mutations |
 | Viewport tests | Highlight geometry, stable distinct colors, topology maps, and exact state restoration |
 | Lifecycle tests | Registration rollback, embedded Core parity, standalone Core coexistence, and cleanup |
 | Release checks | Manifest/runtime version parity, public-source audit, deterministic packaging, archive inspection, SHA-256 output, and native Blender ZIP validation |
@@ -158,8 +175,10 @@ the real Blender smoke and coexistence suites with a clean factory startup.
 
 - Topology evidence maps the editable base mesh; evaluated geometry currently
   contributes metrics rather than selectable modifier-result elements.
-- The current checks do not attempt general self-intersection or non-planarity
-  diagnosis.
+- Face-overlap checks stay inside each editable base mesh; intersections between
+  separate objects and evaluated modifier surfaces are not diagnosed yet.
+- The local normal check finds a face that disagrees with coherent neighbors; it
+  does not guess which side of an entire open model is globally inside or out.
 - Live Review is debounced on Blender's main thread rather than running mesh
   analysis asynchronously.
 - Simple fixes deliberately exclude operations whose correct result depends on

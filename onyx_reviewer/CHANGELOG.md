@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.12.0 - 2026-09-02
+
+- Flag faces that point against a coherent group of connected face normals.
+- Detect both faces that cross in 3D and separate coplanar faces that partially
+  overlap.
+- Keep exact duplicate faces as their own clearer finding instead of counting
+  them again as overlaps.
+- Add face selection and Indigo and Mint viewport evidence for the two new
+  diagnosis-only errors.
+- Group coplanar candidates by plane so overlap checks remain responsive on
+  production meshes and during Live Review.
+
 ## 0.11.0 - 2026-09-02
 
 - Refresh Live Review from the current editable mesh while staying in Edit

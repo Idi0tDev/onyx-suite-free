@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import bmesh
+from mathutils.bvhtree import BVHTree
 
 from .analysis import Issue, ObjectReview, Severity
 from .review_profiles import ReviewProfile, resolve_review_profile
@@ -11,11 +12,19 @@ from .review_profiles import ReviewProfile, resolve_review_profile
 _TRANSFORM_EPSILON = 1.0e-4
 _AREA_EPSILON = 1.0e-12
 _POSITION_PRECISION = 9
+_NORMAL_NEIGHBOR_MINIMUM = 3
+_NORMAL_NEIGHBOR_COHERENCE = 0.7
+_NORMAL_OPPOSITION_DOT = -0.5
+_COPLANAR_NORMAL_DOT = 0.99999
+_OVERLAP_TOLERANCE_MINIMUM = 1.0e-8
+_OVERLAP_TOLERANCE_SCALE = 1.0e-7
 
 _ISSUE_SELECTION_DOMAINS = {
     "topology.non_manifold": "EDGE",
     "topology.degenerate": "FACE",
     "topology.duplicate_faces": "FACE",
+    "topology.overlapping_faces": "FACE",
+    "topology.normal_outliers": "FACE",
     "topology.winding": "EDGE",
     "topology.boundary": "EDGE",
     "topology.loose_edges": "EDGE",
@@ -203,6 +212,216 @@ def _exact_duplicate_faces_to_remove(faces):
     )
 
 
+def _normal_outlier_faces(faces):
+    """Find faces pointing against a coherent patch of connected neighbors."""
+    outliers = []
+    for face in faces:
+        neighbors = {}
+        for edge in face.edges:
+            for neighbor in edge.link_faces:
+                if neighbor is not face:
+                    neighbors[neighbor.index] = neighbor
+        if len(neighbors) < _NORMAL_NEIGHBOR_MINIMUM:
+            continue
+
+        average = face.normal.copy()
+        average.zero()
+        for neighbor in neighbors.values():
+            average += neighbor.normal
+        length = average.length
+        coherence = length / len(neighbors)
+        if length == 0.0 or coherence < _NORMAL_NEIGHBOR_COHERENCE:
+            continue
+        average /= length
+        if face.normal.dot(average) <= _NORMAL_OPPOSITION_DOT:
+            outliers.append(face)
+    return tuple(outliers)
+
+
+def _mesh_overlap_tolerance(bm):
+    if not bm.verts:
+        return _OVERLAP_TOLERANCE_MINIMUM
+    minimum = bm.verts[0].co.copy()
+    maximum = bm.verts[0].co.copy()
+    for vertex in bm.verts:
+        for axis in range(3):
+            minimum[axis] = min(minimum[axis], vertex.co[axis])
+            maximum[axis] = max(maximum[axis], vertex.co[axis])
+    return max(
+        (maximum - minimum).length * _OVERLAP_TOLERANCE_SCALE,
+        _OVERLAP_TOLERANCE_MINIMUM,
+    )
+
+
+def _face_pair_can_overlap(first, second, vertex_indices, position_keys):
+    if first == second:
+        return False
+    if vertex_indices[first] & vertex_indices[second]:
+        return False
+    return position_keys[first] != position_keys[second]
+
+
+def _triangle_bounds(vertices):
+    return (
+        tuple(min(vertex[axis] for vertex in vertices) for axis in range(3)),
+        tuple(max(vertex[axis] for vertex in vertices) for axis in range(3)),
+    )
+
+
+def _bounds_overlap(first, second, tolerance):
+    first_minimum, first_maximum = first
+    second_minimum, second_maximum = second
+    return all(
+        first_minimum[axis] <= second_maximum[axis] + tolerance
+        and second_minimum[axis] <= first_maximum[axis] + tolerance
+        for axis in range(3)
+    )
+
+
+def _strict_triangle_overlap_2d(first, second, drop_axis, tolerance):
+    projected = (
+        tuple(
+            tuple(vertex[axis] for axis in range(3) if axis != drop_axis)
+            for vertex in triangle
+        )
+        for triangle in (first, second)
+    )
+    first_2d, second_2d = projected
+    for triangle in (first_2d, second_2d):
+        for start, end in zip(triangle, triangle[1:] + triangle[:1]):
+            edge_x = end[0] - start[0]
+            edge_y = end[1] - start[1]
+            axis_x = -edge_y
+            axis_y = edge_x
+            axis_length = (axis_x * axis_x + axis_y * axis_y) ** 0.5
+            if axis_length <= tolerance:
+                return False
+            first_projection = tuple(
+                point[0] * axis_x + point[1] * axis_y for point in first_2d
+            )
+            second_projection = tuple(
+                point[0] * axis_x + point[1] * axis_y for point in second_2d
+            )
+            overlap = min(max(first_projection), max(second_projection)) - max(
+                min(first_projection), min(second_projection)
+            )
+            if overlap <= tolerance * axis_length:
+                return False
+    return True
+
+
+def _coplanar_triangles_overlap(first, second, tolerance):
+    first_normal = (first[1] - first[0]).cross(first[2] - first[0])
+    second_normal = (second[1] - second[0]).cross(second[2] - second[0])
+    if first_normal.length <= _AREA_EPSILON or second_normal.length <= _AREA_EPSILON:
+        return False
+    first_normal.normalize()
+    second_normal.normalize()
+    if abs(first_normal.dot(second_normal)) < _COPLANAR_NORMAL_DOT:
+        return False
+    if any(
+        abs(first_normal.dot(vertex - first[0])) > tolerance
+        for vertex in second
+    ):
+        return False
+    drop_axis = max(range(3), key=lambda axis: abs(first_normal[axis]))
+    return _strict_triangle_overlap_2d(first, second, drop_axis, tolerance)
+
+
+def _coplanar_group_key(vertices, tolerance):
+    normal = (vertices[1] - vertices[0]).cross(vertices[2] - vertices[0])
+    if normal.length <= _AREA_EPSILON:
+        return None
+    normal.normalize()
+    dominant_axis = max(range(3), key=lambda axis: abs(normal[axis]))
+    if normal[dominant_axis] < 0.0:
+        normal.negate()
+    plane_distance = normal.dot(vertices[0])
+    return (
+        *(round(float(normal[axis]), 5) for axis in range(3)),
+        round(float(plane_distance) / tolerance),
+    )
+
+
+def _overlapping_faces(bm):
+    """Find non-neighboring faces that cross or overlap with positive area."""
+    if len(bm.faces) < 2:
+        return ()
+
+    tolerance = _mesh_overlap_tolerance(bm)
+    vertex_indices = {
+        face.index: frozenset(vertex.index for vertex in face.verts)
+        for face in bm.faces
+    }
+    position_keys = {face.index: _face_position_key(face) for face in bm.faces}
+    overlapping_pairs = set()
+
+    tree = BVHTree.FromBMesh(bm, epsilon=tolerance)
+    if tree is not None:
+        for first, second in tree.overlap(tree):
+            pair = tuple(sorted((first, second)))
+            if pair in overlapping_pairs:
+                continue
+            if _face_pair_can_overlap(*pair, vertex_indices, position_keys):
+                overlapping_pairs.add(pair)
+
+    coplanar_groups = {}
+    for loops in bm.calc_loop_triangles():
+        vertices = tuple(loop.vert.co.copy() for loop in loops)
+        group_key = _coplanar_group_key(vertices, tolerance)
+        if group_key is None:
+            continue
+        bounds = _triangle_bounds(vertices)
+        coplanar_groups.setdefault(group_key, []).append(
+            (loops[0].face.index, vertices, bounds)
+        )
+    for triangles in coplanar_groups.values():
+        if len(triangles) < 2:
+            continue
+        global_minimum = tuple(
+            min(bounds[0][axis] for _, _, bounds in triangles) for axis in range(3)
+        )
+        global_maximum = tuple(
+            max(bounds[1][axis] for _, _, bounds in triangles) for axis in range(3)
+        )
+        sweep_axis = max(
+            range(3),
+            key=lambda axis: global_maximum[axis] - global_minimum[axis],
+        )
+        triangles.sort(key=lambda item: item[2][0][sweep_axis])
+        active = []
+        for current in triangles:
+            current_face, current_vertices, current_bounds = current
+            active = [
+                item
+                for item in active
+                if item[2][1][sweep_axis]
+                >= current_bounds[0][sweep_axis] - tolerance
+            ]
+            for other_face, other_vertices, other_bounds in active:
+                pair = tuple(sorted((current_face, other_face)))
+                if pair in overlapping_pairs:
+                    continue
+                if not _face_pair_can_overlap(
+                    *pair,
+                    vertex_indices,
+                    position_keys,
+                ):
+                    continue
+                if not _bounds_overlap(current_bounds, other_bounds, tolerance):
+                    continue
+                if _coplanar_triangles_overlap(
+                    current_vertices,
+                    other_vertices,
+                    tolerance,
+                ):
+                    overlapping_pairs.add(pair)
+            active.append(current)
+
+    face_indices = {index for pair in overlapping_pairs for index in pair}
+    return tuple(face for face in bm.faces if face.index in face_indices)
+
+
 def apply_simple_fix(mesh, issue_code):
     """Apply one deterministic base-mesh fix and return its changed element count."""
     if issue_code not in _SIMPLE_FIXES:
@@ -249,6 +468,10 @@ def _matching_elements(bm, issue_code):
         return tuple(face for face in bm.faces if face.calc_area() <= _AREA_EPSILON)
     if issue_code == "topology.duplicate_faces":
         return tuple(face for group in _duplicate_face_groups(bm.faces) for face in group)
+    if issue_code == "topology.overlapping_faces":
+        return _overlapping_faces(bm)
+    if issue_code == "topology.normal_outliers":
+        return _normal_outlier_faces(bm.faces)
     if issue_code == "topology.winding":
         return tuple(
             edge
@@ -296,6 +519,7 @@ def select_issue_elements(mesh, issue_code):
     bm.verts.ensure_lookup_table()
     bm.edges.ensure_lookup_table()
     bm.faces.ensure_lookup_table()
+    bm.normal_update()
     for face in bm.faces:
         face.select_set(False)
     for edge in bm.edges:
@@ -324,6 +548,7 @@ def issue_overlays_geometry(obj, issue_codes):
         bm.verts.ensure_lookup_table()
         bm.edges.ensure_lookup_table()
         bm.faces.ensure_lookup_table()
+        bm.normal_update()
         matrix = obj.matrix_world
 
         def position(coordinate):
@@ -373,6 +598,7 @@ def _base_mesh_metrics(mesh):
         bm.verts.ensure_lookup_table()
         bm.edges.ensure_lookup_table()
         bm.faces.ensure_lookup_table()
+        bm.normal_update()
 
         duplicate_faces = sum(
             len(group) - 1 for group in _duplicate_face_groups(bm.faces)
@@ -381,6 +607,8 @@ def _base_mesh_metrics(mesh):
             len(group) - 1 for group in _coincident_vertex_groups(bm.verts)
         )
         disconnected_islands = max(len(_vertex_islands(bm)) - 1, 0)
+        overlapping_faces = len(_overlapping_faces(bm))
+        normal_outliers = len(_normal_outlier_faces(bm.faces))
 
         boundaries = sum(1 for edge in bm.edges if len(edge.link_faces) == 1)
         non_manifold = sum(1 for edge in bm.edges if len(edge.link_faces) > 2)
@@ -410,6 +638,8 @@ def _base_mesh_metrics(mesh):
             "loose_vertices": loose_vertices,
             "degenerate": degenerate,
             "duplicate_faces": duplicate_faces,
+            "overlapping_faces": overlapping_faces,
+            "normal_outliers": normal_outliers,
             "coincident_vertices": coincident_vertices,
             "disconnected_islands": disconnected_islands,
             "triangle_faces": triangle_faces,
@@ -480,6 +710,24 @@ def review_object(
                 "topology.duplicate_faces",
                 "Faces occupy the same vertex positions",
                 base["duplicate_faces"],
+                error=True,
+            )
+        )
+    if profile.topology and base["overlapping_faces"]:
+        issues.append(
+            _issue(
+                "topology.overlapping_faces",
+                "Faces intersect or overlap other faces",
+                base["overlapping_faces"],
+                error=True,
+            )
+        )
+    if profile.topology and base["normal_outliers"]:
+        issues.append(
+            _issue(
+                "topology.normal_outliers",
+                "Faces point against the surrounding surface",
+                base["normal_outliers"],
                 error=True,
             )
         )

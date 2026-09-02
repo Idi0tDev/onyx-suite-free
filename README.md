@@ -133,7 +133,7 @@ the mesh or saved inside the `.blend` file.
 | Area | Review evidence |
 | --- | --- |
 | Geometry | Base and evaluated vertices, faces, and triangles; triangle, quad, and ngon face composition |
-| Topology | Boundaries, non-manifold edges, duplicate or degenerate faces, coincident vertices, disconnected islands, loose geometry, ngons, inconsistent winding, optional boundary/ngon allowances, and 3/5/6+ edge pole counts |
+| Topology | Boundaries, non-manifold edges, duplicate, overlapping, or degenerate faces, local normal-direction outliers, coincident vertices, disconnected islands, loose geometry, ngons, inconsistent winding, optional boundary/ngon allowances, and 3/5/6+ edge pole counts |
 | Transforms | Negative transforms and unapplied scale |
 | Asset setup | UV-map and material-slot presence |
 | Budget | Optional evaluated triangle warning |

@@ -1,4 +1,4 @@
-# Onyx Reviewer 0.11.0
+# Onyx Reviewer 0.12.0
 
 Onyx Reviewer helps you spot mesh problems before they become annoying production
 problems. It checks the editable mesh and the evaluated modifier result, then
@@ -17,7 +17,9 @@ so there is no second dependency to install.
 - Focused highlights and exact selection for every face and pole class
 - Open boundaries and edges connected to more than two faces
 - Degenerate faces and inconsistent face winding
-- Duplicate faces occupying the same vertex positions
+- Faces pointing against the connected surface around them
+- Crossing faces and partially overlapping coplanar faces
+- Exact duplicate faces occupying the same vertex positions
 - Loose vertices and edges, plus coincident unwelded vertices
 - Additional disconnected mesh islands
 - Ngons
@@ -88,7 +90,8 @@ Supported findings show a **Fix** button for four deterministic operations:
 
 Every fix is explicit, creates one Blender undo step, and refreshes the review.
 There is no automatic cleanup pass. Onyx does not offer generic fixes for holes,
-ngons, coincident vertices, disconnected islands, transforms, UVs, or materials.
+overlapping faces, normal-direction outliers, ngons, coincident vertices,
+disconnected islands, transforms, UVs, or materials.
 Fixes are also refused for linked data, multi-user meshes, and meshes with shape
 keys so a local cleanup cannot silently affect another asset state.
 
@@ -141,7 +144,7 @@ captured viewport.
 
 ## Install
 
-Build `onyx_reviewer-0.11.0.zip` with `tools/package_reviewer.ps1`, then install the
+Build `onyx_reviewer-0.12.0.zip` with `tools/package_reviewer.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.
 

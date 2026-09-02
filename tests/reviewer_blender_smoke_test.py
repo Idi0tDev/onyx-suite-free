@@ -110,6 +110,62 @@ def make_simple_fix_mesh():
     return obj
 
 
+def make_normal_outlier_mesh():
+    mesh = bpy.data.meshes.new("NormalOutlierMesh")
+    mesh.from_pydata(
+        (
+            (0.0, 0.0, 0.0),
+            (1.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0),
+            (0.5, 2.0, 0.0),
+            (-1.0, -1.0, 0.0),
+            (2.0, 0.5, 0.0),
+        ),
+        (),
+        (
+            (0, 2, 1),
+            (0, 1, 3),
+            (1, 2, 4),
+            (2, 0, 5),
+        ),
+    )
+    mesh.update()
+    obj = bpy.data.objects.new("NormalOutlierAsset", mesh)
+    bpy.context.collection.objects.link(obj)
+    return obj
+
+
+def make_overlapping_faces_mesh():
+    mesh = bpy.data.meshes.new("OverlappingFacesMesh")
+    mesh.from_pydata(
+        (
+            (0.0, 0.0, 0.0),
+            (2.0, 0.0, 0.0),
+            (0.0, 2.0, 0.0),
+            (0.5, 0.5, 0.0),
+            (2.5, 0.5, 0.0),
+            (0.5, 2.5, 0.0),
+            (10.0, 0.0, 0.0),
+            (12.0, 0.0, 0.0),
+            (10.0, 2.0, 0.0),
+            (10.5, 0.5, -1.0),
+            (10.5, 0.5, 1.0),
+            (12.0, 2.0, 0.0),
+        ),
+        (),
+        (
+            (0, 1, 2),
+            (3, 4, 5),
+            (6, 7, 8),
+            (9, 10, 11),
+        ),
+    )
+    mesh.update()
+    obj = bpy.data.objects.new("OverlappingFacesAsset", mesh)
+    bpy.context.collection.objects.link(obj)
+    return obj
+
+
 def check_tooltips():
     for cls in properties.CLASSES:
         for identifier in cls.__annotations__:
@@ -493,6 +549,8 @@ def main():
         ("topology.non_manifold", "ERROR"),
         ("topology.degenerate", "ERROR"),
         ("topology.duplicate_faces", "ERROR"),
+        ("topology.overlapping_faces", "ERROR"),
+        ("topology.normal_outliers", "ERROR"),
         ("topology.winding", "ERROR"),
         ("topology.boundary", "WARNING"),
         ("topology.loose_edges", "WARNING"),
@@ -679,6 +737,68 @@ def main():
         len(problem.data.edges),
         len(problem.data.polygons),
     )
+
+    normal_asset = make_normal_outlier_mesh()
+    for obj in tuple(bpy.context.selected_objects):
+        obj.select_set(False)
+    normal_asset.select_set(True)
+    bpy.context.view_layer.objects.active = normal_asset
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    normal_issues = {issue.code: issue.count for issue in settings.results[0].issues}
+    assert normal_issues["topology.normal_outliers"] == 1
+    assert "topology.winding" not in normal_issues
+    assert operators.issue_selection_domain("topology.normal_outliers") == "FACE"
+    assert operators.simple_fix_info("topology.normal_outliers") is None
+    assert bpy.ops.onyx.highlight_review_issue(
+        object_name=normal_asset.name,
+        issue_code="topology.normal_outliers",
+        message="Faces point against the surrounding surface",
+        severity="ERROR",
+    ) == {"FINISHED"}
+    highlight = highlight_state.active_highlight()
+    assert highlight.element_count == 1
+    assert highlight_state.finding_style(
+        highlight.issue_code,
+        highlight.severity,
+    ).name == "Indigo"
+    assert bpy.ops.onyx.inspect_review_issue(
+        object_name=normal_asset.name,
+        issue_code="topology.normal_outliers",
+    ) == {"FINISHED"}
+    edit_mesh = bmesh.from_edit_mesh(normal_asset.data)
+    assert sum(1 for face in edit_mesh.faces if face.select) == 1
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    overlap_asset = make_overlapping_faces_mesh()
+    for obj in tuple(bpy.context.selected_objects):
+        obj.select_set(False)
+    overlap_asset.select_set(True)
+    bpy.context.view_layer.objects.active = overlap_asset
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    overlap_issues = {issue.code: issue.count for issue in settings.results[0].issues}
+    assert overlap_issues["topology.overlapping_faces"] == 4
+    assert "topology.duplicate_faces" not in overlap_issues
+    assert operators.issue_selection_domain("topology.overlapping_faces") == "FACE"
+    assert operators.simple_fix_info("topology.overlapping_faces") is None
+    assert bpy.ops.onyx.highlight_review_issue(
+        object_name=overlap_asset.name,
+        issue_code="topology.overlapping_faces",
+        message="Faces intersect or overlap other faces",
+        severity="ERROR",
+    ) == {"FINISHED"}
+    highlight = highlight_state.active_highlight()
+    assert highlight.element_count == 4
+    assert highlight_state.finding_style(
+        highlight.issue_code,
+        highlight.severity,
+    ).name == "Mint"
+    assert bpy.ops.onyx.inspect_review_issue(
+        object_name=overlap_asset.name,
+        issue_code="topology.overlapping_faces",
+    ) == {"FINISHED"}
+    edit_mesh = bmesh.from_edit_mesh(overlap_asset.data)
+    assert sum(1 for face in edit_mesh.faces if face.select) == 4
+    bpy.ops.object.mode_set(mode="OBJECT")
 
     fix_asset = make_simple_fix_mesh()
     for obj in tuple(bpy.context.selected_objects):

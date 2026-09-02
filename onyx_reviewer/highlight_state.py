@@ -19,6 +19,14 @@ _FINDING_STYLES = {
     "topology.non_manifold": FindingStyle("Red", (1.0, 0.05, 0.12, 0.98)),
     "topology.degenerate": FindingStyle("Rose", (1.0, 0.08, 0.42, 0.98)),
     "topology.duplicate_faces": FindingStyle("Magenta", (0.95, 0.08, 1.0, 0.98)),
+    "topology.overlapping_faces": FindingStyle(
+        "Mint",
+        (0.05, 1.0, 0.58, 0.98),
+    ),
+    "topology.normal_outliers": FindingStyle(
+        "Indigo",
+        (0.25, 0.08, 0.95, 0.98),
+    ),
     "topology.winding": FindingStyle("Purple", (0.62, 0.24, 1.0, 0.98)),
     "topology.boundary": FindingStyle("Cyan", (0.05, 0.82, 1.0, 0.96)),
     "topology.loose_edges": FindingStyle("Yellow", (1.0, 0.82, 0.05, 0.96)),
