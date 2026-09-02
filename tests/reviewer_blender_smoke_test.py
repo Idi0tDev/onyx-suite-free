@@ -15,6 +15,7 @@ from onyx_reviewer import (  # noqa: E402
     delta_state,
     highlight_state,
     live_review,
+    mesh_analysis,
     operators,
     properties,
     viewport_state,
@@ -216,6 +217,7 @@ def main():
     modifier = cube.modifiers.new("Subdivision", "SUBSURF")
     modifier.levels = 1
     settings = bpy.context.scene.onyx_reviewer
+    assert abs(settings.live_delay - 0.3) < 1.0e-6
     assert not settings.more_settings_expanded
     assert not settings.topology_rules_expanded
     assert not settings.delta_expanded
@@ -842,6 +844,26 @@ def main():
         highlight.issue_code,
         highlight.severity,
     ).name == "Mint"
+    original_overlap_finder = mesh_analysis._overlapping_faces
+    overlap_calls = []
+
+    def counted_overlap_finder(bm):
+        overlap_calls.append(None)
+        return original_overlap_finder(bm)
+
+    mesh_analysis._overlapping_faces = counted_overlap_finder
+    settings.live_review = True
+    try:
+        assert live_review.flush_scene(bpy.context.scene)
+        assert overlap_calls == [None]
+        assert highlight_state.is_active(
+            overlap_asset.name,
+            "topology.overlapping_faces",
+        )
+        assert highlight_state.active_highlight().element_count == 4
+    finally:
+        settings.live_review = False
+        mesh_analysis._overlapping_faces = original_overlap_finder
     assert bpy.ops.onyx.inspect_review_issue(
         object_name=overlap_asset.name,
         issue_code="topology.overlapping_faces",

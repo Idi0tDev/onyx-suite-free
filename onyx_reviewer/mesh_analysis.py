@@ -534,7 +534,23 @@ def select_issue_elements(mesh, issue_code):
     return domain, len(matches)
 
 
-def issue_overlays_geometry(obj, issue_codes):
+def _evidence_matches(bm, issue_code, evidence):
+    if not evidence or issue_code not in evidence:
+        return None
+    domain, indices = evidence[issue_code]
+    if domain != issue_selection_domain(issue_code):
+        return None
+    elements = {
+        "VERT": bm.verts,
+        "EDGE": bm.edges,
+        "FACE": bm.faces,
+    }[domain]
+    if any(index < 0 or index >= len(elements) for index in indices):
+        return None
+    return tuple(elements[index] for index in indices)
+
+
+def issue_overlays_geometry(obj, issue_codes, *, evidence=None):
     """Build world-space overlay geometry for inspectable element classes."""
     issue_codes = tuple(dict.fromkeys(issue_codes))
     for issue_code in issue_codes:
@@ -557,7 +573,9 @@ def issue_overlays_geometry(obj, issue_codes):
         overlays = []
         for issue_code in issue_codes:
             domain = issue_selection_domain(issue_code)
-            matches = _matching_elements(bm, issue_code)
+            matches = _evidence_matches(bm, issue_code, evidence)
+            if matches is None:
+                matches = _matching_elements(bm, issue_code)
             points = []
             lines = []
             if domain == "VERT":
@@ -585,13 +603,17 @@ def issue_overlays_geometry(obj, issue_codes):
             bm.free()
 
 
-def issue_overlay_geometry(obj, issue_code):
+def issue_overlay_geometry(obj, issue_code, *, evidence=None):
     """Build world-space points and lines for one inspectable element class."""
-    _, domain, points, lines, count = issue_overlays_geometry(obj, (issue_code,))[0]
+    _, domain, points, lines, count = issue_overlays_geometry(
+        obj,
+        (issue_code,),
+        evidence=evidence,
+    )[0]
     return domain, points, lines, count
 
 
-def _base_mesh_metrics(mesh):
+def _base_mesh_metrics(mesh, *, evidence_codes=(), evidence_out=None):
     bm = bmesh.new()
     try:
         bm.from_mesh(mesh)
@@ -600,55 +622,137 @@ def _base_mesh_metrics(mesh):
         bm.faces.ensure_lookup_table()
         bm.normal_update()
 
-        duplicate_faces = sum(
-            len(group) - 1 for group in _duplicate_face_groups(bm.faces)
+        duplicate_groups = _duplicate_face_groups(bm.faces)
+        duplicate_face_matches = tuple(
+            face for group in duplicate_groups for face in group
         )
-        coincident_vertices = sum(
-            len(group) - 1 for group in _coincident_vertex_groups(bm.verts)
+        duplicate_faces = sum(len(group) - 1 for group in duplicate_groups)
+        coincident_groups = _coincident_vertex_groups(bm.verts)
+        coincident_vertex_matches = tuple(
+            vertex for group in coincident_groups for vertex in group
         )
-        disconnected_islands = max(len(_vertex_islands(bm)) - 1, 0)
-        overlapping_faces = len(_overlapping_faces(bm))
-        normal_outliers = len(_normal_outlier_faces(bm.faces))
+        coincident_vertices = sum(len(group) - 1 for group in coincident_groups)
+        islands = _vertex_islands(bm)
+        disconnected_islands = max(len(islands) - 1, 0)
+        if disconnected_islands:
+            largest_island = max(
+                range(len(islands)),
+                key=lambda index: (len(islands[index]), -index),
+            )
+            secondary_island_matches = tuple(
+                vertex
+                for index, island in enumerate(islands)
+                if index != largest_island
+                for vertex in island
+            )
+        else:
+            secondary_island_matches = ()
+        overlapping_face_matches = _overlapping_faces(bm)
+        normal_outlier_matches = _normal_outlier_faces(bm.faces)
+        overlapping_faces = len(overlapping_face_matches)
+        normal_outliers = len(normal_outlier_matches)
 
-        boundaries = sum(1 for edge in bm.edges if len(edge.link_faces) == 1)
-        non_manifold = sum(1 for edge in bm.edges if len(edge.link_faces) > 2)
-        loose_edges = sum(1 for edge in bm.edges if not edge.link_faces)
-        loose_vertices = sum(1 for vertex in bm.verts if not vertex.link_edges)
-        degenerate = sum(1 for face in bm.faces if face.calc_area() <= _AREA_EPSILON)
-        triangle_faces = sum(1 for face in bm.faces if len(face.verts) == 3)
-        quad_faces = sum(1 for face in bm.faces if len(face.verts) == 4)
-        ngons = sum(1 for face in bm.faces if len(face.verts) > 4)
-        three_poles = sum(1 for vertex in bm.verts if len(vertex.link_edges) == 3)
-        five_poles = sum(1 for vertex in bm.verts if len(vertex.link_edges) == 5)
-        six_plus_poles = sum(1 for vertex in bm.verts if len(vertex.link_edges) >= 6)
-        inconsistent = sum(
-            1
-            for edge in bm.edges
-            if len(edge.link_faces) == 2 and not edge.is_contiguous
-        )
-        triangles = sum(max(len(face.verts) - 2, 0) for face in bm.faces)
+        boundary_matches = []
+        non_manifold_matches = []
+        loose_edge_matches = []
+        winding_matches = []
+        for edge in bm.edges:
+            linked_faces = len(edge.link_faces)
+            if linked_faces == 1:
+                boundary_matches.append(edge)
+            elif linked_faces > 2:
+                non_manifold_matches.append(edge)
+            if not linked_faces:
+                loose_edge_matches.append(edge)
+            if linked_faces == 2 and not edge.is_contiguous:
+                winding_matches.append(edge)
+
+        loose_vertex_matches = []
+        three_pole_matches = []
+        five_pole_matches = []
+        six_plus_pole_matches = []
+        for vertex in bm.verts:
+            linked_edges = len(vertex.link_edges)
+            if not linked_edges:
+                loose_vertex_matches.append(vertex)
+            if linked_edges == 3:
+                three_pole_matches.append(vertex)
+            elif linked_edges == 5:
+                five_pole_matches.append(vertex)
+            elif linked_edges >= 6:
+                six_plus_pole_matches.append(vertex)
+
+        degenerate_matches = []
+        triangle_face_matches = []
+        quad_face_matches = []
+        ngon_matches = []
+        triangles = 0
+        for face in bm.faces:
+            side_count = len(face.verts)
+            triangles += max(side_count - 2, 0)
+            if face.calc_area() <= _AREA_EPSILON:
+                degenerate_matches.append(face)
+            if side_count == 3:
+                triangle_face_matches.append(face)
+            elif side_count == 4:
+                quad_face_matches.append(face)
+            elif side_count > 4:
+                ngon_matches.append(face)
+
+        if evidence_out is not None:
+            requested = tuple(dict.fromkeys(evidence_codes))
+            precomputed = {
+                "topology.non_manifold": non_manifold_matches,
+                "topology.degenerate": degenerate_matches,
+                "topology.duplicate_faces": duplicate_face_matches,
+                "topology.overlapping_faces": overlapping_face_matches,
+                "topology.normal_outliers": normal_outlier_matches,
+                "topology.winding": winding_matches,
+                "topology.boundary": boundary_matches,
+                "topology.loose_edges": loose_edge_matches,
+                "topology.loose_vertices": loose_vertex_matches,
+                "topology.coincident_vertices": coincident_vertex_matches,
+                "topology.disconnected_islands": secondary_island_matches,
+                "topology.ngons": ngon_matches,
+                "topology_map.triangles": triangle_face_matches,
+                "topology_map.quads": quad_face_matches,
+                "topology_map.ngons": ngon_matches,
+                "topology_map.poles_3": three_pole_matches,
+                "topology_map.poles_5": five_pole_matches,
+                "topology_map.poles_6_plus": six_plus_pole_matches,
+            }
+            for issue_code in requested:
+                domain = issue_selection_domain(issue_code)
+                if not domain:
+                    continue
+                matches = precomputed[issue_code]
+                evidence_out[issue_code] = (
+                    domain,
+                    tuple(element.index for element in matches),
+                )
+
         return {
             "vertices": len(bm.verts),
             "edges": len(bm.edges),
             "faces": len(bm.faces),
             "triangles": triangles,
-            "boundaries": boundaries,
-            "non_manifold": non_manifold,
-            "loose_edges": loose_edges,
-            "loose_vertices": loose_vertices,
-            "degenerate": degenerate,
+            "boundaries": len(boundary_matches),
+            "non_manifold": len(non_manifold_matches),
+            "loose_edges": len(loose_edge_matches),
+            "loose_vertices": len(loose_vertex_matches),
+            "degenerate": len(degenerate_matches),
             "duplicate_faces": duplicate_faces,
             "overlapping_faces": overlapping_faces,
             "normal_outliers": normal_outliers,
             "coincident_vertices": coincident_vertices,
             "disconnected_islands": disconnected_islands,
-            "triangle_faces": triangle_faces,
-            "quad_faces": quad_faces,
-            "ngons": ngons,
-            "three_poles": three_poles,
-            "five_poles": five_poles,
-            "six_plus_poles": six_plus_poles,
-            "inconsistent": inconsistent,
+            "triangle_faces": len(triangle_face_matches),
+            "quad_faces": len(quad_face_matches),
+            "ngons": len(ngon_matches),
+            "three_poles": len(three_pole_matches),
+            "five_poles": len(five_pole_matches),
+            "six_plus_poles": len(six_plus_pole_matches),
+            "inconsistent": len(winding_matches),
         }
     finally:
         bm.free()
@@ -672,6 +776,8 @@ def review_object(
     allowed_boundary_edges=0,
     allowed_ngons=0,
     profile=None,
+    evidence_codes=(),
+    evidence_out=None,
 ):
     if obj.type != "MESH":
         raise TypeError("Onyx Reviewer can inspect mesh objects only")
@@ -680,7 +786,11 @@ def review_object(
     if not isinstance(profile, ReviewProfile):
         raise TypeError("Expected a ReviewProfile")
 
-    base = _base_mesh_metrics(obj.data)
+    base = _base_mesh_metrics(
+        obj.data,
+        evidence_codes=evidence_codes,
+        evidence_out=evidence_out,
+    )
     evaluated_vertices, evaluated_faces, evaluated_triangles = _evaluated_mesh_metrics(
         obj, depsgraph
     )

@@ -1,4 +1,4 @@
-# Onyx Reviewer 0.12.1
+# Onyx Reviewer 0.12.2
 
 Onyx Reviewer helps you spot mesh problems before they become annoying production
 problems. It checks the editable mesh and the evaluated modifier result, then
@@ -71,11 +71,14 @@ a modeling pass. It refreshes the same inspection-only results after detected
 mesh changes settle. It does not repair or otherwise edit geometry.
 
 Live Review reads your current editable mesh without leaving Edit Mode or
-changing its selection. It waits until your latest action settles, then updates
-the same diagnostics and evaluated modifier totals you get in Object Mode.
+changing its selection. By default, it waits 0.3 seconds after your latest
+action, then updates the same diagnostics and evaluated modifier totals you get
+in Object Mode.
 If a finding highlight, problem overview, face map, or pole map is visible,
 Reviewer redraws that same view from the changed mesh instead of making it
-disappear. A focused error goes away when the new review confirms it was fixed.
+disappear. It reuses the evidence from the review it just ran, so redrawing the
+colors does not scan the mesh twice. A focused error goes away when the new
+review confirms it was fixed.
 
 It pauses when the chosen scope exceeds the **Live Vertex Limit**. Use zero only
 when you deliberately want no density ceiling. Open **More Settings** for that
@@ -147,7 +150,7 @@ captured viewport.
 
 ## Install
 
-Build `onyx_reviewer-0.12.1.zip` with `tools/package_reviewer.ps1`, then install the
+Build `onyx_reviewer-0.12.2.zip` with `tools/package_reviewer.ps1`, then install the
 archive through **Edit > Preferences > Get Extensions > Install from Disk**.
 Open **Onyx > Review** in the 3D Viewport sidebar.
 

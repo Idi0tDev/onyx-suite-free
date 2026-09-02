@@ -78,9 +78,11 @@ Review button when you want the results to refresh as a watched mesh changes. Th
 selected, or collection scope is shared with manual review, so both paths report
 the same checks and counts.
 
-Open **More Settings** to adjust Live Review. The **Debounce** value controls how long Onyx waits after the latest detected
-change. This prevents a new review from starting for every intermediate update
-while Blender is still evaluating a mesh or modifier stack. **Run Now** remains
+Open **More Settings** to adjust Live Review. The **Debounce** value controls how
+long Onyx waits after the latest detected change. The default is 0.3 seconds;
+you can lower it to 0.1 seconds for light meshes or raise it for heavier work.
+This prevents a new review from starting for every intermediate update while
+Blender is still evaluating a mesh or modifier stack. **Run Now** remains
 available whenever an immediate manual refresh is useful.
 
 Two safeguards keep the workflow predictable:

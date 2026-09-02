@@ -210,8 +210,8 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
     )
     live_delay: FloatProperty(
         name="Debounce",
-        default=0.75,
-        min=0.25,
+        default=0.3,
+        min=0.1,
         max=5.0,
         subtype="TIME",
         description="Wait after the last detected change before refreshing diagnostics",

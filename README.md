@@ -169,8 +169,10 @@ Viewport. Each problem type has a distinct color, while error-level findings use
 thicker marks. Show a single finding or every actionable finding for one object
 at once. Highlights remain visible through the surface and create no scene data.
 During Live Review, the visible highlight or map is rebuilt from the changed
-mesh so it stays useful without becoming stale. It disappears when its problem
-is resolved, it is hidden or cleared, or the extension is disabled.
+mesh so it stays useful without becoming stale. Reviewer reuses the evidence
+from that same review pass, avoiding a second mesh scan just to redraw the
+colors. It disappears when its problem is resolved, it is hidden or cleared,
+or the extension is disabled.
 
 **Topology Tools** turns the descriptive statistics into navigation. Use a
 face map to distinguish quads, triangles, and ngons, or a pole map to locate
@@ -234,7 +236,8 @@ The repository includes:
 - Face-map, pole-map, and topology-class selection coverage
 - Transient viewport-highlight geometry and cleanup coverage
 - Empty-scope readiness and clipboard-report coverage
-- Debounced Live Review in Object and Edit Mode, plus density-limit coverage
+- Debounced Live Review in Object and Edit Mode, single-pass evidence reuse,
+  plus density-limit coverage
 - Finding-view filtering and matching viewport-overview coverage
 - Review-profile presets, custom finding groups, and comparison invalidation coverage
 - Session-only Review Delta comparison, filtering, reporting, and cleanup coverage

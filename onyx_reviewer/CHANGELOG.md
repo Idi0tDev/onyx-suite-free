@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.12.2 - 2026-09-02
+
+- Reuse the current review's mesh evidence when Live Review redraws a visible
+  finding or topology map instead of scanning the mesh a second time.
+- Shorten the default quiet period after an edit from 0.75 to 0.3 seconds, while
+  keeping it adjustable down to 0.1 seconds in More Settings.
+- Cover the optimized path in Blender and verify that an overlapping-face live
+  refresh runs its expensive overlap search only once.
+
 ## 0.12.1 - 2026-09-02
 
 - Keep a visible finding, problem overview, face map, or pole map on screen while

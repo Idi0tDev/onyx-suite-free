@@ -124,8 +124,12 @@ def _stored_result_for_object(settings, obj, object_name):
     )
 
 
-def _highlight_for_issue(obj, issue):
-    domain, points, lines, count = issue_overlay_geometry(obj, issue.code)
+def _highlight_for_issue(obj, issue, *, evidence=None):
+    domain, points, lines, count = issue_overlay_geometry(
+        obj,
+        issue.code,
+        evidence=evidence,
+    )
     if not count:
         return None
     return highlight_state.make_highlight(
@@ -140,7 +144,7 @@ def _highlight_for_issue(obj, issue):
     )
 
 
-def _visible_result_highlights(settings, obj, result):
+def _visible_result_highlights(settings, obj, result, *, evidence=None):
     actionable = tuple(
         issue
         for issue in result.issues
@@ -152,6 +156,7 @@ def _visible_result_highlights(settings, obj, result):
         for issue_code, domain, points, lines, count in issue_overlays_geometry(
             obj,
             (issue.code for issue in actionable),
+            evidence=evidence,
         )
     }
     highlights = []
@@ -173,7 +178,7 @@ def _visible_result_highlights(settings, obj, result):
     return tuple(highlights)
 
 
-def _topology_map_highlights(obj, map_kind):
+def _topology_map_highlights(obj, map_kind, *, evidence=None):
     classes = topology_map_classes(map_kind)
     descriptions = {
         issue_code: (label, description)
@@ -184,6 +189,7 @@ def _topology_map_highlights(obj, map_kind):
     for issue_code, domain, points, lines, count in issue_overlays_geometry(
         obj,
         descriptions,
+        evidence=evidence,
     ):
         if not count:
             continue
@@ -203,7 +209,34 @@ def _topology_map_highlights(obj, map_kind):
     return tuple(highlights)
 
 
-def _refresh_previous_highlight(context, previous, overview_key):
+def _live_evidence_codes(previous, overview_key):
+    if not previous:
+        return ()
+    if overview_key == "FINDINGS":
+        return tuple(
+            dict.fromkeys(
+                (
+                    *(highlight.issue_code for highlight in previous),
+                    "topology.overlapping_faces",
+                    "topology.normal_outliers",
+                )
+            )
+        )
+    if overview_key in {"FACE_MAP", "POLE_MAP"}:
+        map_kind = "FACES" if overview_key == "FACE_MAP" else "POLES"
+        return tuple(
+            topology_class_info(class_id)[0]
+            for class_id in topology_map_classes(map_kind)
+        )
+    return tuple(dict.fromkeys(highlight.issue_code for highlight in previous))
+
+
+def _refresh_previous_highlight(
+    context,
+    previous,
+    overview_key,
+    evidence_by_object=None,
+):
     """Rebuild live overlay geometry after a successful mesh refresh."""
     if not previous:
         return False
@@ -218,10 +251,18 @@ def _refresh_previous_highlight(context, previous, overview_key):
         return False
 
     settings = context.scene.onyx_reviewer
+    evidence = (evidence_by_object or {}).get(obj.name)
     if overview_key == "FINDINGS":
         result = _stored_result_for_object(settings, obj, obj.name)
         highlights = (
-            _visible_result_highlights(settings, obj, result) if result else ()
+            _visible_result_highlights(
+                settings,
+                obj,
+                result,
+                evidence=evidence,
+            )
+            if result
+            else ()
         )
         if highlights:
             highlight_state.show_overview(obj.name, highlights)
@@ -230,7 +271,7 @@ def _refresh_previous_highlight(context, previous, overview_key):
 
     if overview_key in {"FACE_MAP", "POLE_MAP"}:
         map_kind = "FACES" if overview_key == "FACE_MAP" else "POLES"
-        highlights = _topology_map_highlights(obj, map_kind)
+        highlights = _topology_map_highlights(obj, map_kind, evidence=evidence)
         if highlights:
             highlight_state.show_overview(
                 obj.name,
@@ -245,6 +286,7 @@ def _refresh_previous_highlight(context, previous, overview_key):
         domain, points, lines, count = issue_overlay_geometry(
             obj,
             active.issue_code,
+            evidence=evidence,
         )
         if not count:
             return False
@@ -270,7 +312,7 @@ def _refresh_previous_highlight(context, previous, overview_key):
         )
     if issue is None:
         return False
-    highlight = _highlight_for_issue(obj, issue)
+    highlight = _highlight_for_issue(obj, issue, evidence=evidence)
     if highlight is None:
         return False
     highlight_state.show_highlight(
@@ -401,6 +443,13 @@ def _perform_review(context):
     previous_overview_key = (
         highlight_state.active_overview_key() if previous_highlights else ""
     )
+    evidence_codes = _live_evidence_codes(
+        previous_highlights,
+        previous_overview_key,
+    )
+    evidence_object_name = (
+        previous_highlights[0].object_name if previous_highlights else ""
+    )
     # Remove old coordinates before reading the changed mesh. Live Review
     # rebuilds the same visual view from fresh evidence after storing results.
     highlight_state.clear_highlight()
@@ -408,17 +457,27 @@ def _perform_review(context):
     _sync_edit_meshes(context, objects)
     depsgraph = context.evaluated_depsgraph_get()
     profile = active_review_profile(settings)
-    reviews = tuple(
-        review_object(
-            obj,
-            depsgraph,
-            triangle_budget=settings.triangle_budget,
-            allowed_boundary_edges=settings.allowed_boundary_edges,
-            allowed_ngons=settings.allowed_ngons,
-            profile=profile,
+    reviews = []
+    evidence_by_object = {}
+    for obj in objects:
+        evidence = {}
+        reviews.append(
+            review_object(
+                obj,
+                depsgraph,
+                triangle_budget=settings.triangle_budget,
+                allowed_boundary_edges=settings.allowed_boundary_edges,
+                allowed_ngons=settings.allowed_ngons,
+                profile=profile,
+                evidence_codes=(
+                    evidence_codes if obj.name == evidence_object_name else ()
+                ),
+                evidence_out=evidence,
+            )
         )
-        for obj in objects
-    )
+        if evidence:
+            evidence_by_object[obj.name] = evidence
+    reviews = tuple(reviews)
     summary = ReviewSummary(reviews)
     delta = delta_state.compare(context.scene, summary)
     delta_statuses = {
@@ -440,6 +499,7 @@ def _perform_review(context):
             context,
             previous_highlights,
             previous_overview_key,
+            evidence_by_object,
         )
     return summary
 

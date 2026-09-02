@@ -6,7 +6,7 @@ from . import delta_state, highlight_state, live_review, operators, properties, 
 from ._onyx_core import EmbeddedCore, Lifecycle
 
 
-VERSION = "0.12.1"
+VERSION = "0.12.2"
 
 CORE = EmbeddedCore(
     bpy,

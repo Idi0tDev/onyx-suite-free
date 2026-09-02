@@ -139,6 +139,11 @@ analysis engine. It schedules the same review path after a configurable quiet
 period. In Edit Mode it synchronizes the current editable geometry for analysis,
 then preserves the artist's mode and component selection. A source-vertex
 ceiling keeps accidental refreshes on unexpectedly dense scopes predictable.
+When a visible finding or map needs rebuilding, the review hands that same
+pass's element evidence to the overlay builder. Expensive checks such as face
+overlap therefore run once per refresh rather than once for results and again
+for visualization. The evidence is kept only for that refresh, so later edits
+cannot reuse stale element positions.
 
 ### Review Delta stays out of the file
 
