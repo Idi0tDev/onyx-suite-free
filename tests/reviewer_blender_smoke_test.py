@@ -141,6 +141,14 @@ def check_tooltips():
     for cls in operators.CLASSES:
         assert cls.bl_description.strip(), f"Missing operator tooltip: {cls.__name__}"
 
+    monitor_key = (123, 456)
+    assert not highlight_state.has_hover_monitor(monitor_key)
+    assert highlight_state.claim_hover_monitor(monitor_key)
+    assert highlight_state.has_hover_monitor(monitor_key)
+    assert not highlight_state.claim_hover_monitor(monitor_key)
+    highlight_state.release_hover_monitor(monitor_key)
+    assert not highlight_state.has_hover_monitor(monitor_key)
+
 
 def check_viewport_restore():
     space = FakeSpace()

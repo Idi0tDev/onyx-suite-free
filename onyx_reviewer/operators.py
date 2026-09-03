@@ -56,17 +56,41 @@ def review_is_running():
 
 
 def _ensure_hover_help(context):
-    """Start one lightweight pointer listener for this 3D Viewport."""
-    area = getattr(context, "area", None)
-    window = getattr(context, "window", None)
-    if area is None or area.type != "VIEW_3D" or window is None:
+    """Keep one lightweight pointer listener in every open 3D Viewport."""
+    if bpy.app.background:
         return
-    try:
-        bpy.ops.onyx.review_hover_help("INVOKE_DEFAULT")
-    except RuntimeError:
-        # Background tests and unusual temporary contexts have no interactive
-        # window region. Highlights remain fully usable without hover help.
-        pass
+    window_manager = getattr(context, "window_manager", None)
+    if window_manager is None:
+        return
+    for window in window_manager.windows:
+        screen = getattr(window, "screen", None)
+        if screen is None:
+            continue
+        for area in screen.areas:
+            if area.type != "VIEW_3D":
+                continue
+            region = next(
+                (item for item in area.regions if item.type == "WINDOW"),
+                None,
+            )
+            if region is None:
+                continue
+            key = (window.as_pointer(), area.as_pointer())
+            if highlight_state.has_hover_monitor(key):
+                continue
+            try:
+                with context.temp_override(
+                    window=window,
+                    screen=screen,
+                    area=area,
+                    region=region,
+                    space_data=area.spaces.active,
+                ):
+                    bpy.ops.onyx.review_hover_help("INVOKE_DEFAULT")
+            except RuntimeError:
+                # Background tests and temporary screen changes have no usable
+                # interactive region. Highlights remain available without help.
+                continue
 
 
 def scoped_meshes(context, scope):
@@ -544,6 +568,8 @@ def _perform_review(context):
     )
     if not highlight_restored:
         _show_default_findings(context, objects, evidence_by_object)
+    if highlight_state.active_highlights():
+        _ensure_hover_help(context)
     return summary
 
 
@@ -880,7 +906,16 @@ class ONYX_OT_review_hover_help(bpy.types.Operator):
     bl_description = "Show fix guidance when the pointer rests over viewport evidence"
     bl_options = {"INTERNAL"}
 
+    _timer = None
+    _window_manager = None
+
     def _finish(self):
+        if self._timer is not None and self._window_manager is not None:
+            try:
+                self._window_manager.event_timer_remove(self._timer)
+            except (ReferenceError, RuntimeError):
+                pass
+            self._timer = None
         highlight_state.release_hover_monitor(self._key)
         highlight_state.clear_hover_position(self._region_pointer)
 
@@ -901,7 +936,16 @@ class ONYX_OT_review_hover_help(bpy.types.Operator):
         if not highlight_state.claim_hover_monitor(self._key):
             return {"CANCELLED"}
 
-        context.window_manager.modal_handler_add(self)
+        self._window_manager = context.window_manager
+        try:
+            self._timer = self._window_manager.event_timer_add(
+                0.15,
+                window=window,
+            )
+            self._window_manager.modal_handler_add(self)
+        except Exception:
+            self._finish()
+            raise
         self._update_pointer(event, window_region)
         return {"RUNNING_MODAL"}
 
@@ -941,7 +985,12 @@ class ONYX_OT_review_hover_help(bpy.types.Operator):
             self._finish()
             return {"FINISHED"}
 
-        if event.type == "MOUSEMOVE":
+        pointer_event = event.type in {"MOUSEMOVE", "INBETWEEN_MOUSEMOVE"}
+        timer_event = (
+            event.type == "TIMER"
+            and getattr(event, "timer", None) == self._timer
+        )
+        if pointer_event or timer_event:
             self._region_pointer = region.as_pointer()
             self._update_pointer(event, region)
             area.tag_redraw()

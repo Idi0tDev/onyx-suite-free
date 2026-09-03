@@ -133,6 +133,10 @@ def claim_hover_monitor(key):
     return True
 
 
+def has_hover_monitor(key):
+    return tuple(key) in _HOVER_MONITORS
+
+
 def release_hover_monitor(key):
     _HOVER_MONITORS.discard(tuple(key))
 
