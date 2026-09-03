@@ -71,6 +71,30 @@ without touching geometry. It works in Object Mode and Edit Mode without
 changing the active mode or selection, and pauses when the chosen scope exceeds
 its configurable source-vertex limit.
 
+### See it in action
+
+**Find a problem and learn what to do next.** Run a review to see the problem
+areas in their own colors, then hover over one for a practical fix suggestion.
+
+<p align="center">
+  <img src="docs/assets/onyx-reviewer-findings-and-guides.gif" alt="Onyx Reviewer scanning a mesh, showing color-coded problems, and explaining them on hover" width="100%">
+</p>
+
+**Keep checking while you model.** Live Review follows Edit Mode changes and
+removes a highlight as soon as that problem is gone.
+
+<p align="center">
+  <img src="docs/assets/onyx-reviewer-live-review.gif" alt="Onyx Reviewer updating its findings while a topology problem is fixed in Edit Mode" width="100%">
+</p>
+
+**Look at the mesh a few different ways.** Switch between the built-in viewport
+modes for form, silhouette, topology, and face direction, then restore your
+original view in one click.
+
+<p align="center">
+  <img src="docs/assets/onyx-reviewer-viewport-modes.gif" alt="Onyx Reviewer switching between its viewport inspection modes and restoring the original view" width="100%">
+</p>
+
 ### Choose the right review
 
 Review profiles keep early modeling checks useful without treating unfinished
