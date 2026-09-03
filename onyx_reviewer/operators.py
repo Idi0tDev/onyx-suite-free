@@ -223,7 +223,7 @@ def _topology_map_highlights(obj, map_kind, *, evidence=None):
     return tuple(highlights)
 
 
-def _live_evidence_codes(previous, overview_key):
+def _refresh_evidence_codes(previous, overview_key):
     if not previous:
         return ()
     if overview_key == "FINDINGS":
@@ -251,7 +251,7 @@ def _refresh_previous_highlight(
     overview_key,
     evidence_by_object=None,
 ):
-    """Rebuild live overlay geometry after a successful mesh refresh."""
+    """Rebuild the active overlay geometry after a successful mesh refresh."""
     if not previous:
         return False
     obj = bpy.data.objects.get(previous[0].object_name)
@@ -451,21 +451,19 @@ def _perform_review(context):
     if not objects:
         raise ValueError(review_blocker(context, settings.scope))
 
-    previous_highlights = (
-        highlight_state.active_highlights() if settings.live_review else ()
-    )
+    previous_highlights = highlight_state.active_highlights()
     previous_overview_key = (
         highlight_state.active_overview_key() if previous_highlights else ""
     )
-    evidence_codes = _live_evidence_codes(
+    evidence_codes = _refresh_evidence_codes(
         previous_highlights,
         previous_overview_key,
     )
     evidence_object_name = (
         previous_highlights[0].object_name if previous_highlights else ""
     )
-    # Remove old coordinates before reading the changed mesh. Live Review
-    # rebuilds the same visual view from fresh evidence after storing results.
+    # Remove old coordinates before reading the changed mesh. Both manual and
+    # live reviews rebuild the same visual view from fresh evidence afterward.
     highlight_state.clear_highlight()
     settings.results.clear()
     _sync_edit_meshes(context, objects)
@@ -509,12 +507,12 @@ def _perform_review(context):
     settings.review_options_dirty = False
     if settings.live_review:
         settings.live_status = "Up to date"
-        _refresh_previous_highlight(
-            context,
-            previous_highlights,
-            previous_overview_key,
-            evidence_by_object,
-        )
+    _refresh_previous_highlight(
+        context,
+        previous_highlights,
+        previous_overview_key,
+        evidence_by_object,
+    )
     return summary
 
 

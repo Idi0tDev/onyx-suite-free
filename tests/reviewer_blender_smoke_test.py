@@ -623,6 +623,15 @@ def main():
     assert highlight.element_count == 2
     assert len(highlight.points) == 2
     assert len(highlight.lines) == 20
+    manual_single_highlight = highlight
+    assert not settings.live_review
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    assert highlight_state.is_active(
+        problem.name,
+        "topology.duplicate_faces",
+    )
+    assert highlight_state.active_highlight().element_count == 2
+    assert highlight_state.active_highlight() is not manual_single_highlight
     assert bpy.ops.onyx.highlight_review_issue(
         object_name=problem.name,
         issue_code="topology.duplicate_faces",
@@ -652,6 +661,25 @@ def main():
         "topology.disconnected_islands",
         "topology.ngons",
     }
+    manual_overview_highlights = highlights
+    assert not settings.live_review
+    assert bpy.ops.onyx.run_review() == {"FINISHED"}
+    assert highlight_state.is_overview_active(problem.name)
+    highlights = highlight_state.active_highlights()
+    assert {highlight.issue_code for highlight in highlights} == {
+        "topology.degenerate",
+        "topology.duplicate_faces",
+        "topology.boundary",
+        "topology.loose_vertices",
+        "topology.coincident_vertices",
+        "topology.disconnected_islands",
+        "topology.ngons",
+    }
+    assert len(highlights) == len(manual_overview_highlights)
+    assert all(
+        refreshed is not previous
+        for refreshed, previous in zip(highlights, manual_overview_highlights)
+    )
     assert bpy.ops.onyx.highlight_review_object(object_name=problem.name) == {"FINISHED"}
     assert not highlight_state.active_highlights()
 
