@@ -8,6 +8,11 @@ Running a review does not change the mesh. Onyx does not remesh, bake, export,
 or quietly repair anything. The extension includes the free Onyx Core runtime,
 so there is no second dependency to install.
 
+Press **Run Review** and drawable mesh problems appear in the viewport straight
+away, with a different color for each type. If you focus on one problem, later
+scans keep that focus while it still exists. Once it is fixed, Reviewer returns
+to the remaining colored problems.
+
 ## Current review checks
 
 - Base and evaluated vertices, faces, and triangles
@@ -69,8 +74,9 @@ allowance; the mesh statistics remain available.
 ## Live Review
 
 Press **Live** beside the main Review button when you want diagnostics to follow
-a modeling pass. It refreshes the same inspection-only results after detected
-mesh changes settle. It does not repair or otherwise edit geometry.
+a modeling pass. Turning it on runs the first scan automatically, then it
+refreshes the same inspection-only results after detected mesh changes settle.
+It does not repair or otherwise edit geometry.
 
 Live Review reads your current editable mesh without leaving Edit Mode or
 changing its selection. By default, it waits 0.3 seconds after your latest

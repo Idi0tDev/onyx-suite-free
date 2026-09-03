@@ -34,6 +34,21 @@ from . import delta_state, highlight_state, viewport_state
 
 _REVIEW_RUNNING = False
 
+_VIEWPORT_FINDING_CODES = (
+    "topology.non_manifold",
+    "topology.degenerate",
+    "topology.duplicate_faces",
+    "topology.overlapping_faces",
+    "topology.normal_outliers",
+    "topology.winding",
+    "topology.boundary",
+    "topology.loose_edges",
+    "topology.loose_vertices",
+    "topology.coincident_vertices",
+    "topology.disconnected_islands",
+    "topology.ngons",
+)
+
 
 def review_is_running():
     """Return whether the shared inspection engine is currently refreshing."""
@@ -224,25 +239,16 @@ def _topology_map_highlights(obj, map_kind, *, evidence=None):
 
 
 def _refresh_evidence_codes(previous, overview_key):
-    if not previous:
-        return ()
-    if overview_key == "FINDINGS":
-        return tuple(
-            dict.fromkeys(
-                (
-                    *(highlight.issue_code for highlight in previous),
-                    "topology.overlapping_faces",
-                    "topology.normal_outliers",
-                )
-            )
-        )
+    requested = list(_VIEWPORT_FINDING_CODES)
     if overview_key in {"FACE_MAP", "POLE_MAP"}:
         map_kind = "FACES" if overview_key == "FACE_MAP" else "POLES"
-        return tuple(
+        requested.extend(
             topology_class_info(class_id)[0]
             for class_id in topology_map_classes(map_kind)
         )
-    return tuple(dict.fromkeys(highlight.issue_code for highlight in previous))
+    else:
+        requested.extend(highlight.issue_code for highlight in previous)
+    return tuple(dict.fromkeys(requested))
 
 
 def _refresh_previous_highlight(
@@ -265,18 +271,16 @@ def _refresh_previous_highlight(
         return False
 
     settings = context.scene.onyx_reviewer
+    result = _stored_result_for_object(settings, obj, obj.name)
+    if result is None:
+        return False
     evidence = (evidence_by_object or {}).get(obj.name)
     if overview_key == "FINDINGS":
-        result = _stored_result_for_object(settings, obj, obj.name)
-        highlights = (
-            _visible_result_highlights(
-                settings,
-                obj,
-                result,
-                evidence=evidence,
-            )
-            if result
-            else ()
+        highlights = _visible_result_highlights(
+            settings,
+            obj,
+            result,
+            evidence=evidence,
         )
         if highlights:
             highlight_state.show_overview(obj.name, highlights)
@@ -317,13 +321,10 @@ def _refresh_previous_highlight(
         )
         return True
 
-    result = _stored_result_for_object(settings, obj, obj.name)
-    issue = None
-    if result:
-        issue = next(
-            (item for item in result.issues if item.code == active.issue_code),
-            None,
-        )
+    issue = next(
+        (item for item in result.issues if item.code == active.issue_code),
+        None,
+    )
     if issue is None:
         return False
     highlight = _highlight_for_issue(obj, issue, evidence=evidence)
@@ -340,6 +341,34 @@ def _refresh_previous_highlight(
         highlight.lines,
     )
     return True
+
+
+def _show_default_findings(context, objects, evidence_by_object=None):
+    """Show all visible mesh findings after a scan when no focused view remains."""
+    active = getattr(context, "active_object", None)
+    ordered = sorted(
+        objects,
+        key=lambda obj: (obj is not active, obj.name),
+    )
+    settings = context.scene.onyx_reviewer
+    for obj in ordered:
+        if obj.hide_get() or obj.hide_viewport:
+            continue
+        result = _stored_result_for_object(settings, obj, obj.name)
+        if result is None:
+            continue
+        highlights = _visible_result_highlights(
+            settings,
+            obj,
+            result,
+            evidence=(evidence_by_object or {}).get(obj.name),
+        )
+        if not highlights:
+            continue
+        highlight_state.show_overview(obj.name, highlights)
+        _ensure_hover_help(context)
+        return True
+    return False
 
 
 def active_visual_finding_index(settings, findings=None):
@@ -507,12 +536,14 @@ def _perform_review(context):
     settings.review_options_dirty = False
     if settings.live_review:
         settings.live_status = "Up to date"
-    _refresh_previous_highlight(
+    highlight_restored = _refresh_previous_highlight(
         context,
         previous_highlights,
         previous_overview_key,
         evidence_by_object,
     )
+    if not highlight_restored:
+        _show_default_findings(context, objects, evidence_by_object)
     return summary
 
 

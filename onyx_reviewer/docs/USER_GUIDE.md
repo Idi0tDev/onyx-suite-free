@@ -6,9 +6,10 @@
 2. Open the 3D Viewport sidebar and choose **Onyx > Review**.
 3. Use the two small menus below the mesh name to choose the scope and review
    profile. **Active** and **General** are good for a first run.
-4. Click **Run Review**.
-5. Press **Next** to see each visual mesh problem, or open the reviewed object's
-   card to browse the full list.
+4. Click **Run Review**. All drawable mesh problems appear on the model in their
+   own colors.
+5. Press **Next** when you want to focus on one problem, or open the reviewed
+   object's card to browse the full list.
 
 If **Run Review** is greyed out, the message at the top tells you what is
 missing, such as an active mesh or a selected mesh.
@@ -74,9 +75,10 @@ review as out of date and clears its temporary comparison baseline.
 ## Live Review
 
 **Live Review** is optional and off by default. Press **Live** beside the main
-Review button when you want the results to refresh as a watched mesh changes. The active,
-selected, or collection scope is shared with manual review, so both paths report
-the same checks and counts.
+Review button when you want the results to refresh as a watched mesh changes.
+Reviewer runs the first scan as soon as Live Review is turned on, so you do not
+need to press **Run Review** first. The active, selected, or collection scope is
+shared with manual review, so both paths report the same checks and counts.
 
 Open **More Settings** to adjust Live Review. The **Debounce** value controls how
 long Onyx waits after the latest detected change. The default is 0.3 seconds;
@@ -96,9 +98,11 @@ Two safeguards keep the workflow predictable:
 The status below the controls reports **Changes pending**, **Up to date**, or
 the reason a refresh is paused. If a finding, problem overview, face map, or pole
 map is visible, Live Review rebuilds it from the changed mesh after each
-successful refresh. A focused error disappears when the new review confirms it
-is fixed. Live Review never selects components, applies modifiers, repairs
-topology, or edits geometry.
+successful refresh. With no focused view, a manual or live scan shows all
+drawable problems automatically. A focused error stays focused while it exists;
+when the new review confirms it is fixed, Reviewer returns to the remaining
+colored problems. Live Review never selects components, applies modifiers,
+repairs topology, or edits geometry.
 
 ## Findings
 

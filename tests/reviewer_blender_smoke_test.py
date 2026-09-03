@@ -416,6 +416,16 @@ def main():
     assert "topology.ngons" in codes
     assert "data.uv" in codes
     assert "data.material" in codes
+    assert highlight_state.is_overview_active(problem.name)
+    assert {highlight.issue_code for highlight in highlight_state.active_highlights()} == {
+        "topology.degenerate",
+        "topology.duplicate_faces",
+        "topology.boundary",
+        "topology.loose_vertices",
+        "topology.coincident_vertices",
+        "topology.disconnected_islands",
+        "topology.ngons",
+    }
     filtered_codes = {
         filter_mode: {
             issue.code
@@ -824,7 +834,16 @@ def main():
     assert "topology.normal_outliers" not in {
         issue.code for issue in settings.results[0].issues
     }
-    assert not highlight_state.active_highlights()
+    assert highlight_state.is_overview_active(normal_asset.name)
+    refreshed_normal_codes = {
+        highlight.issue_code for highlight in highlight_state.active_highlights()
+    }
+    assert refreshed_normal_codes == {
+        "topology.winding",
+        "topology.boundary",
+        "topology.loose_vertices",
+        "topology.disconnected_islands",
+    }, refreshed_normal_codes
     settings.live_review = False
     bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -878,6 +897,20 @@ def main():
     edit_mesh = bmesh.from_edit_mesh(overlap_asset.data)
     assert sum(1 for face in edit_mesh.faces if face.select) == 4
     bpy.ops.object.mode_set(mode="OBJECT")
+
+    # Turning Live Review on queues its first scan immediately. With no
+    # focused finding to preserve, that scan shows every visible mesh problem.
+    highlight_state.clear_highlight()
+    settings.live_review = True
+    assert live_review.has_pending(bpy.context.scene)
+    assert live_review.flush_scene(bpy.context.scene)
+    assert highlight_state.is_overview_active(overlap_asset.name)
+    assert {highlight.issue_code for highlight in highlight_state.active_highlights()} == {
+        "topology.overlapping_faces",
+        "topology.boundary",
+        "topology.disconnected_islands",
+    }
+    settings.live_review = False
 
     recommendation_codes = {
         "topology.non_manifold",
