@@ -17,13 +17,24 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_reviewer-0.15.0.zip"><img alt="Download Onyx Reviewer 0.15.0" src="https://img.shields.io/badge/Download-Onyx%20Reviewer%200.15.0-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
+  <a href="#download-onyx-suite-free"><img alt="Download Onyx Suite Free" src="https://img.shields.io/badge/Download-Onyx%20Suite%20Free-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
 </p>
 
 <p align="center">
-  <strong>Ready-to-install Blender ZIP · Onyx Core included</strong><br>
-  <a href="#install-onyx-reviewer">New to Blender extensions? Follow the quick install steps.</a>
+  <strong>Choose the tool you need · Ready-to-install Blender ZIPs</strong><br>
+  Every Onyx product includes the Core runtime it needs.
 </p>
+
+## Download Onyx Suite Free
+
+Each Onyx tool has its own ZIP so Blender can install and update it cleanly.
+Most artists only need Reviewer:
+
+- **[Download Onyx Reviewer 0.15.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_reviewer-0.15.0.zip)** — inspect meshes and see problems directly in the viewport. Core is included.
+- **[Download Onyx Core 0.1.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_core-0.1.0.zip)** — optional standalone framework diagnostics for developers.
+
+New free Onyx addons will get their own direct download here. If this is your
+first Blender extension, follow the [Reviewer install steps](#install-onyx-reviewer).
 
 ## What's in this repository
 
