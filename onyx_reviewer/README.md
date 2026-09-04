@@ -1,163 +1,196 @@
-# Onyx Reviewer 0.15.0
+<p align="center">
+  <img src="../docs/assets/onyx-reviewer-hero.png" alt="Onyx Reviewer scanning a mesh and identifying geometry problems" width="100%">
+</p>
 
-Onyx Reviewer helps you spot mesh problems before they become annoying production
-problems. It checks the editable mesh and the evaluated modifier result, then
-points to useful evidence directly in Blender's 3D Viewport.
+<h1 align="center">Onyx Reviewer 0.15.0</h1>
 
-Running a review does not change the mesh. Onyx does not remesh, bake, export,
-or quietly repair anything. The extension includes the free Onyx Core runtime,
+<p align="center">
+  Find mesh problems, see where they are, and decide how you want to fix them.
+</p>
+
+<p align="center">
+  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_reviewer-0.15.0.zip"><img alt="Download Onyx Reviewer 0.15.0" src="https://img.shields.io/badge/Download-Onyx%20Reviewer-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
+</p>
+
+Onyx Reviewer checks the editable mesh and the evaluated modifier result, then
+points to useful evidence directly in Blender's 3D Viewport. It is meant to help
+you understand a mesh—not make creative decisions for you.
+
+Running a review does not change the mesh. Reviewer does not remesh, bake,
+export, or quietly repair anything. The ZIP includes the free Onyx Core runtime,
 so there is no second dependency to install.
 
-Press **Run Review** and drawable mesh problems appear in the viewport straight
-away, with a different color for each type. If you focus on one problem, later
-scans keep that focus while it still exists. Once it is fixed, Reviewer returns
-to the remaining colored problems.
+## See it in action
 
-## Current review checks
+### Find a problem and get a useful suggestion
 
-- Base and evaluated vertices, faces, and triangles
-- Triangle, quad, and ngon face composition
-- 3-edge, 5-edge, and 6+-edge topology-pole counts
-- Color-coded face and pole topology maps
-- Focused highlights and exact selection for every face and pole class
+Run a review to see different problem types in their own colors. Rest the
+pointer over a mark to see what it means and a practical way to approach it.
+
+<p align="center">
+  <img src="../docs/assets/onyx-reviewer-findings-and-guides.gif" alt="Onyx Reviewer scanning a mesh, showing color-coded problems, and explaining them on hover" width="100%">
+</p>
+
+### Keep checking while you model
+
+Live Review follows Edit Mode changes and removes a highlight once the next
+scan confirms that problem is gone.
+
+<p align="center">
+  <img src="../docs/assets/onyx-reviewer-live-review.gif" alt="Onyx Reviewer updating its findings while a topology problem is fixed in Edit Mode" width="100%">
+</p>
+
+### Look at the mesh in a few useful ways
+
+Switch between form, silhouette, topology, and face-direction views, then put
+the viewport back exactly as it was.
+
+<p align="center">
+  <img src="../docs/assets/onyx-reviewer-viewport-modes.gif" alt="Onyx Reviewer switching between its viewport inspection modes and restoring the original view" width="100%">
+</p>
+
+## Install
+
+1. **[Download Onyx Reviewer 0.15.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_reviewer-0.15.0.zip)** and leave the ZIP packed.
+2. In Blender, open **Edit → Preferences → Get Extensions**.
+3. Open the menu in the top-right and choose **Install from Disk**.
+4. Pick `onyx_reviewer-0.15.0.zip` and confirm the installation.
+5. Open **Onyx → Review** in the 3D Viewport sidebar.
+
+Blender shows that Reviewer needs clipboard access. It uses that permission only
+when you press **Copy Report** or **Copy Delta**. Reviewer does not need network
+or file access.
+
+## A simple first review
+
+1. Select a mesh.
+2. Open the **Onyx** tab in the 3D Viewport sidebar.
+3. Choose a review profile. **General** is a good first look.
+4. Press **Run Review**.
+5. Use **Show Problems** for an overview or the arrow buttons to step through
+   one problem at a time.
+6. Hover over a colored mark or press **Guide** when you want a suggested next
+   step.
+
+Enable **Live** when you want the results to follow a modeling pass. Turning it
+on runs the first scan automatically.
+
+## What Reviewer checks
+
+<details open>
+<summary><strong>Mesh and topology</strong></summary>
+
+- Base and evaluated vertex, face, and triangle counts
+- Triangles, quads, ngons, and 3/5/6+ edge poles
 - Open boundaries and edges connected to more than two faces
-- Degenerate faces and inconsistent face winding
-- Faces pointing against the connected surface around them
-- Crossing faces and partially overlapping coplanar faces
-- Exact duplicate faces occupying the same vertex positions
-- Loose vertices and edges, plus coincident unwelded vertices
-- Additional disconnected mesh islands
-- Ngons
-- Negative or unapplied scale
+- Degenerate, duplicate, crossing, and overlapping faces
+- Inconsistent winding and faces pointing against their connected neighbors
+- Loose geometry, coincident unwelded vertices, and disconnected islands
+- Exact selection and color-coded evidence for actionable findings
+
+</details>
+
+<details>
+<summary><strong>Transforms, asset setup, and budget</strong></summary>
+
+- Negative transforms and unapplied scale
 - Missing UV maps and material slots
 - Optional evaluated triangle budget
-- Direct element selection for actionable topology findings
-- Exact color dots beside drawable findings and topology classes
-- Distinct, through-surface viewport colors for every actionable finding type
-- Thicker lines and larger points for error-level findings
-- Combined per-object overview of all actionable findings
-- Previous and next navigation through the currently visible mesh problems
-- All, Errors, Warnings, On Mesh, and Changes finding views for dense reviews
-- Session-only before-and-after Review Delta comparisons
-- General, While Modeling, Topology Only, and Custom review profiles
-- Optional allowances for intentionally open boundary edges and ngons
-- Copyable plain-text review report
-- Optional debounced Live Review after mesh changes
-- Live Review in Object and Edit Mode with a configurable source-vertex safety limit
-- A plain-language fix guide for every finding, without automatic mesh changes
-- Hover guidance directly over colored problem marks in the 3D Viewport
+- Optional allowances for intentionally open edges and ngons
+
+</details>
+
+Review findings describe facts, not universal rules. An open boundary can be a
+mistake on a closed prop and completely intentional on cloth, cards, or trim.
 
 ## Review profiles
 
-Choose a profile before running Review:
-
 - **General** runs every current finding group.
-- **While Modeling** checks topology and transforms without warning about
-  unfinished UVs, materials, or a triangle budget.
-- **Topology Only** focuses on mesh structure.
+- **While Modeling** focuses on topology and transforms without complaining
+  about unfinished UVs, materials, or a triangle budget.
+- **Topology Only** keeps the review on mesh structure.
 - **Custom** lets you choose the finding groups yourself.
 
 Geometry totals, face mix, and pole counts remain visible in every profile.
-The completed profile is shown with the result and included in **Copy Report**.
 Changing the profile, scope, custom switches, or triangle budget clears the
-temporary Review Delta baseline. That prevents a different set of checks from
-looking like a mesh improvement.
+temporary Review Delta baseline so two different sets of rules are not compared
+as if they were the same review.
 
-### Allow intentional topology
-
-Some assets are meant to be open or contain a small number of ngons. Open
-**More Settings > Topology Allowances** and enter how many open boundary edges
-or ngons are acceptable for the current review. Zero means flag any amount.
-The matching warning disappears only while the real count is within your
-allowance; the mesh statistics remain available.
+If an asset is intentionally open or contains a few ngons, open **More Settings
+→ Topology Allowances** and enter what is acceptable. Zero keeps the default
+review strict.
 
 ## Live Review
 
 Press **Live** beside the main Review button when you want diagnostics to follow
-a modeling pass. Turning it on runs the first scan automatically, then it
-refreshes the same inspection-only results after detected mesh changes settle.
-It does not repair or otherwise edit geometry.
+your changes. Reviewer waits for editing to settle, then refreshes the same
+inspection-only results in Object Mode or Edit Mode without changing the mode or
+selection.
 
-Live Review reads your current editable mesh without leaving Edit Mode or
-changing its selection. By default, it waits 0.3 seconds after your latest
-action, then updates the same diagnostics and evaluated modifier totals you get
-in Object Mode.
-If a finding highlight, problem overview, face map, or pole map is visible,
-Reviewer redraws that same view from the changed mesh instead of making it
-disappear. It reuses the evidence from the review it just ran, so redrawing the
-colors does not scan the mesh twice. A focused error goes away when the new
-review confirms it was fixed.
+A visible problem overview, focused highlight, face map, or pole map is rebuilt
+from the latest scan instead of disappearing. Reviewer reuses the evidence it
+just collected, so drawing the colors does not scan the mesh a second time.
 
-It pauses when the chosen scope exceeds the **Live Vertex Limit**. Use zero only
-when you deliberately want no density ceiling. Open **More Settings** for that
-limit and the refresh delay. The manual **Run Now** action remains available at
-all times.
+Live Review pauses when the chosen scope goes over the configurable **Live
+Vertex Limit**. The manual **Run Now** button remains available.
 
-## Fix guides
+## Finding view and guides
 
-Every finding has a **Guide** button. It explains a practical next step in plain
-language, whether the problem is topology, transforms, UVs, materials, or the
-triangle budget. Reviewer does not press Blender buttons for you or change the
-mesh behind your back.
+The compact **Show** menu can display everything, only errors, only warnings,
+problems that can be drawn on the mesh, or findings that changed since a saved
+baseline. **Copy Report** still includes the complete review.
 
-When colored evidence is visible, rest the pointer over a mark in the viewport.
-A small floating guide shows which problem it belongs to and the same recommended
-approach. This makes the viewport useful without repeatedly jumping back to the
-sidebar.
+Use the arrow buttons to walk through visible mesh problems. Reviewer selects
+the matching object, opens its result card, and draws the right evidence. The
+navigator wraps around when it reaches the end.
 
-## Finding view
-
-Use the compact **Show** menu when the full list feels busy. You can show everything,
-only errors, only warnings, findings that can be pointed out on the mesh, or
-findings that changed since your Review Delta baseline. **Show Problems** draws
-that same focused set in the viewport.
-
-Changing the view clears the old finding overlay so you never mistake stale
-marks for the new filter. Face and pole maps stay independent. **Copy Report**
-still includes every finding from the latest review.
-
-When the current view contains problems that can be drawn on the mesh, use the
-compact arrow controls to step through them. Onyx selects the right object,
-opens its result card, and shows that problem's color-coded evidence. The
-navigator wraps around, so you can keep checking without returning to the list.
+Every finding has a plain-language **Guide**. Drawable findings show the same
+advice when you hover over their colored marks in the viewport. These are
+recommendations, not automatic repairs.
 
 ## Review Delta
 
-A baseline is just a before snapshot.
+A baseline is a temporary before snapshot:
 
 1. Run Review.
 2. Press **Save Baseline**.
 3. Make your changes.
 4. Run Review again.
 
-Onyx shows what is new, what was fixed or disappeared, what changed, and what
-stayed the same. It also shows the evaluated triangle difference. **Copy Delta**
-gives you a plain-text comparison for notes or handoff. **Use Current as
-Baseline** starts a fresh comparison from the current result. These controls
-stay folded inside **Compare Changes** until you need them.
-
-The baseline stays in memory for this Blender session only. It does not add
-anything to the scene and is not saved in the `.blend` file.
+Reviewer shows what appeared, disappeared, or changed, plus the evaluated
+triangle difference. **Copy Delta** creates a plain-text comparison for notes or
+handoff. The baseline stays in memory for the current Blender session and is not
+saved in the `.blend` file.
 
 ## Viewport modes
 
-Open **Viewport Modes** to use:
+Open **Viewport Modes** for Studio, Silhouette, Topology, and Face Orientation.
+The first mode used in a viewport saves its settings. **Restore View** puts them
+back exactly, and disabling Reviewer restores any remaining saved viewports.
 
-- Studio
-- Silhouette
-- Topology wire overlay
-- Face Orientation
+## Built to leave the scene alone
 
-The first mode used in a viewport captures its settings. **Restore View** returns
-those settings exactly, and disabling the extension restores every remaining
-captured viewport.
+- No automatic mesh repair
+- No hole filling, remeshing, merging, or transform application
+- No material replacement
+- No export or pipeline assumptions
+- No downloads, accounts, telemetry, or background network access
+- No permanent viewport changes
 
-## Install
+For every control and more interpretation help, read the
+[full user guide](docs/USER_GUIDE.md). For common installation and workflow
+questions, see [Troubleshooting and FAQ](../docs/TROUBLESHOOTING.md).
 
-Build `onyx_reviewer-0.15.0.zip` with `tools/package_reviewer.ps1`, then install the
-archive through **Edit > Preferences > Get Extensions > Install from Disk**.
-Open **Onyx > Review** in the 3D Viewport sidebar.
+<details>
+<summary><strong>Build the current source</strong></summary>
 
-Blender will show that Reviewer needs clipboard access. That permission is used
-only when you press **Copy Report** or **Copy Delta**. Reviewer does not need
-network or file access.
+From a clean checkout of the repository, run:
+
+```powershell
+tools/package_reviewer.ps1
+```
+
+The ready-to-install archive is written to
+`dist/onyx_reviewer-x.y.z.zip`.
+
+</details>
