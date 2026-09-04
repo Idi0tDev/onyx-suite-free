@@ -104,7 +104,8 @@ when possible.
 ### Support the flock 🐔
 
 Onyx stays free. If it saves you some time and you feel the urge to support
-future updates, here is a photo of what you are supporting:
+future updates, here is a photo of my chickens—the tiny support crew you are
+supporting:
 
 <p align="center">
   <img src="docs/assets/onyx-support-crew.jpg" alt="Marco's chickens, the unofficial Onyx support crew" width="720">
