@@ -101,6 +101,20 @@ Found a bug or have a focused idea? Open an
 Blender version, the Onyx version, what you expected, and a small reproduction
 when possible.
 
+### Support the flock 🐔
+
+Onyx stays free. If it saves you some time and you feel the urge to support
+future updates, here is a photo of what you are supporting:
+
+<p align="center">
+  <img src="docs/assets/onyx-support-crew.jpg" alt="Marco's chickens, the unofficial Onyx support crew" width="720">
+</p>
+
+They contribute nothing to the codebase, ignore release schedules, and remain
+deeply committed to the feed budget.
+
+**[Support free Onyx addons on Gumroad](https://idi0tdev.gumroad.com/l/onyx-suite-free)**
+
 <details>
 <summary><strong>Quality and release checks</strong></summary>
 
