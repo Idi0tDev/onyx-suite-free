@@ -16,6 +16,15 @@
   <img alt="Early preview" src="https://img.shields.io/badge/status-early%20preview-c58b36">
 </p>
 
+<p align="center">
+  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_reviewer-0.15.0.zip"><img alt="Download Onyx Reviewer 0.15.0" src="https://img.shields.io/badge/Download-Onyx%20Reviewer%200.15.0-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
+</p>
+
+<p align="center">
+  <strong>Ready-to-install Blender ZIP · Onyx Core included</strong><br>
+  <a href="#install-onyx-reviewer">New to Blender extensions? Follow the quick install steps.</a>
+</p>
+
 ## What's in this repository
 
 Onyx Suite Free currently contains two closely connected projects:
@@ -222,21 +231,27 @@ viewports.
 
 ## Install Onyx Reviewer
 
-For a tagged release, download `onyx_reviewer-x.y.z.zip` from the repository's
-[Releases](https://github.com/Idi0tDev/onyx-suite-free/releases) page. Install
-the ZIP without unpacking it through:
+**[Download Onyx Reviewer 0.15.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_reviewer-0.15.0.zip)**
 
-**Edit → Preferences → Get Extensions → Install from Disk**
+That is the ready-to-install add-on. Onyx Core is already included, so you do
+not need to download anything else.
 
-To build the current source instead, use a clean Git checkout:
+1. Download the ZIP and leave it packed.
+2. In Blender, open **Edit → Preferences → Get Extensions**.
+3. Open the menu in the top-right and choose **Install from Disk**.
+4. Pick `onyx_reviewer-0.15.0.zip` and confirm the installation.
+5. Open **Onyx → Review** in the 3D Viewport sidebar.
+
+Older versions and their checksums stay available on the repository's
+[Releases](https://github.com/Idi0tDev/onyx-suite-free/releases) page.
+
+Developers who want to build the current source can use a clean Git checkout:
 
 ```powershell
 tools/package_reviewer.ps1
 ```
 
 The package is written to `dist/onyx_reviewer-x.y.z.zip`.
-
-Then open **Onyx → Review** in the 3D Viewport sidebar.
 
 Onyx Reviewer targets Blender 5.2 LTS on Windows, macOS, and Linux. It is
 pure Python and asks only for clipboard access so **Copy Report** and **Copy

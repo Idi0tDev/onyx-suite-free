@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.15.0 - 2026-09-04
+
+- Run the first review as soon as Live Review is enabled, then keep checking
+  after mesh edits settle.
+- Show every drawable problem by default after both manual and Live Review
+  scans, so a fresh result never looks empty or unexpectedly hidden.
+- Preserve a focused finding or topology map across rescans while it still
+  exists, and fall back to the remaining problem overview when it is fixed.
+- Keep hover guidance responsive after rescans and in every open 3D Viewport,
+  including when the pointer is resting over a highlighted problem.
+
 ## 0.14.0 - 2026-09-02
 
 - Replace mesh-changing Fix actions with a plain-language Guide for every
