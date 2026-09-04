@@ -1,5 +1,24 @@
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$catalogPath = Join-Path $PSScriptRoot "public_products.txt"
+
+if (-not (Test-Path -LiteralPath $catalogPath -PathType Leaf)) {
+    throw "Public product catalog is missing: $catalogPath"
+}
+$publicProducts = @(Get-Content -LiteralPath $catalogPath | ForEach-Object {
+    $_.Trim()
+} | Where-Object {
+    $_ -and -not $_.StartsWith("#")
+})
+if ($publicProducts.Count -eq 0) { throw "Public product catalog is empty." }
+if (@($publicProducts | Group-Object | Where-Object Count -gt 1).Count -gt 0) {
+    throw "Public product catalog contains duplicate IDs."
+}
+foreach ($productId in $publicProducts) {
+    if ($productId -notmatch '^onyx_[a-z0-9_]+$') {
+        throw "Invalid public product ID: $productId"
+    }
+}
 
 Push-Location $projectRoot
 try {
@@ -24,7 +43,6 @@ try {
         }
     }
 
-    $publicProducts = @("onyx_core", "onyx_reviewer")
     $productRoots = $trackedFiles | ForEach-Object {
         if ($_ -match '^(onyx_[a-z0-9_]+)/') { $Matches[1] }
     } | Sort-Object -Unique
@@ -37,15 +55,13 @@ try {
     $allowedIdentifiers = @(
         "onyx_asset_id",
         "onyx_asset_role",
-        "onyx_core",
         "onyx_example",
         "onyx_missing",
-        "onyx_reviewer",
         "onyx_reviewer_analysis_test_module",
         "onyx_reviewer_profiles_test_module",
         "onyx_smoke",
         "onyx_source_name"
-    )
+    ) + $publicProducts
     $identifiers = @(& git grep -I -h -o -E 'onyx_[a-z0-9_]+' -- .)
     $grepStatus = $LASTEXITCODE
     if ($grepStatus -notin @(0, 1)) { throw "Unable to scan public identifiers." }
@@ -55,11 +71,9 @@ try {
         }
     }
 
-    $allowedPackageScripts = @(
-        "package_core.ps1",
-        "package_extension.ps1",
-        "package_reviewer.ps1"
-    )
+    $allowedPackageScripts = @("package_extension.ps1") + @($publicProducts | ForEach-Object {
+        "package_$($_.Substring('onyx_'.Length)).ps1"
+    })
     $packageReferences = @(& git grep -I -h -o -E 'package_[a-z0-9_]+\.ps1' -- .)
     $grepStatus = $LASTEXITCODE
     if ($grepStatus -notin @(0, 1)) { throw "Unable to scan package references." }

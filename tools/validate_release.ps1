@@ -5,6 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $distRoot = Join-Path $projectRoot "dist"
+$catalogPath = Join-Path $PSScriptRoot "public_products.txt"
 
 function Get-ManifestVersion {
     param([Parameter(Mandatory = $true)][string]$ManifestPath)
@@ -18,15 +19,21 @@ function Get-ManifestVersion {
 if (-not (Test-Path -LiteralPath $BlenderPath -PathType Leaf)) {
     throw "Blender 5.2 was not found: $BlenderPath"
 }
+if (-not (Test-Path -LiteralPath $catalogPath -PathType Leaf)) {
+    throw "Public product catalog is missing: $catalogPath"
+}
 
-$coreVersion = Get-ManifestVersion (Join-Path $projectRoot "onyx_core\blender_manifest.toml")
-$reviewerVersion = Get-ManifestVersion (Join-Path $projectRoot "onyx_reviewer\blender_manifest.toml")
-$archives = @(
-    (Join-Path $distRoot "onyx_core-$coreVersion.zip"),
-    (Join-Path $distRoot "onyx_reviewer-$reviewerVersion.zip")
-)
+$productIds = @(Get-Content -LiteralPath $catalogPath | ForEach-Object {
+    $_.Trim()
+} | Where-Object {
+    $_ -and -not $_.StartsWith("#")
+})
+if ($productIds.Count -eq 0) { throw "Public product catalog is empty." }
 
-foreach ($archive in $archives) {
+foreach ($productId in $productIds) {
+    $manifestPath = Join-Path $projectRoot "$productId\blender_manifest.toml"
+    $version = Get-ManifestVersion $manifestPath
+    $archive = Join-Path $distRoot "$productId-$version.zip"
     if (-not (Test-Path -LiteralPath $archive -PathType Leaf)) {
         throw "Release archive is missing. Run tools/build_release.ps1 first: $archive"
     }

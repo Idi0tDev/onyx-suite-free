@@ -20,35 +20,40 @@ jobs:
           python-version: "3.11"
       - name: Validate extension manifests
         run: python tests/extension_manifest_test.py
-      - name: Read and verify versions
+      - name: Verify suite release tag
         shell: pwsh
         run: |
           $tagVersion = "${{ github.ref_name }}".TrimStart("v")
           if ($tagVersion -notmatch '^\d+\.\d+\.\d+$') {
             throw "Release tags must use vMAJOR.MINOR.PATCH."
           }
-          $coreManifest = Get-Content onyx_core/blender_manifest.toml -Raw
-          $reviewerManifest = Get-Content onyx_reviewer/blender_manifest.toml -Raw
-          $coreVersion = [regex]::Match($coreManifest, '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
-          $reviewerVersion = [regex]::Match($reviewerManifest, '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
-          if ($tagVersion -ne $reviewerVersion) {
-            throw "Tag version $tagVersion does not match Onyx Reviewer $reviewerVersion."
-          }
-          "ONYX_CORE_VERSION=$coreVersion" >> $env:GITHUB_ENV
-          "ONYX_REVIEWER_VERSION=$reviewerVersion" >> $env:GITHUB_ENV
+          "ONYX_SUITE_VERSION=$tagVersion" >> $env:GITHUB_ENV
       - name: Build verified release bundle
         shell: pwsh
-        run: ./tools/build_release.ps1 -CoreVersion $env:ONYX_CORE_VERSION -ReviewerVersion $env:ONYX_REVIEWER_VERSION
+        run: ./tools/build_release.ps1
       - name: Create draft GitHub release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ github.ref_name }}" `
-            "dist/onyx_core-$env:ONYX_CORE_VERSION.zip#Onyx Core $env:ONYX_CORE_VERSION" `
-            "dist/onyx_reviewer-$env:ONYX_REVIEWER_VERSION.zip#Onyx Reviewer $env:ONYX_REVIEWER_VERSION" `
-            "dist/SHA256SUMS.txt#SHA-256 checksums" `
+          $productIds = @(Get-Content tools/public_products.txt | ForEach-Object {
+            $_.Trim()
+          } | Where-Object {
+            $_ -and -not $_.StartsWith("#")
+          })
+          $assets = @($productIds | ForEach-Object {
+            $manifest = Get-Content "$_/blender_manifest.toml" -Raw
+            $name = [regex]::Match($manifest, '(?m)^name\s*=\s*"([^"]+)"\s*$').Groups[1].Value
+            $version = [regex]::Match($manifest, '(?m)^version\s*=\s*"([^"]+)"\s*$').Groups[1].Value
+            $path = "dist/$_-$version.zip"
+            if (-not $name -or -not $version -or -not (Test-Path -LiteralPath $path)) {
+              throw "Release asset metadata is incomplete for $_."
+            }
+            "$path#$name $version"
+          })
+          $assets += "dist/SHA256SUMS.txt#SHA-256 checksums"
+          & gh release create "${{ github.ref_name }}" @assets `
             --draft `
             --generate-notes `
             --verify-tag `
-            --title "Onyx Suite Free $env:ONYX_REVIEWER_VERSION"
+            --title "Onyx Suite Free $env:ONYX_SUITE_VERSION"

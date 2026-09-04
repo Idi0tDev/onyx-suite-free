@@ -52,7 +52,6 @@ jobs:
         with:
           name: onyx-suite-free-release-candidate
           path: |
-            dist/onyx_core-*.zip
-            dist/onyx_reviewer-*.zip
+            dist/onyx_*.zip
             dist/SHA256SUMS.txt
           if-no-files-found: error
