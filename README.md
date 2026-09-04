@@ -108,7 +108,7 @@ future updates, here is a photo of my chickens—the tiny support crew you are
 supporting:
 
 <p align="center">
-  <img src="docs/assets/onyx-support-crew.jpg" alt="Marco's chickens, the unofficial Onyx support crew" width="480">
+  <img src="docs/assets/onyx-support-crew-upright.png" alt="Marco's chickens, the unofficial Onyx support crew" width="360">
 </p>
 
 They contribute nothing to the codebase, ignore release schedules, and remain
