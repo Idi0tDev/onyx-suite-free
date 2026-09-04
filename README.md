@@ -92,7 +92,7 @@ That is it. Core is already inside the Reviewer package.
 | [`onyx_reviewer/`](onyx_reviewer) | The Reviewer extension, product page, and user guide |
 | [`docs/`](docs) | Shared project notes, troubleshooting, and artwork |
 | [`tests/`](tests) | Pure Python and real-Blender checks |
-| [`tools/`](tools) | Packaging, validation, and release helpers |
+| [`tools/`](tools) | Public packaging and validation helpers |
 
 ## Contributing and support
 
@@ -117,27 +117,17 @@ deeply committed to the feed budget.
 **[Support free Onyx addons on Gumroad](https://idi0tdev.gumroad.com/l/onyx-suite-free)**
 
 <details>
-<summary><strong>Quality and release checks</strong></summary>
+<summary><strong>Testing</strong></summary>
 
 The repository tests the Core framework, Reviewer analysis and profiles,
 viewport evidence, Live Review, Core embedding, product coexistence, manifests,
-public-source safety, deterministic packaging, and Blender validation of the
-finished ZIP files.
+and Blender validation of the finished ZIP files.
 
 Run the full local suite with Blender 5.2 and its bundled Python:
 
 ```powershell
 tools/test.ps1
 ```
-
-Build and validate every public product listed in `tools/public_products.txt`:
-
-```powershell
-tools/build_release.ps1
-tools/validate_release.ps1
-```
-
-The complete release gate is in [RELEASING.md](RELEASING.md).
 
 </details>
 
