@@ -2,14 +2,14 @@
   <img src="../docs/assets/onyx-reviewer-hero.png" alt="Onyx Reviewer scanning a mesh and identifying geometry problems" width="100%">
 </p>
 
-<h1 align="center">Onyx Reviewer 0.15.0</h1>
+<h1 align="center">Onyx Reviewer 0.15.1</h1>
 
 <p align="center">
   Find mesh problems, see where they are, and decide how you want to fix them.
 </p>
 
 <p align="center">
-  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_reviewer-0.15.0.zip"><img alt="Download Onyx Reviewer 0.15.0" src="https://img.shields.io/badge/Download-Onyx%20Reviewer-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
+  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_reviewer-0.15.1.zip"><img alt="Download Onyx Reviewer 0.15.1" src="https://img.shields.io/badge/Download-Onyx%20Reviewer-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
 </p>
 
 Onyx Reviewer checks the editable mesh and the evaluated modifier result, then
@@ -51,10 +51,10 @@ the viewport back exactly as it was.
 
 ## Install
 
-1. **[Download Onyx Reviewer 0.15.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_reviewer-0.15.0.zip)** and leave the ZIP packed.
+1. **[Download Onyx Reviewer 0.15.1](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_reviewer-0.15.1.zip)** and leave the ZIP packed.
 2. In Blender, open **Edit → Preferences → Get Extensions**.
 3. Open the menu in the top-right and choose **Install from Disk**.
-4. Pick `onyx_reviewer-0.15.0.zip` and confirm the installation.
+4. Pick `onyx_reviewer-0.15.1.zip` and confirm the installation.
 5. Open **Onyx → Review** in the 3D Viewport sidebar.
 
 Blender shows that Reviewer needs clipboard access. It uses that permission only

@@ -28,9 +28,22 @@ jobs:
             throw "Release tags must use vMAJOR.MINOR.PATCH."
           }
           "ONYX_SUITE_VERSION=$tagVersion" >> $env:GITHUB_ENV
+      - name: Download Blender 5.2 LTS
+        shell: pwsh
+        run: |
+          $download = Join-Path $env:RUNNER_TEMP "blender-5.2.0-windows-x64.zip"
+          $install = Join-Path $env:RUNNER_TEMP "blender-5.2.0"
+          Invoke-WebRequest `
+            -Uri "https://download.blender.org/release/Blender5.2/blender-5.2.0-windows-x64.zip" `
+            -OutFile $download
+          Expand-Archive -LiteralPath $download -DestinationPath $install
+          $blender = Get-ChildItem -LiteralPath $install -Filter blender.exe -File -Recurse |
+            Select-Object -First 1
+          if (-not $blender) { throw "Blender executable was not found after extraction." }
+          "BLENDER_PATH=$($blender.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
       - name: Build verified release bundle
         shell: pwsh
-        run: ./tools/build_release.ps1
+        run: ./tools/build_release.ps1 -BlenderPath $env:BLENDER_PATH
       - name: Create draft GitHub release
         shell: pwsh
         env:

@@ -25,8 +25,8 @@
 Pick the tool you want and install its ZIP directly in Blender. Each Onyx addon
 includes the Core runtime it needs, so there is no dependency puzzle.
 
-- **[Download Onyx Reviewer 0.15.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_reviewer-0.15.0.zip)** — find mesh problems and see them on the model.
-- **[Download Onyx Core 0.1.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_core-0.1.0.zip)** — optional standalone diagnostics for the shared framework.
+- **[Download Onyx Reviewer 0.15.1](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_reviewer-0.15.1.zip)** — find mesh problems and see them on the model.
+- **[Download Onyx Core 0.1.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_core-0.1.0.zip)** — optional standalone diagnostics for the shared framework.
 
 All versions, checksums, and release notes are kept on the
 [Releases](https://github.com/Idi0tDev/onyx-suite-free/releases) page. Future
@@ -48,7 +48,7 @@ compatibility, diagnostics, and safe communication between products.
 
 **[Open the Core product page](onyx_core/README.md)** ·
 **[Read the developer guide](onyx_core/docs/DEVELOPER_GUIDE.md)** ·
-**[Download Core](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_core-0.1.0.zip)**
+**[Download Core](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_core-0.1.0.zip)**
 
 ## Onyx Reviewer
 
@@ -72,14 +72,14 @@ repair, remesh, or otherwise change your geometry.
 
 **[Open the Reviewer product page](onyx_reviewer/README.md)** ·
 **[Read the user guide](onyx_reviewer/docs/USER_GUIDE.md)** ·
-**[Download Reviewer](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_reviewer-0.15.0.zip)**
+**[Download Reviewer](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_reviewer-0.15.1.zip)**
 
 ## Install Onyx Reviewer
 
 1. Download the Reviewer ZIP above and leave it packed.
 2. In Blender, open **Edit → Preferences → Get Extensions**.
 3. Open the menu in the top-right and choose **Install from Disk**.
-4. Pick `onyx_reviewer-0.15.0.zip` and confirm the installation.
+4. Pick `onyx_reviewer-0.15.1.zip` and confirm the installation.
 5. Open **Onyx → Review** in the 3D Viewport sidebar.
 
 That is it. Core is already inside the Reviewer package.

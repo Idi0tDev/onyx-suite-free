@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_core-0.1.0.zip"><img alt="Download Onyx Core 0.1.0" src="https://img.shields.io/badge/Download-Onyx%20Core-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
+  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_core-0.1.0.zip"><img alt="Download Onyx Core 0.1.0" src="https://img.shields.io/badge/Download-Onyx%20Core-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
 </p>
 
 Onyx Core gives Onyx extensions one stable runtime for startup, compatibility,
@@ -34,7 +34,7 @@ start a competing runtime.
 
 ## Install the standalone extension
 
-1. **[Download Onyx Core 0.1.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.0/onyx_core-0.1.0.zip)** and leave the ZIP packed.
+1. **[Download Onyx Core 0.1.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_core-0.1.0.zip)** and leave the ZIP packed.
 2. In Blender, open **Edit → Preferences → Get Extensions**.
 3. Open the menu in the top-right and choose **Install from Disk**.
 4. Pick `onyx_core-0.1.0.zip` and confirm the installation.

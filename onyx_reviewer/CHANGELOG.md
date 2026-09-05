@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.15.1 - 2026-09-05
+
+- Trim the installable ZIP down to the files Reviewer actually uses in
+  Blender. Guides and other repository files stay on GitHub instead.
+- Build and validate the package with Blender's own extension tools.
+- Remove the `threading` dependency from the bundled Core runtime.
+- Keep Reviewer fully self-contained: the Core runtime is still included and
+  no separate extension is needed.
+
 ## 0.15.0 - 2026-09-04
 
 - Run the first review as soon as Live Review is enabled, then keep checking
