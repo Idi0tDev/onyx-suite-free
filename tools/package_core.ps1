@@ -1,4 +1,7 @@
-param([string]$Version = "")
+param(
+    [string]$Version = "",
+    [string]$BlenderPath = "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
+)
 
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -16,6 +19,9 @@ $required = @(
 foreach ($path in $required) {
     if (-not (Test-Path -LiteralPath $path)) { throw "Missing release file: $path" }
     if ((Get-Item -LiteralPath $path).Length -eq 0) { throw "Empty release file: $path" }
+}
+if (-not (Test-Path -LiteralPath $BlenderPath -PathType Leaf)) {
+    throw "Blender extension builder was not found: $BlenderPath"
 }
 
 $manifest = Get-Content -LiteralPath (Join-Path $packageRoot "blender_manifest.toml") -Raw
@@ -45,70 +51,60 @@ New-Item -ItemType Directory -Path $distRoot -Force | Out-Null
 if (Test-Path -LiteralPath $archive) {
     Remove-Item -LiteralPath $archive -Force
 }
-Add-Type -AssemblyName System.IO.Compression
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-
-function Add-ArchiveFile {
-    param(
-        [Parameter(Mandatory = $true)]$Archive,
-        [Parameter(Mandatory = $true)][string]$SourcePath,
-        [Parameter(Mandatory = $true)][string]$EntryName
-    )
-
-    $entry = $Archive.CreateEntry(
-        $EntryName,
-        [System.IO.Compression.CompressionLevel]::Optimal
-    )
-    $entry.LastWriteTime = [System.DateTimeOffset]::new(1980, 1, 1, 0, 0, 0, [System.TimeSpan]::Zero)
-    $source = [System.IO.File]::OpenRead($SourcePath)
-    try {
-        $destination = $entry.Open()
-        try {
-            $source.CopyTo($destination)
-        } finally {
-            $destination.Dispose()
-        }
-    } finally {
-        $source.Dispose()
-    }
-}
 
 $trackedFiles = @(& git -C $projectRoot ls-files -- "onyx_core")
 if ($LASTEXITCODE -ne 0 -or $trackedFiles.Count -eq 0) {
     throw "Unable to enumerate tracked Core package files."
 }
 $packagePrefix = "onyx_core/"
-$stream = [System.IO.File]::Open($archive, [System.IO.FileMode]::CreateNew)
+$tempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/')
+$stagingRoot = [System.IO.Path]::GetFullPath(
+    (Join-Path $tempBase ("onyx-core-build-" + [System.Guid]::NewGuid().ToString("N")))
+)
+if (-not $stagingRoot.StartsWith("$tempBase\", [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Unsafe Core staging path: $stagingRoot"
+}
+New-Item -ItemType Directory -Path $stagingRoot | Out-Null
 try {
-    $zip = [System.IO.Compression.ZipArchive]::new(
-        $stream,
-        [System.IO.Compression.ZipArchiveMode]::Create,
-        $false
-    )
-    try {
-        foreach ($trackedPath in ($trackedFiles | Sort-Object)) {
-            if (-not $trackedPath.StartsWith($packagePrefix, [System.StringComparison]::Ordinal)) {
-                continue
-            }
-            $relative = $trackedPath.Substring($packagePrefix.Length)
-            if (
-                $relative -match '(^|/)__pycache__(/|$)' -or
-                $relative -match '\.py[co]$' -or
-                [System.IO.Path]::GetFileName($relative) -ieq $internalInstructionName
-            ) {
-                throw "Repository-internal or generated file cannot be packaged: $trackedPath"
-            }
-            $sourcePath = [System.IO.Path]::GetFullPath((Join-Path $projectRoot $trackedPath))
-            if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
-                throw "Tracked package file is missing: $trackedPath"
-            }
-            Add-ArchiveFile -Archive $zip -SourcePath $sourcePath -EntryName $relative
+    foreach ($trackedPath in ($trackedFiles | Sort-Object)) {
+        if (-not $trackedPath.StartsWith($packagePrefix, [System.StringComparison]::Ordinal)) {
+            continue
         }
-        Add-ArchiveFile -Archive $zip -SourcePath $licensePath -EntryName "LICENSE"
-    } finally {
-        $zip.Dispose()
+        $relative = $trackedPath.Substring($packagePrefix.Length)
+        if (
+            $relative -match '(^|/)__pycache__(/|$)' -or
+            $relative -match '\.py[co]$' -or
+            [System.IO.Path]::GetFileName($relative) -ieq $internalInstructionName
+        ) {
+            throw "Repository-internal or generated file cannot be staged: $trackedPath"
+        }
+        $sourcePath = [System.IO.Path]::GetFullPath((Join-Path $projectRoot $trackedPath))
+        if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
+            throw "Tracked package file is missing: $trackedPath"
+        }
+        $destinationPath = Join-Path $stagingRoot $relative
+        $destinationDirectory = Split-Path -Parent $destinationPath
+        New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+        Copy-Item -LiteralPath $sourcePath -Destination $destinationPath
+    }
+    Copy-Item -LiteralPath $licensePath -Destination (Join-Path $stagingRoot "LICENSE")
+
+    & $BlenderPath --background --command extension build `
+        --source-dir $stagingRoot `
+        --output-filepath $archive
+    if ($LASTEXITCODE -ne 0) {
+        throw "Blender failed to build the standalone Core extension archive"
     }
 } finally {
-    $stream.Dispose()
+    $resolvedStaging = [System.IO.Path]::GetFullPath($stagingRoot)
+    if (-not $resolvedStaging.StartsWith("$tempBase\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to clean unsafe Core staging path: $resolvedStaging"
+    }
+    if (Test-Path -LiteralPath $resolvedStaging) {
+        Remove-Item -LiteralPath $resolvedStaging -Recurse -Force
+    }
 }
-Write-Output "Packed $archive"
+if (-not (Test-Path -LiteralPath $archive -PathType Leaf)) {
+    throw "Blender did not create the expected Core archive: $archive"
+}
+Write-Output "Built $archive with Blender's extension builder"

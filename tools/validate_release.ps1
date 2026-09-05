@@ -6,6 +6,7 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $distRoot = Join-Path $projectRoot "dist"
 $catalogPath = Join-Path $PSScriptRoot "public_products.txt"
+. (Join-Path $PSScriptRoot "release_archive_checks.ps1")
 
 function Get-ManifestVersion {
     param([Parameter(Mandatory = $true)][string]$ManifestPath)
@@ -37,6 +38,11 @@ foreach ($productId in $productIds) {
     if (-not (Test-Path -LiteralPath $archive -PathType Leaf)) {
         throw "Release archive is missing. Run tools/build_release.ps1 first: $archive"
     }
+    $requiredEntries = @("__init__.py", "blender_manifest.toml", "LICENSE")
+    if ($productId -ne "onyx_core") {
+        $requiredEntries += @("_onyx_core/embedded.py", "_onyx_core/lifecycle.py")
+    }
+    Test-OnyxReleaseArchive -ArchivePath $archive -RequiredEntries $requiredEntries
     & $BlenderPath --background --command extension validate $archive
     if ($LASTEXITCODE -ne 0) {
         throw "Blender rejected the extension archive: $archive"

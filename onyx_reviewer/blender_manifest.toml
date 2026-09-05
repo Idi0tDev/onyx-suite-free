@@ -13,3 +13,14 @@ license = ["SPDX:GPL-3.0-or-later"]
 
 [permissions]
 clipboard = "Copy review reports and comparisons"
+
+[build]
+paths_exclude_pattern = [
+    "__pycache__/",
+    ".*",
+    "/*.zip",
+    "*.blend[1-9]",
+    "/docs/",
+    "/README.md",
+    "/CHANGELOG.md",
+]

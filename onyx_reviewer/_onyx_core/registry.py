@@ -1,10 +1,9 @@
-"""Thread-safe extension and service discovery for Onyx products."""
+"""Extension and service discovery for Onyx products."""
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from threading import RLock
 from typing import Any, Iterable
 
 from .errors import (
@@ -119,84 +118,76 @@ class FrameworkRegistry:
     """Owns runtime registrations while keeping provider lifetimes explicit."""
 
     def __init__(self):
-        self._lock = RLock()
         self._extensions = {}
         self._services = {}
 
     def register_extension(self, record: ExtensionRecord) -> ExtensionRecord:
         if not isinstance(record, ExtensionRecord):
             raise ValidationError("register_extension expects an ExtensionRecord")
-        with self._lock:
-            existing = self._extensions.get(record.extension_id)
-            if existing is not None:
-                if existing != record:
-                    raise DuplicateRegistrationError(
-                        f"{record.extension_id} is already registered as {existing.name} {existing.version}"
-                    )
-                return existing
-            self._extensions[record.extension_id] = record
-            return record
+        existing = self._extensions.get(record.extension_id)
+        if existing is not None:
+            if existing != record:
+                raise DuplicateRegistrationError(
+                    f"{record.extension_id} is already registered as {existing.name} {existing.version}"
+                )
+            return existing
+        self._extensions[record.extension_id] = record
+        return record
 
     def unregister_extension(self, extension_id: str) -> bool:
         extension_id = _nonempty(extension_id, "Extension ID")
-        with self._lock:
-            if self._extensions.pop(extension_id, None) is None:
-                return False
-            owned = [service_id for service_id, service in self._services.items() if service.owner_id == extension_id]
-            for service_id in owned:
-                del self._services[service_id]
-            return True
+        if self._extensions.pop(extension_id, None) is None:
+            return False
+        owned = [service_id for service_id, service in self._services.items() if service.owner_id == extension_id]
+        for service_id in owned:
+            del self._services[service_id]
+        return True
 
     def extension(self, extension_id: str):
-        with self._lock:
-            return self._extensions.get(extension_id)
+        return self._extensions.get(extension_id)
 
     def extensions(self):
-        with self._lock:
-            return tuple(sorted(self._extensions.values(), key=lambda item: item.extension_id))
+        return tuple(sorted(self._extensions.values(), key=lambda item: item.extension_id))
 
     def register_service(self, record: ServiceRecord, *, replace=False) -> ServiceRecord:
         if not isinstance(record, ServiceRecord):
             raise ValidationError("register_service expects a ServiceRecord")
-        with self._lock:
-            if record.owner_id not in self._extensions:
-                raise MissingExtensionError(
-                    f"Register extension {record.owner_id} before publishing {record.service_id}"
+        if record.owner_id not in self._extensions:
+            raise MissingExtensionError(
+                f"Register extension {record.owner_id} before publishing {record.service_id}"
+            )
+        existing = self._services.get(record.service_id)
+        if existing is not None:
+            same_registration = (
+                existing.owner_id == record.owner_id
+                and existing.version == record.version
+                and existing.provider is record.provider
+                and existing.description == record.description
+            )
+            if same_registration:
+                return existing
+            if not replace or existing.owner_id != record.owner_id:
+                raise DuplicateRegistrationError(
+                    f"{record.service_id} is already provided by {existing.owner_id} {existing.version}"
                 )
-            existing = self._services.get(record.service_id)
-            if existing is not None:
-                same_registration = (
-                    existing.owner_id == record.owner_id
-                    and existing.version == record.version
-                    and existing.provider is record.provider
-                    and existing.description == record.description
-                )
-                if same_registration:
-                    return existing
-                if not replace or existing.owner_id != record.owner_id:
-                    raise DuplicateRegistrationError(
-                        f"{record.service_id} is already provided by {existing.owner_id} {existing.version}"
-                    )
-            self._services[record.service_id] = record
-            return record
+        self._services[record.service_id] = record
+        return record
 
     def unregister_service(self, service_id: str, *, owner_id=None) -> bool:
         service_id = _nonempty(service_id, "Service ID")
-        with self._lock:
-            existing = self._services.get(service_id)
-            if existing is None:
-                return False
-            if owner_id is not None and existing.owner_id != owner_id:
-                raise DuplicateRegistrationError(
-                    f"{service_id} belongs to {existing.owner_id}, not {owner_id}"
-                )
-            del self._services[service_id]
-            return True
+        existing = self._services.get(service_id)
+        if existing is None:
+            return False
+        if owner_id is not None and existing.owner_id != owner_id:
+            raise DuplicateRegistrationError(
+                f"{service_id} belongs to {existing.owner_id}, not {owner_id}"
+            )
+        del self._services[service_id]
+        return True
 
     def service(self, service_id: str, minimum_version=None):
         service_id = _nonempty(service_id, "Service ID")
-        with self._lock:
-            record = self._services.get(service_id)
+        record = self._services.get(service_id)
         if record is None:
             return None
         if minimum_version is not None:
@@ -215,14 +206,12 @@ class FrameworkRegistry:
         return record
 
     def services(self):
-        with self._lock:
-            return tuple(sorted(self._services.values(), key=lambda item: item.service_id))
+        return tuple(sorted(self._services.values(), key=lambda item: item.service_id))
 
     def audit(self):
         """Return invariant violations without exposing mutable registry state."""
-        with self._lock:
-            return tuple(
-                f"{service.service_id} has missing owner {service.owner_id}"
-                for service in self._services.values()
-                if service.owner_id not in self._extensions
-            )
+        return tuple(
+            f"{service.service_id} has missing owner {service.owner_id}"
+            for service in self._services.values()
+            if service.owner_id not in self._extensions
+        )

@@ -10,3 +10,15 @@ type = "add-on"
 tags = ["Development"]
 blender_version_min = "5.2.0"
 license = ["SPDX:GPL-3.0-or-later"]
+
+[build]
+paths_exclude_pattern = [
+    "__pycache__/",
+    ".*",
+    "/*.zip",
+    "*.blend[1-9]",
+    "/docs/",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/embedded_init.py",
+]

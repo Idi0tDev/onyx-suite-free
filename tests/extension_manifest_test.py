@@ -20,6 +20,15 @@ REQUIRED_FIELDS = {
     "blender_version_min",
     "license",
 }
+REQUIRED_BUILD_EXCLUSIONS = {
+    "__pycache__/",
+    ".*",
+    "/*.zip",
+    "*.blend[1-9]",
+    "/docs/",
+    "/README.md",
+    "/CHANGELOG.md",
+}
 
 
 def read_manifest(extension_id: str) -> dict[str, object]:
@@ -98,10 +107,18 @@ def validate_manifest(
         assert isinstance(reason, str) and reason.strip()
         assert len(reason) <= 64
         assert not reason.endswith(".")
+    build = manifest.get("build", {})
+    exclusions = set(build.get("paths_exclude_pattern", ()))
+    assert REQUIRED_BUILD_EXCLUSIONS <= exclusions, (
+        f"{extension_id} manifest must exclude non-runtime release files"
+    )
     return manifest
 
 
 core_manifest = validate_manifest("onyx_core", "Onyx Core")
+assert "/embedded_init.py" in core_manifest["build"]["paths_exclude_pattern"], (
+    "Onyx Core package must exclude its embedding-only source template"
+)
 reviewer_manifest = validate_manifest(
     "onyx_reviewer",
     "Onyx Reviewer",

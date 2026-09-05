@@ -1,4 +1,7 @@
-param([string]$Version = "")
+param(
+    [string]$Version = "",
+    [string]$BlenderPath = "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
+)
 
 $ErrorActionPreference = "Stop"
 if (-not $Version) {
@@ -11,4 +14,5 @@ if (-not $Version) {
 & (Join-Path $PSScriptRoot "package_extension.ps1") `
     -AddonId "onyx_reviewer" `
     -Version $Version `
+    -BlenderPath $BlenderPath `
     -Required @("README.md", "docs\USER_GUIDE.md")

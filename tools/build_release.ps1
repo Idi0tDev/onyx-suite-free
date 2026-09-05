@@ -1,8 +1,12 @@
+param(
+    [string]$BlenderPath = "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
+)
+
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $distRoot = Join-Path $projectRoot "dist"
 $catalogPath = Join-Path $PSScriptRoot "public_products.txt"
-$internalInstructionName = "AG" + "ENTS.md"
+. (Join-Path $PSScriptRoot "release_archive_checks.ps1")
 
 function Get-PublicProductIds {
     if (-not (Test-Path -LiteralPath $catalogPath -PathType Leaf)) {
@@ -46,50 +50,6 @@ function Get-ManifestField {
     return $match.Groups[1].Value
 }
 
-function Test-ReleaseArchive {
-    param(
-        [Parameter(Mandatory = $true)][string]$ArchivePath,
-        [Parameter(Mandatory = $true)][string[]]$RequiredEntries
-    )
-
-    Add-Type -AssemblyName System.IO.Compression
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $archive = [System.IO.Compression.ZipFile]::OpenRead($ArchivePath)
-    try {
-        $entries = [System.Collections.Generic.HashSet[string]]::new(
-            [System.StringComparer]::OrdinalIgnoreCase
-        )
-        foreach ($entry in $archive.Entries) {
-            $name = $entry.FullName.Replace('\', '/')
-            if (
-                [string]::IsNullOrWhiteSpace($name) -or
-                $name.StartsWith('/') -or
-                $name -match '^[A-Za-z]:' -or
-                $name -match '(^|/)\.\.(/|$)'
-            ) {
-                throw "Unsafe archive path in $ArchivePath`: $name"
-            }
-            if (-not $entries.Add($name)) {
-                throw "Duplicate archive entry in $ArchivePath`: $name"
-            }
-            if (
-                $name -match '(^|/)__pycache__(/|$)' -or
-                $name -match '\.py[co]$' -or
-                [System.IO.Path]::GetFileName($name) -ieq $internalInstructionName
-            ) {
-                throw "Generated or repository-internal file in $ArchivePath`: $name"
-            }
-        }
-        foreach ($required in $RequiredEntries) {
-            if (-not $entries.Contains($required)) {
-                throw "Required archive entry is missing from $ArchivePath`: $required"
-            }
-        }
-    } finally {
-        $archive.Dispose()
-    }
-}
-
 $productIds = @(Get-PublicProductIds)
 $products = foreach ($id in $productIds) {
     $manifestPath = Join-Path $projectRoot "$id\blender_manifest.toml"
@@ -122,29 +82,31 @@ if (Test-Path -LiteralPath $checksumPath) {
 $archives = [System.Collections.Generic.List[string]]::new()
 foreach ($product in $products) {
     if ($product.Id -eq "onyx_core") {
-        & (Join-Path $PSScriptRoot "package_core.ps1") -Version $product.Version | Write-Output
+        & (Join-Path $PSScriptRoot "package_core.ps1") `
+            -Version $product.Version `
+            -BlenderPath $BlenderPath | Write-Output
         $requiredEntries = @(
             "__init__.py",
             "blender_manifest.toml",
-            "README.md",
-            "LICENSE",
-            "docs/DEVELOPER_GUIDE.md"
+            "LICENSE"
         )
     } else {
         $shortId = $product.Id.Substring("onyx_".Length)
         $productPackager = Join-Path $PSScriptRoot "package_$shortId.ps1"
         if (Test-Path -LiteralPath $productPackager -PathType Leaf) {
-            & $productPackager -Version $product.Version | Write-Output
+            & $productPackager `
+                -Version $product.Version `
+                -BlenderPath $BlenderPath | Write-Output
         } else {
             & (Join-Path $PSScriptRoot "package_extension.ps1") `
                 -AddonId $product.Id `
                 -Version $product.Version `
+                -BlenderPath $BlenderPath `
                 -Required @("README.md") | Write-Output
         }
         $requiredEntries = @(
             "__init__.py",
             "blender_manifest.toml",
-            "README.md",
             "LICENSE",
             "_onyx_core/embedded.py",
             "_onyx_core/lifecycle.py"
@@ -152,7 +114,7 @@ foreach ($product in $products) {
     }
 
     $archivePath = Join-Path $distRoot "$($product.Id)-$($product.Version).zip"
-    Test-ReleaseArchive -ArchivePath $archivePath -RequiredEntries $requiredEntries
+    Test-OnyxReleaseArchive -ArchivePath $archivePath -RequiredEntries $requiredEntries
     $archives.Add($archivePath)
 }
 
