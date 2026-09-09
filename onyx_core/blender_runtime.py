@@ -3,18 +3,21 @@
 import bpy
 
 from . import operators, preferences
-from .api import API_VERSION, CORE_VERSION, api
+from .api import CORE_VERSION, api
 from .integration import publish, unpublish
 from .lifecycle import Lifecycle
 
 
 _endpoint = None
+_MINIMUM_COMPATIBLE_API = (1, 0)
 
 
 def _connect():
     global _endpoint
     _endpoint = publish(bpy, api)
-    _endpoint.require_api(API_VERSION)
+    # The standalone extension can provide API 1.1 when it owns the broker,
+    # while still joining an already-active compatible API 1.0 broker.
+    _endpoint.require_api(_MINIMUM_COMPATIBLE_API)
 
 
 def _disconnect():

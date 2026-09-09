@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "onyx_reviewer"
-version = "0.15.1"
+version = "0.15.2"
 name = "Onyx Reviewer"
 tagline = "Inspect topology and mesh health without changing the asset"
 maintainer = "Onyx"
@@ -15,12 +15,27 @@ license = ["SPDX:GPL-3.0-or-later"]
 clipboard = "Copy review reports and comparisons"
 
 [build]
-paths_exclude_pattern = [
-    "__pycache__/",
-    ".*",
-    "/*.zip",
-    "*.blend[1-9]",
-    "/docs/",
-    "/README.md",
-    "/CHANGELOG.md",
+paths = [
+    "__init__.py",
+    "analysis.py",
+    "delta_state.py",
+    "highlight_state.py",
+    "live_review.py",
+    "mesh_analysis.py",
+    "operators.py",
+    "properties.py",
+    "review_profiles.py",
+    "ui.py",
+    "viewport_state.py",
+    "_onyx_core/__init__.py",
+    "_onyx_core/api.py",
+    "_onyx_core/assets.py",
+    "_onyx_core/embedded.py",
+    "_onyx_core/errors.py",
+    "_onyx_core/integration.py",
+    "_onyx_core/lifecycle.py",
+    "_onyx_core/materials.py",
+    "_onyx_core/readiness.py",
+    "_onyx_core/registry.py",
+    "LICENSE",
 ]

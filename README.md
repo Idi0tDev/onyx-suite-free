@@ -20,18 +20,6 @@
   <a href="#download-onyx-suite-free"><img alt="Download Onyx Suite Free" src="https://img.shields.io/badge/Download-Onyx%20Suite%20Free-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
 </p>
 
-## Download Onyx Suite Free
-
-Pick the tool you want and install its ZIP directly in Blender. Each Onyx addon
-includes the Core runtime it needs, so there is no dependency puzzle.
-
-- **[Download Onyx Reviewer 0.15.1](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_reviewer-0.15.1.zip)** — find mesh problems and see them on the model.
-- **[Download Onyx Core 0.1.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_core-0.1.0.zip)** — optional standalone diagnostics for the shared framework.
-
-All versions, checksums, and release notes are kept on the
-[Releases](https://github.com/Idi0tDev/onyx-suite-free/releases) page. Future
-free Onyx addons will get their own direct download in this section.
-
 ## Onyx Core
 
 <p align="center">
@@ -47,8 +35,7 @@ compatibility, diagnostics, and safe communication between products.
   development.
 
 **[Open the Core product page](onyx_core/README.md)** ·
-**[Read the developer guide](onyx_core/docs/DEVELOPER_GUIDE.md)** ·
-**[Download Core](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_core-0.1.0.zip)**
+**[Read the developer guide](onyx_core/docs/DEVELOPER_GUIDE.md)**
 
 ## Onyx Reviewer
 
@@ -71,18 +58,32 @@ repair, remesh, or otherwise change your geometry.
 </p>
 
 **[Open the Reviewer product page](onyx_reviewer/README.md)** ·
-**[Read the user guide](onyx_reviewer/docs/USER_GUIDE.md)** ·
-**[Download Reviewer](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_reviewer-0.15.1.zip)**
+**[Read the user guide](onyx_reviewer/docs/USER_GUIDE.md)**
 
-## Install Onyx Reviewer
+## Download Onyx Suite Free
 
-1. Download the Reviewer ZIP above and leave it packed.
+Pick the add-on you want. These are ready-to-install Blender ZIPs—there is no
+need to download the repository or unpack anything.
+
+- **[Download Onyx Reviewer 0.15.2](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.2/onyx_reviewer-0.15.2.zip)** — find mesh problems and see them on the model.
+- **[Download Onyx Core 0.2.1](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.2/onyx_core-0.2.1.zip)** — optional standalone diagnostics for the shared framework.
+
+Each Onyx add-on includes the Core runtime it needs, so you never have to
+install Core as a separate dependency. All versions, checksums, and release
+notes are also kept on the
+[Releases](https://github.com/Idi0tDev/onyx-suite-free/releases) page. Future
+free Onyx add-ons will get their own direct download here.
+
+## Install an Onyx add-on
+
+1. Download the add-on ZIP you want from the section above and leave it packed.
 2. In Blender, open **Edit → Preferences → Get Extensions**.
 3. Open the menu in the top-right and choose **Install from Disk**.
-4. Pick `onyx_reviewer-0.15.1.zip` and confirm the installation.
-5. Open **Onyx → Review** in the 3D Viewport sidebar.
+4. Pick the downloaded `onyx_*.zip` file and confirm the installation.
+5. Enable the add-on if Blender asks. Its product page and user guide explain
+   where its controls live.
 
-That is it. Core is already inside the Reviewer package.
+That is it. Every Onyx product already carries its compatible Core runtime.
 
 ## Repository map
 

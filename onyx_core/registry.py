@@ -1,4 +1,4 @@
-"""Extension and service discovery for Onyx products."""
+"""Main-thread extension and service discovery for Onyx products."""
 
 from __future__ import annotations
 

@@ -12,6 +12,7 @@ ASSET_ID = "onyx_asset_id"
 ASSET_ROLE = "onyx_asset_role"
 SOURCE_NAME = "onyx_source_name"
 ASSET_ROLES = frozenset({"HIGH", "LOW", "CAGE", "SOURCE", "RESULT"})
+_LEGACY_SOURCE_NAMES = ("onyx_remesher_source_name",)
 
 
 @dataclass(frozen=True)
@@ -32,7 +33,13 @@ def read_asset(data):
     role = _value(data, ASSET_ROLE).upper()
     if not asset_id or role not in ASSET_ROLES:
         return None
-    return AssetReference(asset_id, role, _value(data, SOURCE_NAME))
+    source_name = _value(data, SOURCE_NAME)
+    if not source_name:
+        for key in _LEGACY_SOURCE_NAMES:
+            source_name = _value(data, key)
+            if source_name:
+                break
+    return AssetReference(asset_id, role, source_name)
 
 
 def tag_asset(data, role, *, asset_id=None, source_name=""):
@@ -50,11 +57,14 @@ def tag_asset(data, role, *, asset_id=None, source_name=""):
         data[SOURCE_NAME] = source_name
     elif SOURCE_NAME in data:
         del data[SOURCE_NAME]
+    for key in _LEGACY_SOURCE_NAMES:
+        if key in data:
+            del data[key]
     return AssetReference(asset_id, role, source_name)
 
 
 def clear_asset(data):
-    for key in (ASSET_ID, ASSET_ROLE, SOURCE_NAME):
+    for key in (ASSET_ID, ASSET_ROLE, SOURCE_NAME, *_LEGACY_SOURCE_NAMES):
         if key in data:
             del data[key]
 

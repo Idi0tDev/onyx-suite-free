@@ -2,14 +2,14 @@
   <img src="../docs/assets/onyx-core-foundation.png" alt="Onyx Core shown as the workflow foundation of the Onyx Suite" width="100%">
 </p>
 
-<h1 align="center">Onyx Core 0.1.0</h1>
+<h1 align="center">Onyx Core 0.2.1</h1>
 
 <p align="center">
   The quiet foundation shared by Onyx Blender tools.
 </p>
 
 <p align="center">
-  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_core-0.1.0.zip"><img alt="Download Onyx Core 0.1.0" src="https://img.shields.io/badge/Download-Onyx%20Core-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
+  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.2/onyx_core-0.2.1.zip"><img alt="Download Onyx Core 0.2.1" src="https://img.shields.io/badge/Download-Onyx%20Core-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
 </p>
 
 Onyx Core gives Onyx extensions one stable runtime for startup, compatibility,
@@ -26,6 +26,7 @@ including Reviewer, already contains the Core runtime it needs.
 - Provides shared services with clear ownership and cleanup
 - Rolls registration back safely if an addon cannot finish starting
 - Defines shared readiness and asset metadata conventions
+- Defines shared material-channel names and metadata for compatible tools
 - Adds a small diagnostic view when the standalone Core extension is installed
 
 Bundled copies cooperate through the same broker instead of importing code from
@@ -34,10 +35,10 @@ start a competing runtime.
 
 ## Install the standalone extension
 
-1. **[Download Onyx Core 0.1.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.1/onyx_core-0.1.0.zip)** and leave the ZIP packed.
+1. **[Download Onyx Core 0.2.1](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.2/onyx_core-0.2.1.zip)** and leave the ZIP packed.
 2. In Blender, open **Edit → Preferences → Get Extensions**.
 3. Open the menu in the top-right and choose **Install from Disk**.
-4. Pick `onyx_core-0.1.0.zip` and confirm the installation.
+4. Pick `onyx_core-0.2.1.zip` and confirm the installation.
 
 Core targets Blender 5.2 or newer. It performs no downloads, package
 installation, telemetry, or background network access. Its status appears in

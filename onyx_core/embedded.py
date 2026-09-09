@@ -19,7 +19,7 @@ class EmbeddedCore:
         description="",
         capabilities=(),
         website="",
-        minimum_api=API_VERSION,
+        minimum_api=(1, 0),
     ):
         self._bpy = bpy_module
         self.extension_id = extension_id

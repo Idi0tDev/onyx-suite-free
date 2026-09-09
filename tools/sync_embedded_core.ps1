@@ -16,6 +16,7 @@ $runtimeFiles = @(
     "errors.py",
     "integration.py",
     "lifecycle.py",
+    "materials.py",
     "readiness.py",
     "registry.py"
 )
@@ -32,4 +33,3 @@ foreach ($target in $targets) {
 }
 
 Write-Output "Synced public Onyx Core into $($targets.Count) product extension"
-

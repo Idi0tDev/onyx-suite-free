@@ -6,13 +6,14 @@ Onyx Core is infrastructure, not a tool bundle. Every Onyx product vendors the
 Core runtime under its own package namespace, while the same source is also
 available as a free standalone extension. API v1 owns only shared concerns:
 runtime discovery, compatibility checks, registration lifetimes, service
-ownership, readiness results, and canonical asset metadata. Product logic stays
-inside the product extension.
+ownership, readiness results, canonical asset metadata, and shared
+material-channel roles. Product logic stays inside the product extension.
 
-The public API version and Core package version are separate. Add-ons declare
-the API they need; they do not compare the Core package version directly. A
-compatible API has the same major version and at least the requested minor
-version.
+The public API version and Core package version are separate. Core 0.2.1 exposes
+API 1.1 and remains compatible with products that require API 1.0. Add-ons
+declare the API they need; they do not compare the Core package version
+directly. A compatible API has the same major version and at least the
+requested minor version.
 
 ## Attach a bundled product runtime
 
@@ -38,6 +39,10 @@ lifecycle.add("interface", ui.register, ui.unregister)
 
 `tools/sync_embedded_core.ps1` updates the generated `_onyx_core` copies from
 the canonical standalone source. Product packagers call the sync automatically.
+
+Core registration and service discovery are main-process APIs. Shipped Blender
+extensions must not wrap registry access in Python `threading` or `queue` code.
+All Blender API and broker changes stay on Blender's main process.
 
 ## Discover the shared runtime
 
@@ -138,6 +143,22 @@ determines every extension's full module path.
 `onyx_source_name`. Helpers accept a Blender ID property collection or any
 mutable mapping, which keeps metadata logic testable outside Blender. API v1
 roles are `HIGH`, `LOW`, `CAGE`, `SOURCE`, and `RESULT`.
+
+## Shared material channels
+
+API 1.1 gives compatible tools one set of names for common material data:
+`BASE_COLOR`, `ROUGHNESS`, `METALLIC`, `NORMAL`, `HEIGHT`,
+`AMBIENT_OCCLUSION`, `EMISSION`, and `ALPHA`.
+
+Use `normalize_material_channel`, `material_channel_descriptor`,
+`tag_material_channel`, `read_material_channel`, and
+`clear_material_channel` from the product's own bundled `_onyx_core`. Tags use
+the `onyx_material_channel` property and a versioned schema, so tools can share
+meaning without importing one another.
+
+The optional `onyx.material.channels` service ID is reserved for a provider
+that can inspect or resolve channels. Consumers should discover it through the
+active Core broker and keep working normally when no provider is enabled.
 
 ## Failure behavior
 

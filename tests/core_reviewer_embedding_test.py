@@ -14,6 +14,7 @@ RUNTIME_FILES = (
     "errors.py",
     "integration.py",
     "lifecycle.py",
+    "materials.py",
     "readiness.py",
     "registry.py",
 )

@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "onyx_core"
-version = "0.1.0"
+version = "0.2.1"
 name = "Onyx Core"
 tagline = "Shared framework and interoperability for Onyx extensions"
 maintainer = "Onyx"
@@ -12,13 +12,19 @@ blender_version_min = "5.2.0"
 license = ["SPDX:GPL-3.0-or-later"]
 
 [build]
-paths_exclude_pattern = [
-    "__pycache__/",
-    ".*",
-    "/*.zip",
-    "*.blend[1-9]",
-    "/docs/",
-    "/README.md",
-    "/CHANGELOG.md",
-    "/embedded_init.py",
+paths = [
+    "__init__.py",
+    "api.py",
+    "assets.py",
+    "blender_runtime.py",
+    "embedded.py",
+    "errors.py",
+    "integration.py",
+    "lifecycle.py",
+    "materials.py",
+    "operators.py",
+    "preferences.py",
+    "readiness.py",
+    "registry.py",
+    "LICENSE",
 ]

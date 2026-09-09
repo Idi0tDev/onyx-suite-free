@@ -20,14 +20,13 @@ REQUIRED_FIELDS = {
     "blender_version_min",
     "license",
 }
-REQUIRED_BUILD_EXCLUSIONS = {
-    "__pycache__/",
-    ".*",
-    "/*.zip",
-    "*.blend[1-9]",
-    "/docs/",
-    "/README.md",
-    "/CHANGELOG.md",
+FORBIDDEN_RUNTIME_PARTS = {"docs", "tests", "tools", "__pycache__"}
+FORBIDDEN_RUNTIME_FILES = {
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "README.md",
+    "SECURITY.md",
 }
 
 
@@ -108,22 +107,39 @@ def validate_manifest(
         assert len(reason) <= 64
         assert not reason.endswith(".")
     build = manifest.get("build", {})
-    exclusions = set(build.get("paths_exclude_pattern", ()))
-    assert REQUIRED_BUILD_EXCLUSIONS <= exclusions, (
-        f"{extension_id} manifest must exclude non-runtime release files"
+    paths = build.get("paths")
+    assert isinstance(paths, list) and paths, (
+        f"{extension_id} manifest must use an explicit runtime allowlist"
     )
+    assert len(paths) == len(set(paths)), f"{extension_id} build paths contain duplicates"
+    for runtime_path in paths:
+        assert isinstance(runtime_path, str) and runtime_path.strip()
+        normalized = Path(runtime_path)
+        assert not normalized.is_absolute() and ".." not in normalized.parts
+        assert not (FORBIDDEN_RUNTIME_PARTS & set(normalized.parts))
+        assert normalized.name not in FORBIDDEN_RUNTIME_FILES
+        source_path = ROOT / (runtime_path if runtime_path == "LICENSE" else f"{extension_id}/{runtime_path}")
+        assert source_path.is_file(), f"Missing allowed runtime file: {runtime_path}"
     return manifest
 
 
 core_manifest = validate_manifest("onyx_core", "Onyx Core")
-assert "/embedded_init.py" in core_manifest["build"]["paths_exclude_pattern"], (
+assert "embedded_init.py" not in core_manifest["build"]["paths"], (
     "Onyx Core package must exclude its embedding-only source template"
 )
+assert {
+    "blender_runtime.py",
+    "materials.py",
+    "operators.py",
+    "preferences.py",
+    "LICENSE",
+} <= set(core_manifest["build"]["paths"]), "Onyx Core allowlist is missing standalone runtime files"
 reviewer_manifest = validate_manifest(
     "onyx_reviewer",
     "Onyx Reviewer",
     expected_permissions={"clipboard": "Copy review reports and comparisons"},
 )
+assert "_onyx_core/materials.py" in reviewer_manifest["build"]["paths"]
 
 core_runtime_version = read_version_assignment(ROOT / "onyx_core" / "api.py", "CORE_VERSION")
 reviewer_runtime_version = read_string_assignment(ROOT / "onyx_reviewer" / "__init__.py", "VERSION")

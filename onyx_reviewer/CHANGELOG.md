@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.15.2 - 2026-09-09
+
+- Update the bundled Onyx Core runtime to 0.2.1 / API 1.1 while keeping
+  Reviewer fully self-contained.
+- Use an explicit runtime-only package list so guides, changelogs, tests, and
+  other repository files stay out of the Blender ZIP.
+- Keep Blender API and Core broker work on the main process with no Python
+  `threading` or `queue` dependency.
+
 ## 0.15.1 - 2026-09-05
 
 - Trim the installable ZIP down to the files Reviewer actually uses in

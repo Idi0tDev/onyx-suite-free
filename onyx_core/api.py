@@ -6,8 +6,8 @@ from .errors import IncompatibleVersionError, ValidationError
 from .registry import ExtensionRecord, FrameworkRegistry, ServiceRecord, Version
 
 
-CORE_VERSION = Version(0, 1, 0)
-API_VERSION = (1, 0)
+CORE_VERSION = Version(0, 2, 1)
+API_VERSION = (1, 1)
 
 
 def _api_version(value):
