@@ -16,8 +16,8 @@ missing, such as an active mesh or a selected mesh.
 
 The everyday controls stay visible. Less common controls are folded away:
 
-- **More Settings** contains custom checks, the triangle budget, and Live
-  Review timing limits.
+- **More Settings** contains custom checks, the triangle budget, problem colors,
+  and Live Review timing limits.
 - **Compare Changes** contains the temporary before-and-after baseline.
 - **Viewport Modes** contains Studio, Silhouette, Topology, Orientation, and
   Restore View.
@@ -59,7 +59,7 @@ Some models are meant to have open edges. A cloth panel, hair card, trim sheet,
 or other flat asset should not need a noisy warning on every review. The same
 can be true for a small number of deliberate ngons.
 
-Open **More Settings > Topology Allowances** and set:
+Open **More Settings > Topology Limits** and set:
 
 - **Allowed Open Edges** — how many boundary edges can exist before the open-edge
   warning appears; and
@@ -71,6 +71,25 @@ allowance is accepted; the warning returns as soon as the mesh goes over it.
 These values change only the warnings. Face mix and the other mesh statistics
 stay visible, and no geometry is edited. Changing either allowance marks an old
 review as out of date and clears its temporary comparison baseline.
+
+### Check for bent faces
+
+A quad or ngon can look flat at a glance while its corners sit on slightly
+different planes. Blender still has to turn that face into triangles for
+display and rendering, and those triangles may shade or export differently.
+
+Reviewer compares the triangles inside each quad or ngon with the face's
+overall direction. When one triangle differs by more than the **Non-Planar
+Angle**, the face is marked as **Non-planar faces**. The default is 5°.
+Lower it when a job needs very flat surfaces; raise it when small bends are
+expected. A higher value means fewer warnings.
+
+Triangles are skipped because three points already define one plane. Zero-area
+faces are also skipped here because the separate degenerate-face check explains
+them more clearly. This is a Quick check, so it stays current in Live Review.
+Like every Reviewer check, it only points at the face and never flattens it.
+Changing the angle marks the old result as out of date and clears a temporary
+Review Delta baseline, just like changing the other review limits.
 
 ## Live Review
 
@@ -104,6 +123,19 @@ when the new review confirms it is fixed, Reviewer returns to the remaining
 colored problems. Live Review never selects components, applies modifiers,
 repairs topology, or edits geometry.
 
+### If Onyx Reviewer Pro is enabled too
+
+Both editions can stay installed, but only one should review and draw on the
+mesh at a time. When Pro is enabled, the regular Review panel steps out of the
+sidebar and its Live Review and colored marks pause. This prevents duplicate
+scans and overlapping colors.
+
+Your current Reviewer settings and results are left alone. Disable Pro and the
+regular panel returns automatically. If Live Review was switched on, it runs a
+fresh scan before showing its marks again, so an old result is not mistaken for
+the current mesh. If Live was off, press **Run Review** whenever you want a new
+result.
+
 ## Findings
 
 Errors identify conditions that usually require correction, such as degenerate
@@ -113,8 +145,8 @@ when it points against a clear majority of the connected surface around it.
 Exact duplicate faces occupying the same vertex positions stay separate from
 partial overlaps so you know which problem you are looking at. Warnings identify
 conditions that may be valid but deserve review, such as open boundaries,
-ngons, unapplied scale, coincident unwelded vertices, disconnected islands, or
-missing UVs.
+non-planar faces, ngons, unapplied scale, coincident unwelded vertices,
+disconnected islands, or missing UVs.
 
 The normal-direction check looks for local odd faces, not every hard corner. It
 needs at least three connected neighbors that mostly agree with each other, then
@@ -234,21 +266,10 @@ on how the asset will deform, shade, or be edited.
 Expand **Topology Tools** inside an object card to turn those statistics into
 viewport navigation.
 
-**Show Face Map** displays every available face class together:
-
-| Face class | Color |
-| --- | --- |
-| Quads | Teal |
-| Triangles | Gold |
-| Ngons | Coral |
-
-**Show Pole Map** displays the pole classes that are present:
-
-| Pole class | Color |
-| --- | --- |
-| 3-edge poles | Sky |
-| 5-edge poles | Violet |
-| 6+-edge poles | Pink |
+**Show Face Map** displays quads, triangles, and ngons together. **Show Pole
+Map** displays the 3-edge, 5-edge, and 6+-edge pole classes that are present.
+The real color dot beside each class is the best key: it changes with your
+chosen palette and always matches the viewport.
 
 Use **Show** beside one class to isolate it. Use **Inspect** to enter Edit Mode
 and select its exact faces or vertices. Controls with a zero count remain
@@ -259,22 +280,19 @@ the surface, and create no objects, materials, or saved mesh data.
 
 Use **Show** beside an actionable topology finding to draw its affected geometry
 directly over the model. The dot beside the finding shows the exact color that
-will appear in the viewport. Each finding type keeps the same color:
+will appear in the viewport.
 
-| Finding | Color |
-| --- | --- |
-| Edges connected to more than two faces | Red |
-| Degenerate faces | Rose |
-| Duplicate faces | Magenta |
-| Overlapping faces | Mint |
-| Local normal-direction outliers | Indigo |
-| Inconsistent winding | Purple |
-| Open boundary edges | Cyan |
-| Loose edges | Yellow |
-| Loose vertices | Lime |
-| Coincident vertices | Orange |
-| Disconnected islands | Blue |
-| Ngons | Amber |
+Open **More Settings > Problem Colors** to choose a palette:
+
+- **Onyx** is the familiar orange-led default.
+- **High Contrast** uses brighter, more separated colors when the standard
+  marks blend into the model or viewport.
+- **Colorblind Safe** avoids relying on easy-to-confuse red/green differences.
+
+Changing the palette recolors marks that are already visible. It does not run a
+review, rebuild the evidence, mark results out of date, schedule Live Review,
+or clear a Review Delta baseline. The dots beside findings and topology classes
+change at the same time, so you never have to remember a written color name.
 
 Error-level findings use thicker lines and larger point markers, so severity is
 still visible when several colors overlap. Vertex findings appear as points,

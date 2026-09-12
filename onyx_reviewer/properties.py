@@ -12,6 +12,7 @@ from bpy.props import (
     StringProperty,
 )
 
+from ._reviewer_common.palettes import DEFAULT_PALETTE, PALETTE_ENUM_ITEMS
 from .review_profiles import PROFILE_ENUM_ITEMS
 
 
@@ -29,6 +30,13 @@ def _review_option_changed(_settings, context):
     from . import live_review
 
     live_review.review_options_changed(context.scene)
+
+
+def _color_palette_changed(_settings, _context):
+    """Recolor current evidence without changing the review itself."""
+    from . import highlight_state
+
+    highlight_state.refresh_colors()
 
 
 def _review_semantics_changed(settings, context):
@@ -122,7 +130,7 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
     )
     topology_rules_expanded: BoolProperty(
         default=False,
-        description="Show allowances for intentionally open edges and ngons",
+        description="Show the topology limits used by the review",
     )
     delta_expanded: BoolProperty(
         default=False,
@@ -135,6 +143,13 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
     highlight_legend_expanded: BoolProperty(
         default=False,
         description="Show the exact viewport colors for the current highlight",
+    )
+    color_palette: EnumProperty(
+        name="Problem Colors",
+        items=PALETTE_ENUM_ITEMS,
+        default=DEFAULT_PALETTE,
+        description="Choose how finding colors appear in the viewport and panel",
+        update=_color_palette_changed,
     )
     scope: EnumProperty(
         name="Review Scope",
@@ -192,6 +207,18 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
         min=0,
         soft_max=1_000,
         description="Ignore the ngon warning up to this count; zero flags any ngon",
+        update=_review_semantics_changed,
+    )
+    non_planar_angle: FloatProperty(
+        name="Non-Planar Angle",
+        default=5.0,
+        min=0.0,
+        max=90.0,
+        precision=1,
+        description=(
+            "Flag faces whose surface varies from the face direction by more "
+            "than this many degrees"
+        ),
         update=_review_semantics_changed,
     )
     triangle_budget: IntProperty(

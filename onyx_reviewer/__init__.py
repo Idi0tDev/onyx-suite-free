@@ -2,11 +2,20 @@
 
 import bpy
 
-from . import delta_state, highlight_state, live_review, operators, properties, ui, viewport_state
+from . import (
+    compatibility,
+    delta_state,
+    highlight_state,
+    live_review,
+    operators,
+    properties,
+    ui,
+    viewport_state,
+)
 from ._onyx_core import EmbeddedCore, Lifecycle
 
 
-VERSION = "0.15.2"
+VERSION = "1.0.0"
 
 CORE = EmbeddedCore(
     bpy,
@@ -19,6 +28,7 @@ CORE = EmbeddedCore(
 
 LIFECYCLE = Lifecycle("Onyx Reviewer")
 LIFECYCLE.add("Core runtime", CORE.register, CORE.unregister)
+LIFECYCLE.add("edition compatibility", compatibility.register, compatibility.unregister)
 LIFECYCLE.add("delta state", delta_state.register, delta_state.unregister)
 LIFECYCLE.add("viewport state", viewport_state.register, viewport_state.unregister)
 LIFECYCLE.add("highlight state", highlight_state.register, highlight_state.unregister)

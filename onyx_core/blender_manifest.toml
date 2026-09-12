@@ -26,5 +26,4 @@ paths = [
     "preferences.py",
     "readiness.py",
     "registry.py",
-    "LICENSE",
 ]

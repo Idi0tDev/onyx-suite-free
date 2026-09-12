@@ -1,3 +1,0 @@
-# Public Onyx products included in suite builds, in display order.
-onyx_core
-onyx_reviewer

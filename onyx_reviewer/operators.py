@@ -17,6 +17,7 @@ from .analysis import (
     format_review_delta,
     format_review_report,
 )
+from ._reviewer_common import BASE_RULES
 from .mesh_analysis import (
     TOPOLOGY_CLASS_ENUM_ITEMS,
     issue_overlay_geometry,
@@ -29,24 +30,16 @@ from .mesh_analysis import (
     topology_map_classes,
 )
 from .review_profiles import resolve_review_profile
-from . import delta_state, highlight_state, viewport_state
+from . import compatibility, delta_state, highlight_state, viewport_state
 
 
 _REVIEW_RUNNING = False
 
-_VIEWPORT_FINDING_CODES = (
-    "topology.non_manifold",
-    "topology.degenerate",
-    "topology.duplicate_faces",
-    "topology.overlapping_faces",
-    "topology.normal_outliers",
-    "topology.winding",
-    "topology.boundary",
-    "topology.loose_edges",
-    "topology.loose_vertices",
-    "topology.coincident_vertices",
-    "topology.disconnected_islands",
-    "topology.ngons",
+_VIEWPORT_FINDING_CODES = tuple(
+    rule.rule_id
+    for rule in BASE_RULES
+    if rule.scan_cost == "QUICK"
+    and rule.evidence_domain in {"VERT", "EDGE", "FACE"}
 )
 
 
@@ -137,6 +130,11 @@ def active_review_profile(settings):
     )
 
 
+def _analysis_options(settings):
+    """Return scene thresholds used by scans and evidence recomputation."""
+    return {"non_planar_angle": settings.non_planar_angle}
+
+
 def finding_matches_filter(issue, filter_mode):
     """Return whether a stored finding belongs in the current artist-facing view."""
     if filter_mode == "ALL":
@@ -177,11 +175,12 @@ def _stored_result_for_object(settings, obj, object_name):
     )
 
 
-def _highlight_for_issue(obj, issue, *, evidence=None):
+def _highlight_for_issue(obj, issue, *, settings, evidence=None):
     domain, points, lines, count = issue_overlay_geometry(
         obj,
         issue.code,
         evidence=evidence,
+        **_analysis_options(settings),
     )
     if not count:
         return None
@@ -210,6 +209,7 @@ def _visible_result_highlights(settings, obj, result, *, evidence=None):
             obj,
             (issue.code for issue in actionable),
             evidence=evidence,
+            **_analysis_options(settings),
         )
     }
     highlights = []
@@ -231,7 +231,7 @@ def _visible_result_highlights(settings, obj, result, *, evidence=None):
     return tuple(highlights)
 
 
-def _topology_map_highlights(obj, map_kind, *, evidence=None):
+def _topology_map_highlights(settings, obj, map_kind, *, evidence=None):
     classes = topology_map_classes(map_kind)
     descriptions = {
         issue_code: (label, description)
@@ -243,6 +243,7 @@ def _topology_map_highlights(obj, map_kind, *, evidence=None):
         obj,
         descriptions,
         evidence=evidence,
+        **_analysis_options(settings),
     ):
         if not count:
             continue
@@ -313,7 +314,12 @@ def _refresh_previous_highlight(
 
     if overview_key in {"FACE_MAP", "POLE_MAP"}:
         map_kind = "FACES" if overview_key == "FACE_MAP" else "POLES"
-        highlights = _topology_map_highlights(obj, map_kind, evidence=evidence)
+        highlights = _topology_map_highlights(
+            settings,
+            obj,
+            map_kind,
+            evidence=evidence,
+        )
         if highlights:
             highlight_state.show_overview(
                 obj.name,
@@ -329,6 +335,7 @@ def _refresh_previous_highlight(
             obj,
             active.issue_code,
             evidence=evidence,
+            **_analysis_options(settings),
         )
         if not count:
             return False
@@ -351,7 +358,12 @@ def _refresh_previous_highlight(
     )
     if issue is None:
         return False
-    highlight = _highlight_for_issue(obj, issue, evidence=evidence)
+    highlight = _highlight_for_issue(
+        obj,
+        issue,
+        settings=settings,
+        evidence=evidence,
+    )
     if highlight is None:
         return False
     highlight_state.show_highlight(
@@ -484,6 +496,10 @@ def _stored_summary(settings):
 def perform_review(context):
     """Run one guarded review without scheduling a duplicate live refresh."""
     global _REVIEW_RUNNING
+    if compatibility.production_review_active():
+        raise RuntimeError(
+            "Onyx Reviewer is paused while production review is active"
+        )
     if _REVIEW_RUNNING:
         raise RuntimeError("A mesh review is already running")
     _REVIEW_RUNNING = True
@@ -492,7 +508,11 @@ def perform_review(context):
             from . import live_review
 
             live_review.cancel_scene(context.scene)
-        return _perform_review(context)
+        summary = _perform_review(context)
+        # A successful manual pass is also a valid way to finish an edition
+        # handoff when the automatic Live refresh could not run earlier.
+        compatibility.finish_handoff_refresh()
+        return summary
     finally:
         _REVIEW_RUNNING = False
 
@@ -533,6 +553,7 @@ def _perform_review(context):
                 triangle_budget=settings.triangle_budget,
                 allowed_boundary_edges=settings.allowed_boundary_edges,
                 allowed_ngons=settings.allowed_ngons,
+                **_analysis_options(settings),
                 profile=profile,
                 evidence_codes=(
                     evidence_codes if obj.name == evidence_object_name else ()
@@ -580,6 +601,11 @@ class ONYX_OT_run_review(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        if compatibility.production_review_active():
+            cls.poll_message_set(
+                "Onyx Reviewer is paused while production review is active"
+            )
+            return False
         settings = getattr(getattr(context, "scene", None), "onyx_reviewer", None)
         if settings is None:
             cls.poll_message_set("Onyx Reviewer is not available in this scene")
@@ -591,6 +617,12 @@ class ONYX_OT_run_review(bpy.types.Operator):
         return True
 
     def execute(self, context):
+        if compatibility.production_review_active():
+            self.report(
+                {"INFO"},
+                "Onyx Reviewer is paused while production review is active",
+            )
+            return {"CANCELLED"}
         settings = context.scene.onyx_reviewer
         blocker = review_blocker(context, settings.scope)
         if blocker:
@@ -776,7 +808,11 @@ class ONYX_OT_step_review_finding(bpy.types.Operator):
         for stored_result in settings.results:
             stored_result.expanded = stored_result.object_name == result.object_name
 
-        domain, points, lines, count = issue_overlay_geometry(obj, issue.code)
+        domain, points, lines, count = issue_overlay_geometry(
+            obj,
+            issue.code,
+            **_analysis_options(settings),
+        )
         if not count:
             highlight_state.clear_highlight()
             self.report({"INFO"}, "This problem changed; run Review again")
@@ -847,7 +883,11 @@ class ONYX_OT_inspect_review_issue(bpy.types.Operator):
             "EDGE": (False, True, False),
             "FACE": (False, False, True),
         }[domain]
-        _, count = select_issue_elements(obj.data, self.issue_code)
+        _, count = select_issue_elements(
+            obj.data,
+            self.issue_code,
+            **_analysis_options(context.scene.onyx_reviewer),
+        )
         if not count:
             self.report({"INFO"}, "No matching elements remain; run Review again")
             return {"FINISHED"}
@@ -1035,7 +1075,11 @@ class ONYX_OT_inspect_topology_class(bpy.types.Operator):
             "VERT": (True, False, False),
             "FACE": (False, False, True),
         }[domain]
-        _, count = select_issue_elements(obj.data, issue_code)
+        _, count = select_issue_elements(
+            obj.data,
+            issue_code,
+            **_analysis_options(context.scene.onyx_reviewer),
+        )
         if not count:
             self.report({"INFO"}, f"No {label.lower()} remain; run Review again")
             return {"FINISHED"}
@@ -1073,7 +1117,11 @@ class ONYX_OT_highlight_review_issue(bpy.types.Operator):
             return {"CANCELLED"}
 
         try:
-            domain, points, lines, count = issue_overlay_geometry(obj, self.issue_code)
+            domain, points, lines, count = issue_overlay_geometry(
+                obj,
+                self.issue_code,
+                **_analysis_options(context.scene.onyx_reviewer),
+            )
         except ValueError:
             self.report({"WARNING"}, "This finding has no mesh elements to highlight")
             return {"CANCELLED"}
@@ -1160,7 +1208,11 @@ class ONYX_OT_highlight_topology_class(bpy.types.Operator):
             self.report({"WARNING"}, "Show the reviewed mesh before highlighting its topology")
             return {"CANCELLED"}
 
-        domain, points, lines, count = issue_overlay_geometry(obj, issue_code)
+        domain, points, lines, count = issue_overlay_geometry(
+            obj,
+            issue_code,
+            **_analysis_options(context.scene.onyx_reviewer),
+        )
         if not count:
             self.report({"INFO"}, f"No {label.lower()} remain; run Review again")
             return {"FINISHED"}
@@ -1210,7 +1262,11 @@ class ONYX_OT_highlight_topology_map(bpy.types.Operator):
             self.report({"WARNING"}, "Show the reviewed mesh before highlighting its topology")
             return {"CANCELLED"}
 
-        highlights = _topology_map_highlights(obj, self.map_kind)
+        highlights = _topology_map_highlights(
+            context.scene.onyx_reviewer,
+            obj,
+            self.map_kind,
+        )
         if not highlights:
             self.report({"INFO"}, "This mesh has no matching topology classes")
             return {"FINISHED"}

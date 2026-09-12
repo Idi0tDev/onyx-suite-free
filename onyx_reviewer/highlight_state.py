@@ -12,43 +12,25 @@ from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 
+from . import compatibility
+from ._reviewer_common.palettes import (
+    DEFAULT_PALETTE,
+    FindingStyle,
+    PALETTE_ENUM_ITEMS,
+    base_finding_style,
+    base_palette_styles,
+    fallback_style,
+    normalize_palette_id,
+    palette_ids,
+)
 from .mesh_analysis import issue_recommendation
 
 
-@dataclass(frozen=True)
-class FindingStyle:
-    name: str
-    color: tuple
-
-
-_FINDING_STYLES = {
-    "topology.non_manifold": FindingStyle("Red", (1.0, 0.05, 0.12, 0.98)),
-    "topology.degenerate": FindingStyle("Rose", (1.0, 0.08, 0.42, 0.98)),
-    "topology.duplicate_faces": FindingStyle("Magenta", (0.95, 0.08, 1.0, 0.98)),
-    "topology.overlapping_faces": FindingStyle(
-        "Mint",
-        (0.05, 1.0, 0.58, 0.98),
-    ),
-    "topology.normal_outliers": FindingStyle(
-        "Indigo",
-        (0.25, 0.08, 0.95, 0.98),
-    ),
-    "topology.winding": FindingStyle("Purple", (0.62, 0.24, 1.0, 0.98)),
-    "topology.boundary": FindingStyle("Cyan", (0.05, 0.82, 1.0, 0.96)),
-    "topology.loose_edges": FindingStyle("Yellow", (1.0, 0.82, 0.05, 0.96)),
-    "topology.loose_vertices": FindingStyle("Lime", (0.55, 1.0, 0.12, 0.96)),
-    "topology.coincident_vertices": FindingStyle("Orange", (1.0, 0.34, 0.03, 0.96)),
-    "topology.disconnected_islands": FindingStyle("Blue", (0.12, 0.42, 1.0, 0.96)),
-    "topology.ngons": FindingStyle("Amber", (1.0, 0.58, 0.04, 0.96)),
-    "topology_map.triangles": FindingStyle("Gold", (1.0, 0.72, 0.04, 0.96)),
-    "topology_map.quads": FindingStyle("Teal", (0.05, 0.86, 0.64, 0.96)),
-    "topology_map.ngons": FindingStyle("Coral", (1.0, 0.18, 0.08, 0.98)),
-    "topology_map.poles_3": FindingStyle("Sky", (0.05, 0.64, 1.0, 0.96)),
-    "topology_map.poles_5": FindingStyle("Violet", (0.58, 0.18, 1.0, 0.98)),
-    "topology_map.poles_6_plus": FindingStyle("Pink", (1.0, 0.05, 0.52, 0.98)),
-}
-_ERROR_STYLE = FindingStyle("Red", (1.0, 0.12, 0.03, 0.98))
-_WARNING_STYLE = FindingStyle("Orange", (1.0, 0.48, 0.03, 0.96))
+# Compatibility aliases keep the original Onyx style table available to older
+# internal checks. Runtime lookup below always honors the active scene palette.
+_FINDING_STYLES = base_palette_styles(DEFAULT_PALETTE)
+_ERROR_STYLE = fallback_style(DEFAULT_PALETTE, "ERROR")
+_WARNING_STYLE = fallback_style(DEFAULT_PALETTE, "WARNING")
 
 
 @dataclass(frozen=True)
@@ -90,12 +72,50 @@ def active_overview_key():
     return _OVERVIEW_KEY
 
 
-def finding_style(issue_code, severity):
-    """Return the stable viewport color assigned to a finding type."""
-    return _FINDING_STYLES.get(
-        issue_code,
-        _ERROR_STYLE if severity == "ERROR" else _WARNING_STYLE,
+def _scene_settings():
+    scene = getattr(bpy.context, "scene", None)
+    return getattr(scene, "onyx_reviewer", None) if scene is not None else None
+
+
+def current_palette():
+    """Return the valid palette selected by the active scene."""
+    settings = _scene_settings()
+    palette_id = getattr(settings, "color_palette", DEFAULT_PALETTE)
+    try:
+        return normalize_palette_id(palette_id)
+    except ValueError:
+        return DEFAULT_PALETTE
+
+
+def palette_styles(palette_id):
+    """Return a copy of every Free finding and topology-map style."""
+    return base_palette_styles(palette_id)
+
+
+def finding_style(issue_code, severity, palette_id=None):
+    """Return a palette-aware viewport style for one finding type."""
+    palette_id = (
+        current_palette()
+        if palette_id is None
+        else normalize_palette_id(palette_id)
     )
+    return base_finding_style(palette_id, issue_code, severity)
+
+
+def refresh_colors():
+    """Redraw existing evidence in the active scene's current palette."""
+    _tag_redraw()
+
+
+def set_palette(palette_id):
+    """Select a valid palette on the active scene without touching results."""
+    palette_id = normalize_palette_id(palette_id)
+    settings = _scene_settings()
+    if settings is not None and hasattr(settings, "color_palette"):
+        if settings.color_palette != palette_id:
+            settings.color_palette = palette_id
+    refresh_colors()
+    return palette_id
 
 
 def is_active(object_name, issue_code):
@@ -292,7 +312,11 @@ def _draw_tooltip(region, mouse, highlight):
 
 
 def _draw_hover():
-    if not _ACTIVE or _HOVER_POSITION is None:
+    if (
+        not _ACTIVE
+        or _HOVER_POSITION is None
+        or compatibility.review_display_suspended()
+    ):
         return
     region = getattr(bpy.context, "region", None)
     region_data = getattr(bpy.context, "region_data", None)
@@ -308,7 +332,7 @@ def _draw_hover():
 
 def _draw_highlight():
     global _SHADER, _BATCHES
-    if not _ACTIVE:
+    if not _ACTIVE or compatibility.review_display_suspended():
         return
 
     if _SHADER is None:
@@ -467,10 +491,17 @@ def clear_highlight():
     _tag_redraw()
 
 
+def _production_review_changed(active):
+    if active:
+        clear_hover_position()
+    _tag_redraw()
+
+
 def register():
-    return None
+    compatibility.register_listener(_production_review_changed)
 
 
 def unregister():
+    compatibility.unregister_listener(_production_review_changed)
     clear_highlight()
     _HOVER_MONITORS.clear()

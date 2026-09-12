@@ -2,14 +2,14 @@
   <img src="../docs/assets/onyx-reviewer-hero.png" alt="Onyx Reviewer scanning a mesh and identifying geometry problems" width="100%">
 </p>
 
-<h1 align="center">Onyx Reviewer 0.15.2</h1>
+<h1 align="center">Onyx Reviewer</h1>
 
 <p align="center">
   Find mesh problems, see where they are, and decide how you want to fix them.
 </p>
 
 <p align="center">
-  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.2/onyx_reviewer-0.15.2.zip"><img alt="Download Onyx Reviewer 0.15.2" src="https://img.shields.io/badge/Download-Onyx%20Reviewer-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
+  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.0/onyx_reviewer-1.0.0.zip"><img alt="Download Onyx Reviewer 1.0.0" src="https://img.shields.io/badge/Download-Onyx%20Reviewer-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
 </p>
 
 Onyx Reviewer checks the editable mesh and the evaluated modifier result, then
@@ -51,10 +51,10 @@ the viewport back exactly as it was.
 
 ## Install
 
-1. **[Download Onyx Reviewer 0.15.2](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.2/onyx_reviewer-0.15.2.zip)** and leave the ZIP packed.
+1. **[Download Onyx Reviewer 1.0.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.0/onyx_reviewer-1.0.0.zip)** and leave the ZIP packed.
 2. In Blender, open **Edit → Preferences → Get Extensions**.
 3. Open the menu in the top-right and choose **Install from Disk**.
-4. Pick `onyx_reviewer-0.15.2.zip` and confirm the installation.
+4. Pick the downloaded `onyx_reviewer-<version>.zip` and confirm the installation.
 5. Open **Onyx → Review** in the 3D Viewport sidebar.
 
 Blender shows that Reviewer needs clipboard access. It uses that permission only
@@ -75,6 +75,13 @@ or file access.
 Enable **Live** when you want the results to follow a modeling pass. Turning it
 on runs the first scan automatically.
 
+### If both Reviewer editions are enabled
+
+You can keep both editions installed. While Onyx Reviewer Pro is enabled, this
+Reviewer's panel, Live Review, and viewport marks pause so the two tools never
+draw or scan over each other. Nothing is deleted. Disable Pro and this panel
+comes back automatically; if Live was on, Reviewer starts with a fresh scan.
+
 ## What Reviewer checks
 
 <details open>
@@ -84,6 +91,7 @@ on runs the first scan automatically.
 - Triangles, quads, ngons, and 3/5/6+ edge poles
 - Open boundaries and edges connected to more than two faces
 - Degenerate, duplicate, crossing, and overlapping faces
+- Bent faces whose triangles no longer agree on one flat surface
 - Inconsistent winding and faces pointing against their connected neighbors
 - Loose geometry, coincident unwelded vertices, and disconnected islands
 - Exact selection and color-coded evidence for actionable findings
@@ -117,8 +125,19 @@ temporary Review Delta baseline so two different sets of rules are not compared
 as if they were the same review.
 
 If an asset is intentionally open or contains a few ngons, open **More Settings
-→ Topology Allowances** and enter what is acceptable. Zero keeps the default
-review strict.
+→ Topology Limits** and enter what is acceptable. This is also where you can
+adjust the **Non-Planar Angle**. Its 5° default catches clearly bent quads and
+ngons without treating every tiny wobble as a problem.
+
+## Pick colors that work for you
+
+Open **More Settings → Problem Colors** to choose **Onyx**, **High Contrast**,
+or **Colorblind Safe**. Any marks already on the mesh change immediately, and
+the little dots in the panel always show the colors you will see in the
+viewport.
+
+This is only a display choice. Switching palettes does not scan again, change
+the result, or affect a saved Review Delta baseline.
 
 ## Live Review
 
@@ -177,20 +196,22 @@ back exactly, and disabling Reviewer restores any remaining saved viewports.
 - No downloads, accounts, telemetry, or background network access
 - No permanent viewport changes
 
-For every control and more interpretation help, read the
-[full user guide](docs/USER_GUIDE.md). For common installation and workflow
-questions, see [Troubleshooting and FAQ](../docs/TROUBLESHOOTING.md).
+For a relaxed first walkthrough, follow the
+[beginner tutorial](docs/TUTORIAL.md). For every control and more interpretation
+help, read the [full user guide](docs/USER_GUIDE.md). For common installation
+and workflow questions, see
+[Troubleshooting and FAQ](../docs/TROUBLESHOOTING.md).
 
 <details>
 <summary><strong>Build the current source</strong></summary>
 
-From a clean checkout of the repository, run:
+From a clean checkout, use Blender's extension builder:
 
 ```powershell
-tools/package_reviewer.ps1
+blender --command extension build --source-dir onyx_reviewer --output-filepath onyx_reviewer-1.0.0.zip
 ```
 
-The ready-to-install archive is written to
-`dist/onyx_reviewer-x.y.z.zip`.
+The result is the same ready-to-install ZIP linked above. If `blender` is not
+available as a terminal command, use the full path to your Blender executable.
 
 </details>

@@ -2,7 +2,7 @@
 
 import bpy
 
-from . import delta_state, highlight_state, operators
+from . import compatibility, delta_state, highlight_state, operators
 from .mesh_analysis import issue_recommendation, issue_selection_domain, topology_class_info
 
 
@@ -79,6 +79,10 @@ class ONYX_PT_review(bpy.types.Panel):
     bl_region_type = "UI"
     bl_category = "Onyx"
 
+    @classmethod
+    def poll(cls, _context):
+        return not compatibility.production_review_active()
+
     def draw(self, context):
         layout = self.layout
         settings = context.scene.onyx_reviewer
@@ -138,12 +142,18 @@ class ONYX_PT_review(bpy.types.Panel):
                     rules,
                     settings,
                     "topology_rules_expanded",
-                    "Topology Allowances",
+                    "Topology Limits",
                     "MODIFIER",
                 ):
-                    rules.label(text="Set what is intentional for this asset")
+                    rules.label(text="Tune what counts as a topology problem")
                     rules.prop(settings, "allowed_boundary_edges")
                     rules.prop(settings, "allowed_ngons")
+                    rules.prop(
+                        settings,
+                        "non_planar_angle",
+                        text="Non-Planar Angle (°)",
+                    )
+            optional.prop(settings, "color_palette", text="Problem Colors")
             budget = optional.row()
             budget.enabled = profile.triangle_budget
             budget.prop(settings, "triangle_budget")

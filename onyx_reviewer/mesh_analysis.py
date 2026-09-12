@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from math import cos, radians
+
 import bmesh
 from mathutils.bvhtree import BVHTree
 
 from .analysis import Issue, ObjectReview, Severity
+from ._reviewer_common import RULE_BY_ID
 from .review_profiles import ReviewProfile, resolve_review_profile
 
 
@@ -15,23 +18,12 @@ _POSITION_PRECISION = 9
 _NORMAL_NEIGHBOR_MINIMUM = 3
 _NORMAL_NEIGHBOR_COHERENCE = 0.7
 _NORMAL_OPPOSITION_DOT = -0.5
+_NON_PLANAR_DOT_EPSILON = 1.0e-9
 _COPLANAR_NORMAL_DOT = 0.99999
 _OVERLAP_TOLERANCE_MINIMUM = 1.0e-8
 _OVERLAP_TOLERANCE_SCALE = 1.0e-7
 
-_ISSUE_SELECTION_DOMAINS = {
-    "topology.non_manifold": "EDGE",
-    "topology.degenerate": "FACE",
-    "topology.duplicate_faces": "FACE",
-    "topology.overlapping_faces": "FACE",
-    "topology.normal_outliers": "FACE",
-    "topology.winding": "EDGE",
-    "topology.boundary": "EDGE",
-    "topology.loose_edges": "EDGE",
-    "topology.loose_vertices": "VERT",
-    "topology.coincident_vertices": "VERT",
-    "topology.disconnected_islands": "VERT",
-    "topology.ngons": "FACE",
+_TOPOLOGY_MAP_SELECTION_DOMAINS = {
     "topology_map.triangles": "FACE",
     "topology_map.quads": "FACE",
     "topology_map.ngons": "FACE",
@@ -78,75 +70,11 @@ _TOPOLOGY_MAP_CLASSES = {
     "POLES": ("POLES_3", "POLES_5", "POLES_6_PLUS"),
 }
 
-_ISSUE_RECOMMENDATIONS = {
-    "topology.non_manifold": (
-        "Inspect the highlighted edge and remove internal faces, or rebuild the join "
-        "so no more than two faces share the edge."
-    ),
-    "topology.degenerate": (
-        "Dissolve or rebuild the zero-area face. If its vertices sit together, merge "
-        "them first and check the surrounding faces."
-    ),
-    "topology.duplicate_faces": (
-        "Inspect the matching faces, keep the surface you need, and delete only the "
-        "redundant copy."
-    ),
-    "topology.overlapping_faces": (
-        "Move or rebuild the highlighted surfaces so they no longer pass through or "
-        "cover each other. Keep overlaps only when the asset really needs them."
-    ),
-    "topology.normal_outliers": (
-        "Compare the highlighted face with its neighbors. Flip that face, or select "
-        "the connected patch and use Recalculate Outside if the whole patch is wrong."
-    ),
-    "topology.winding": (
-        "Select the connected surface and use Mesh > Normals > Recalculate Outside. "
-        "Flip intentional inward-facing parts by hand afterward."
-    ),
-    "topology.boundary": (
-        "Close accidental gaps by filling or bridging the open loop, or weld nearby "
-        "vertices. If the opening is intentional, add a topology allowance."
-    ),
-    "topology.loose_edges": (
-        "Delete the loose edge if it is leftover construction geometry, or connect it "
-        "to faces if it belongs to the final mesh."
-    ),
-    "topology.loose_vertices": (
-        "Delete the loose vertex if it is accidental, or connect it to the mesh if it "
-        "is meant to contribute to the shape."
-    ),
-    "topology.coincident_vertices": (
-        "Inspect the stacked vertices and use Merge by Distance only where those "
-        "points are meant to be welded."
-    ),
-    "topology.disconnected_islands": (
-        "Remove stray islands, connect pieces that belong together, or separate "
-        "intentional pieces into their own objects."
-    ),
-    "topology.ngons": (
-        "Split the face into clean quads or triangles where it bends or shades badly. "
-        "A flat, stable ngon can be left alone or covered by an allowance."
-    ),
-    "transform.negative_scale": (
-        "In Object Mode, use Apply > Scale when the mirrored result is final, then "
-        "check face orientation and modifier behavior."
-    ),
-    "transform.scale": (
-        "In Object Mode, use Apply > Scale when the current size should become the "
-        "object's new default scale."
-    ),
-    "data.uv": (
-        "Add and unwrap a UV map if the asset uses image textures, baking, or workflows "
-        "that expect UV coordinates."
-    ),
-    "data.material": (
-        "Add a material slot and assign a material, even if it is only a simple "
-        "placeholder for handoff."
-    ),
-    "budget.triangles": (
-        "Reduce dense source geometry or expensive modifiers, or raise the review "
-        "budget when this level of detail is intentional."
-    ),
+_PROFILE_CATEGORY_ATTRIBUTES = {
+    "TOPOLOGY": "topology",
+    "TRANSFORMS": "transforms",
+    "ASSET_SETUP": "asset_setup",
+    "BUDGET": "triangle_budget",
 }
 
 TOPOLOGY_CLASS_ENUM_ITEMS = tuple(
@@ -155,11 +83,36 @@ TOPOLOGY_CLASS_ENUM_ITEMS = tuple(
 )
 
 
-def _issue(code, message, count=1, *, error=False):
+def _catalog_rule(code):
+    try:
+        return RULE_BY_ID[code]
+    except KeyError as exc:
+        raise ValueError(f"Unknown shared Reviewer rule: {code}") from exc
+
+
+def _rule_enabled(profile, code, object_mode):
+    """Apply shared rule metadata to the existing Free profile switches."""
+    rule = _catalog_rule(code)
+    mode = "EDIT" if object_mode == "EDIT" else "OBJECT"
+    if rule.scan_cost != "QUICK" or mode not in rule.modes:
+        return False
+    try:
+        attribute = _PROFILE_CATEGORY_ATTRIBUTES[rule.category]
+    except KeyError as exc:
+        raise ValueError(
+            f"Unsupported shared Reviewer category for {code}: {rule.category}"
+        ) from exc
+    return bool(getattr(profile, attribute))
+
+
+def _issue(code, message, count=1):
+    rule = _catalog_rule(code)
+    if rule.scan_cost != "QUICK":
+        raise ValueError(f"Free Reviewer cannot emit a Deep rule: {code}")
     return Issue(
         code,
         message,
-        Severity.ERROR if error else Severity.WARNING,
+        Severity(rule.severity),
         count,
     )
 
@@ -225,7 +178,12 @@ def _secondary_island_vertices(bm):
 
 def issue_selection_domain(issue_code):
     """Return the element domain for an inspectable finding or topology class."""
-    return _ISSUE_SELECTION_DOMAINS.get(issue_code, "")
+    if issue_code in _TOPOLOGY_MAP_SELECTION_DOMAINS:
+        return _TOPOLOGY_MAP_SELECTION_DOMAINS[issue_code]
+    rule = RULE_BY_ID.get(issue_code)
+    if rule is None or rule.evidence_domain not in {"VERT", "EDGE", "FACE"}:
+        return ""
+    return rule.evidence_domain
 
 
 def topology_class_info(class_id):
@@ -246,7 +204,8 @@ def topology_map_classes(map_kind):
 
 def issue_recommendation(issue_code):
     """Return a short, non-destructive next step for a review finding."""
-    return _ISSUE_RECOMMENDATIONS.get(issue_code, "")
+    rule = RULE_BY_ID.get(issue_code)
+    return rule.recommendation if rule is not None else ""
 
 
 def _normal_outlier_faces(faces):
@@ -380,7 +339,40 @@ def _coplanar_group_key(vertices, tolerance):
     )
 
 
-def _overlapping_faces(bm):
+def _non_planar_faces(faces, loop_triangles, angle_degrees):
+    """Find source faces whose triangulation bends beyond the review threshold."""
+    angle_degrees = max(0.0, min(90.0, float(angle_degrees)))
+    minimum_dot = cos(radians(angle_degrees))
+    candidates = {}
+    for face in faces:
+        if len(face.verts) <= 3 or face.calc_area() <= _AREA_EPSILON:
+            continue
+        reference_normal = face.normal.copy()
+        if reference_normal.length <= _AREA_EPSILON:
+            continue
+        reference_normal.normalize()
+        candidates[face.index] = reference_normal
+
+    matches = set()
+    for loops in loop_triangles:
+        face_index = loops[0].face.index
+        if face_index not in candidates or face_index in matches:
+            continue
+        first, second, third = (loop.vert.co for loop in loops)
+        triangle_normal = (second - first).cross(third - first)
+        if triangle_normal.length <= _AREA_EPSILON:
+            continue
+        triangle_normal.normalize()
+        if (
+            triangle_normal.dot(candidates[face_index])
+            < minimum_dot - _NON_PLANAR_DOT_EPSILON
+        ):
+            matches.add(face_index)
+
+    return tuple(face for face in faces if face.index in matches)
+
+
+def _overlapping_faces(bm, *, loop_triangles=None):
     """Find non-neighboring faces that cross or overlap with positive area."""
     if len(bm.faces) < 2:
         return ()
@@ -402,8 +394,10 @@ def _overlapping_faces(bm):
             if _face_pair_can_overlap(*pair, vertex_indices, position_keys):
                 overlapping_pairs.add(pair)
 
+    if loop_triangles is None:
+        loop_triangles = tuple(bm.calc_loop_triangles())
     coplanar_groups = {}
-    for loops in bm.calc_loop_triangles():
+    for loops in loop_triangles:
         vertices = tuple(loop.vert.co.copy() for loop in loops)
         group_key = _coplanar_group_key(vertices, tolerance)
         if group_key is None:
@@ -459,7 +453,13 @@ def _overlapping_faces(bm):
     return tuple(face for face in bm.faces if face.index in face_indices)
 
 
-def _matching_elements(bm, issue_code):
+def _matching_elements(
+    bm,
+    issue_code,
+    *,
+    non_planar_angle=5.0,
+    loop_triangles=None,
+):
     if issue_code == "topology.non_manifold":
         return tuple(edge for edge in bm.edges if len(edge.link_faces) > 2)
     if issue_code == "topology.degenerate":
@@ -467,7 +467,11 @@ def _matching_elements(bm, issue_code):
     if issue_code == "topology.duplicate_faces":
         return tuple(face for group in _duplicate_face_groups(bm.faces) for face in group)
     if issue_code == "topology.overlapping_faces":
-        return _overlapping_faces(bm)
+        return _overlapping_faces(bm, loop_triangles=loop_triangles)
+    if issue_code == "topology.non_planar_faces":
+        if loop_triangles is None:
+            loop_triangles = tuple(bm.calc_loop_triangles())
+        return _non_planar_faces(bm.faces, loop_triangles, non_planar_angle)
     if issue_code == "topology.normal_outliers":
         return _normal_outlier_faces(bm.faces)
     if issue_code == "topology.winding":
@@ -507,7 +511,7 @@ def _matching_elements(bm, issue_code):
     raise ValueError(f"Finding cannot select mesh elements: {issue_code}")
 
 
-def select_issue_elements(mesh, issue_code):
+def select_issue_elements(mesh, issue_code, *, non_planar_angle=5.0):
     """Select edit-mesh elements matching a finding or topology class."""
     domain = issue_selection_domain(issue_code)
     if not domain:
@@ -525,7 +529,11 @@ def select_issue_elements(mesh, issue_code):
     for vertex in bm.verts:
         vertex.select_set(False)
 
-    matches = _matching_elements(bm, issue_code)
+    matches = _matching_elements(
+        bm,
+        issue_code,
+        non_planar_angle=non_planar_angle,
+    )
     for element in matches:
         element.select_set(True)
     bmesh.update_edit_mesh(mesh, loop_triangles=False, destructive=False)
@@ -548,7 +556,13 @@ def _evidence_matches(bm, issue_code, evidence):
     return tuple(elements[index] for index in indices)
 
 
-def issue_overlays_geometry(obj, issue_codes, *, evidence=None):
+def issue_overlays_geometry(
+    obj,
+    issue_codes,
+    *,
+    evidence=None,
+    non_planar_angle=5.0,
+):
     """Build world-space overlay geometry for inspectable element classes."""
     issue_codes = tuple(dict.fromkeys(issue_codes))
     for issue_code in issue_codes:
@@ -569,11 +583,23 @@ def issue_overlays_geometry(obj, issue_codes, *, evidence=None):
             return tuple(float(value) for value in matrix @ coordinate)
 
         overlays = []
+        loop_triangles = None
         for issue_code in issue_codes:
             domain = issue_selection_domain(issue_code)
             matches = _evidence_matches(bm, issue_code, evidence)
             if matches is None:
-                matches = _matching_elements(bm, issue_code)
+                if (
+                    issue_code
+                    in {"topology.overlapping_faces", "topology.non_planar_faces"}
+                    and loop_triangles is None
+                ):
+                    loop_triangles = tuple(bm.calc_loop_triangles())
+                matches = _matching_elements(
+                    bm,
+                    issue_code,
+                    non_planar_angle=non_planar_angle,
+                    loop_triangles=loop_triangles,
+                )
             points = []
             lines = []
             if domain == "VERT":
@@ -601,17 +627,30 @@ def issue_overlays_geometry(obj, issue_codes, *, evidence=None):
             bm.free()
 
 
-def issue_overlay_geometry(obj, issue_code, *, evidence=None):
+def issue_overlay_geometry(
+    obj,
+    issue_code,
+    *,
+    evidence=None,
+    non_planar_angle=5.0,
+):
     """Build world-space points and lines for one inspectable element class."""
     _, domain, points, lines, count = issue_overlays_geometry(
         obj,
         (issue_code,),
         evidence=evidence,
+        non_planar_angle=non_planar_angle,
     )[0]
     return domain, points, lines, count
 
 
-def _base_mesh_metrics(mesh, *, evidence_codes=(), evidence_out=None):
+def _base_mesh_metrics(
+    mesh,
+    *,
+    evidence_codes=(),
+    evidence_out=None,
+    non_planar_angle=5.0,
+):
     bm = bmesh.new()
     try:
         bm.from_mesh(mesh)
@@ -645,9 +684,7 @@ def _base_mesh_metrics(mesh, *, evidence_codes=(), evidence_out=None):
             )
         else:
             secondary_island_matches = ()
-        overlapping_face_matches = _overlapping_faces(bm)
         normal_outlier_matches = _normal_outlier_faces(bm.faces)
-        overlapping_faces = len(overlapping_face_matches)
         normal_outliers = len(normal_outlier_matches)
 
         boundary_matches = []
@@ -697,6 +734,20 @@ def _base_mesh_metrics(mesh, *, evidence_codes=(), evidence_out=None):
             elif side_count > 4:
                 ngon_matches.append(face)
 
+        # Both checks depend on Blender's source-face triangulation. Calculate it
+        # once so enabling non-planarity does not duplicate the overlap work.
+        loop_triangles = tuple(bm.calc_loop_triangles())
+        overlapping_face_matches = _overlapping_faces(
+            bm,
+            loop_triangles=loop_triangles,
+        )
+        non_planar_face_matches = _non_planar_faces(
+            bm.faces,
+            loop_triangles,
+            non_planar_angle,
+        )
+        overlapping_faces = len(overlapping_face_matches)
+
         if evidence_out is not None:
             requested = tuple(dict.fromkeys(evidence_codes))
             precomputed = {
@@ -704,6 +755,7 @@ def _base_mesh_metrics(mesh, *, evidence_codes=(), evidence_out=None):
                 "topology.degenerate": degenerate_matches,
                 "topology.duplicate_faces": duplicate_face_matches,
                 "topology.overlapping_faces": overlapping_face_matches,
+                "topology.non_planar_faces": non_planar_face_matches,
                 "topology.normal_outliers": normal_outlier_matches,
                 "topology.winding": winding_matches,
                 "topology.boundary": boundary_matches,
@@ -741,6 +793,7 @@ def _base_mesh_metrics(mesh, *, evidence_codes=(), evidence_out=None):
             "degenerate": len(degenerate_matches),
             "duplicate_faces": duplicate_faces,
             "overlapping_faces": overlapping_faces,
+            "non_planar_faces": len(non_planar_face_matches),
             "normal_outliers": normal_outliers,
             "coincident_vertices": coincident_vertices,
             "disconnected_islands": disconnected_islands,
@@ -773,6 +826,7 @@ def review_object(
     triangle_budget=100_000,
     allowed_boundary_edges=0,
     allowed_ngons=0,
+    non_planar_angle=5.0,
     profile=None,
     evidence_codes=(),
     evidence_out=None,
@@ -788,67 +842,96 @@ def review_object(
         obj.data,
         evidence_codes=evidence_codes,
         evidence_out=evidence_out,
+        non_planar_angle=non_planar_angle,
     )
     evaluated_vertices, evaluated_faces, evaluated_triangles = _evaluated_mesh_metrics(
         obj, depsgraph
     )
     issues = []
+    object_mode = obj.mode
 
-    if profile.topology and base["non_manifold"]:
+    if (
+        _rule_enabled(profile, "topology.non_manifold", object_mode)
+        and base["non_manifold"]
+    ):
         issues.append(
             _issue(
                 "topology.non_manifold",
                 "Edges connected to more than two faces",
                 base["non_manifold"],
-                error=True,
             )
         )
-    if profile.topology and base["degenerate"]:
+    if (
+        _rule_enabled(profile, "topology.degenerate", object_mode)
+        and base["degenerate"]
+    ):
         issues.append(
             _issue(
                 "topology.degenerate",
                 "Faces with effectively zero area",
                 base["degenerate"],
-                error=True,
             )
         )
-    if profile.topology and base["duplicate_faces"]:
+    if (
+        _rule_enabled(profile, "topology.duplicate_faces", object_mode)
+        and base["duplicate_faces"]
+    ):
         issues.append(
             _issue(
                 "topology.duplicate_faces",
                 "Faces occupy the same vertex positions",
                 base["duplicate_faces"],
-                error=True,
             )
         )
-    if profile.topology and base["overlapping_faces"]:
+    if (
+        _rule_enabled(profile, "topology.overlapping_faces", object_mode)
+        and base["overlapping_faces"]
+    ):
         issues.append(
             _issue(
                 "topology.overlapping_faces",
                 "Faces intersect or overlap other faces",
                 base["overlapping_faces"],
-                error=True,
             )
         )
-    if profile.topology and base["normal_outliers"]:
+    if (
+        _rule_enabled(profile, "topology.non_planar_faces", object_mode)
+        and base["non_planar_faces"]
+    ):
+        angle_limit = max(0.0, min(90.0, float(non_planar_angle)))
+        issues.append(
+            _issue(
+                "topology.non_planar_faces",
+                f"Faces bend more than the {angle_limit:g} degree allowance",
+                base["non_planar_faces"],
+            )
+        )
+    if (
+        _rule_enabled(profile, "topology.normal_outliers", object_mode)
+        and base["normal_outliers"]
+    ):
         issues.append(
             _issue(
                 "topology.normal_outliers",
                 "Faces point against the surrounding surface",
                 base["normal_outliers"],
-                error=True,
             )
         )
-    if profile.topology and base["inconsistent"]:
+    if (
+        _rule_enabled(profile, "topology.winding", object_mode)
+        and base["inconsistent"]
+    ):
         issues.append(
             _issue(
                 "topology.winding",
                 "Edges with inconsistent face winding",
                 base["inconsistent"],
-                error=True,
             )
         )
-    if profile.topology and base["boundaries"] > allowed_boundary_edges:
+    if (
+        _rule_enabled(profile, "topology.boundary", object_mode)
+        and base["boundaries"] > allowed_boundary_edges
+    ):
         message = "Open boundary edges"
         if allowed_boundary_edges:
             message = (
@@ -861,15 +944,24 @@ def review_object(
                 base["boundaries"],
             )
         )
-    if profile.topology and base["loose_edges"]:
+    if (
+        _rule_enabled(profile, "topology.loose_edges", object_mode)
+        and base["loose_edges"]
+    ):
         issues.append(
             _issue("topology.loose_edges", "Loose edges", base["loose_edges"])
         )
-    if profile.topology and base["loose_vertices"]:
+    if (
+        _rule_enabled(profile, "topology.loose_vertices", object_mode)
+        and base["loose_vertices"]
+    ):
         issues.append(
             _issue("topology.loose_vertices", "Loose vertices", base["loose_vertices"])
         )
-    if profile.topology and base["coincident_vertices"]:
+    if (
+        _rule_enabled(profile, "topology.coincident_vertices", object_mode)
+        and base["coincident_vertices"]
+    ):
         issues.append(
             _issue(
                 "topology.coincident_vertices",
@@ -877,7 +969,10 @@ def review_object(
                 base["coincident_vertices"],
             )
         )
-    if profile.topology and base["disconnected_islands"]:
+    if (
+        _rule_enabled(profile, "topology.disconnected_islands", object_mode)
+        and base["disconnected_islands"]
+    ):
         issues.append(
             _issue(
                 "topology.disconnected_islands",
@@ -885,31 +980,52 @@ def review_object(
                 base["disconnected_islands"],
             )
         )
-    if profile.topology and base["ngons"] > allowed_ngons:
+    if (
+        _rule_enabled(profile, "topology.ngons", object_mode)
+        and base["ngons"] > allowed_ngons
+    ):
         message = "Faces with more than four sides"
         if allowed_ngons:
             message = f"Ngons exceed the {allowed_ngons:,}-face allowance"
         issues.append(_issue("topology.ngons", message, base["ngons"]))
 
-    if profile.transforms:
+    negative_scale_enabled = _rule_enabled(
+        profile,
+        "transform.negative_scale",
+        object_mode,
+    )
+    scale_enabled = _rule_enabled(profile, "transform.scale", object_mode)
+    if negative_scale_enabled or scale_enabled:
         scale = tuple(float(value) for value in obj.scale)
-        if obj.matrix_world.to_3x3().determinant() < 0.0:
+        if negative_scale_enabled and obj.matrix_world.to_3x3().determinant() < 0.0:
             issues.append(
                 _issue(
                     "transform.negative_scale",
                     "World transform has a negative determinant",
-                    error=True,
                 )
             )
-        elif any(abs(abs(value) - 1.0) > _TRANSFORM_EPSILON for value in scale):
+        elif (
+            scale_enabled
+            and any(
+                abs(abs(value) - 1.0) > _TRANSFORM_EPSILON
+                for value in scale
+            )
+        ):
             issues.append(_issue("transform.scale", "Scale is not applied"))
 
-    if profile.asset_setup:
+    if _rule_enabled(profile, "data.uv", object_mode):
         if not obj.data.uv_layers:
             issues.append(_issue("data.uv", "Mesh has no UV map"))
-        if not obj.material_slots:
-            issues.append(_issue("data.material", "Object has no material slots"))
-    if profile.triangle_budget and triangle_budget > 0 and evaluated_triangles > triangle_budget:
+    if (
+        _rule_enabled(profile, "data.material", object_mode)
+        and not obj.material_slots
+    ):
+        issues.append(_issue("data.material", "Object has no material slots"))
+    if (
+        _rule_enabled(profile, "budget.triangles", object_mode)
+        and triangle_budget > 0
+        and evaluated_triangles > triangle_budget
+    ):
         issues.append(
             _issue(
                 "budget.triangles",

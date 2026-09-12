@@ -10,9 +10,9 @@
 </p>
 
 <p align="center">
-  <img alt="Blender 5.2 LTS" src="https://img.shields.io/badge/Blender-5.2%20LTS-5b7083">
+  <img alt="Blender 5.2 or newer" src="https://img.shields.io/badge/Blender-5.2%2B-5b7083">
   <img alt="GPL 3.0 or later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-5b7083">
-  <img alt="Early preview" src="https://img.shields.io/badge/status-early%20preview-c58b36">
+  <img alt="Public release" src="https://img.shields.io/badge/status-public%20release-c58b36">
 </p>
 
 <p align="center">
@@ -64,8 +64,8 @@ repair, remesh, or otherwise change your geometry.
 Pick the add-on you want. These are ready-to-install Blender ZIPs—there is no
 need to download the repository or unpack anything.
 
-- **[Download Onyx Reviewer 0.15.2](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.2/onyx_reviewer-0.15.2.zip)** — find mesh problems and see them on the model.
-- **[Download Onyx Core 0.2.1](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v0.15.2/onyx_core-0.2.1.zip)** — optional standalone diagnostics for the shared framework.
+- **[Download Onyx Reviewer 1.0.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.0/onyx_reviewer-1.0.0.zip)** — find mesh problems and see them on the model.
+- **[Download Onyx Core 0.2.1](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.0/onyx_core-0.2.1.zip)** — optional standalone diagnostics for the shared framework.
 
 Each Onyx add-on includes the Core runtime it needs, so you never have to
 install Core as a separate dependency. All versions, checksums, and release

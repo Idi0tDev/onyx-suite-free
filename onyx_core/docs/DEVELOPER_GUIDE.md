@@ -37,8 +37,8 @@ lifecycle.add("operators", operators.register, operators.unregister)
 lifecycle.add("interface", ui.register, ui.unregister)
 ```
 
-`tools/sync_embedded_core.ps1` updates the generated `_onyx_core` copies from
-the canonical standalone source. Product packagers call the sync automatically.
+Generated `_onyx_core` copies are included in each public product source tree.
+They come from the same canonical standalone Core runtime.
 
 Core registration and service discovery are main-process APIs. Shipped Blender
 extensions must not wrap registry access in Python `threading` or `queue` code.

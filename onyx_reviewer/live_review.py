@@ -8,7 +8,7 @@ import bmesh
 import bpy
 from bpy.app.handlers import persistent
 
-from . import operators
+from . import compatibility, operators
 
 
 _PENDING_SCENE = None
@@ -38,6 +38,15 @@ def cancel_scene(scene):
         _DUE_AT = 0.0
 
 
+def suspend_scene(scene):
+    """Cancel queued Free work while another reviewer owns the viewport."""
+    global _PENDING_SCENE, _DUE_AT
+    _PENDING_SCENE = None
+    _DUE_AT = 0.0
+    if _timer_is_registered():
+        bpy.app.timers.unregister(_timer)
+
+
 def _ensure_timer(delay):
     if not _timer_is_registered():
         bpy.app.timers.register(
@@ -54,6 +63,10 @@ def schedule(scene, *, immediate=False):
         return False
     settings = getattr(scene, "onyx_reviewer", None)
     if settings is None or not settings.live_review:
+        return False
+    if compatibility.production_review_active():
+        suspend_scene(scene)
+        settings.live_status = compatibility.SUSPENDED_STATUS
         return False
 
     delay = 0.0 if immediate else settings.live_delay
@@ -73,6 +86,7 @@ def settings_changed(scene):
     else:
         cancel_scene(scene)
         settings.live_status = "Off"
+        compatibility.finish_handoff_refresh()
 
 
 def review_options_changed(scene):
@@ -99,6 +113,10 @@ def flush_scene(scene):
     if settings is None or not settings.live_review:
         cancel_scene(scene)
         return False
+    if compatibility.production_review_active():
+        cancel_scene(scene)
+        settings.live_status = compatibility.SUSPENDED_STATUS
+        return False
 
     objects = operators.scoped_meshes(bpy.context, settings.scope)
     if not objects:
@@ -121,6 +139,7 @@ def flush_scene(scene):
         settings.live_status = f"Paused: {exc}"
         return False
     settings.live_status = "Up to date"
+    compatibility.finish_handoff_refresh()
     return True
 
 
@@ -160,6 +179,10 @@ def _depsgraph_updated(scene, depsgraph):
     settings = getattr(scene, "onyx_reviewer", None)
     if settings is None or not settings.live_review:
         return
+    if compatibility.production_review_active():
+        suspend_scene(scene)
+        settings.live_status = compatibility.SUSPENDED_STATUS
+        return
     objects = operators.scoped_meshes(bpy.context, settings.scope)
     watched = {
         pointer
@@ -170,15 +193,38 @@ def _depsgraph_updated(scene, depsgraph):
         schedule(scene)
 
 
+def _production_review_changed(active):
+    scene = getattr(bpy.context, "scene", None)
+    if scene is None:
+        if not active:
+            compatibility.finish_handoff_refresh()
+        return
+    settings = getattr(scene, "onyx_reviewer", None)
+    if settings is None:
+        if not active:
+            compatibility.finish_handoff_refresh()
+        return
+    if active:
+        suspend_scene(scene)
+        if settings.live_review:
+            settings.live_status = compatibility.SUSPENDED_STATUS
+    elif settings.live_review:
+        schedule(scene, immediate=True)
+    else:
+        compatibility.finish_handoff_refresh()
+
+
 def register():
     if not is_registered():
         bpy.app.handlers.depsgraph_update_post.append(_depsgraph_updated)
+    compatibility.register_listener(_production_review_changed)
 
 
 def unregister():
     global _PENDING_SCENE, _DUE_AT
     if is_registered():
         bpy.app.handlers.depsgraph_update_post.remove(_depsgraph_updated)
+    compatibility.unregister_listener(_production_review_changed)
     if _timer_is_registered():
         bpy.app.timers.unregister(_timer)
     _PENDING_SCENE = None

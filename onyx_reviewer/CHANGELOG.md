@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+## 1.0.0 - 2026-09-12
+
+- Add Onyx, High Contrast, and Colorblind Safe problem-color palettes.
+- Recolor current viewport evidence and the panel's real color dots instantly,
+  without rescanning, changing results, or disturbing Live Review and Review
+  Delta state.
+- Add a Live-friendly non-planar-face check for bent quads and ngons, with a
+  5° default angle, exact face evidence, hover help, and Edit Mode inspection.
+- Keep triangles and zero-area faces out of the non-planar result so each
+  condition has one clear owner.
+- Let Onyx Reviewer and Onyx Reviewer Pro stay installed together without
+  competing for the sidebar, Live Review, or viewport drawing. Reviewer pauses
+  while Pro is active and returns automatically when Pro is disabled.
+- Keep the current Reviewer results and settings intact while it is paused, then
+  run a fresh review when Live Review resumes.
+- Drive the active review engine from one shared rule catalog while preserving
+  the existing Reviewer controls and operator IDs.
+- Add a beginner-friendly tutorial for the complete first-review workflow.
+
 ## 0.15.2 - 2026-09-09
 
 - Update the bundled Onyx Core runtime to 0.2.1 / API 1.1 while keeping
