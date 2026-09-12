@@ -10,7 +10,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Idi0tDev/onyx-suite-free/actions/workflows/ci.yml"><img alt="Public source checks" src="https://github.com/Idi0tDev/onyx-suite-free/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Blender 5.2 LTS" src="https://img.shields.io/badge/Blender-5.2%20LTS-5b7083">
   <img alt="GPL 3.0 or later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-5b7083">
   <img alt="Early preview" src="https://img.shields.io/badge/status-early%20preview-c58b36">
@@ -92,8 +91,6 @@ That is it. Every Onyx product already carries its compatible Core runtime.
 | [`onyx_core/`](onyx_core) | The public framework and optional standalone extension |
 | [`onyx_reviewer/`](onyx_reviewer) | The Reviewer extension, product page, and user guide |
 | [`docs/`](docs) | Shared project notes, troubleshooting, and artwork |
-| [`tests/`](tests) | Pure Python and real-Blender checks |
-| [`tools/`](tools) | Public packaging and validation helpers |
 
 ## Contributing and support
 
@@ -118,17 +115,12 @@ deeply committed to the feed budget.
 **[Support free Onyx addons on Gumroad](https://idi0tdev.gumroad.com/l/onyx-suite-free)**
 
 <details>
-<summary><strong>Testing</strong></summary>
+<summary><strong>How releases are checked</strong></summary>
 
-The repository tests the Core framework, Reviewer analysis and profiles,
-viewport evidence, Live Review, Core embedding, product coexistence, manifests,
-and Blender validation of the finished ZIP files.
-
-Run the full local suite with Blender 5.2 and its bundled Python:
-
-```powershell
-tools/test.ps1
-```
+Before a ZIP is published, the Core framework, Reviewer analysis, viewport
+evidence, Live Review, embedded runtime, edition coexistence, package contents,
+and a clean Blender installation are checked. The downloadable ZIP is the same
+file that goes through those checks.
 
 </details>
 

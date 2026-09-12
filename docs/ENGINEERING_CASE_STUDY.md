@@ -21,7 +21,7 @@ The product goal was therefore narrower than a general cleanup system:
 - distinguish source geometry from the evaluated modifier result;
 - turn topology counts into exact viewport locations;
 - preserve context so reviewing a model does not disrupt modeling work; and
-- make every mutation explicit, limited, and undoable.
+- keep inspection separate from mesh editing so the artist stays in control.
 
 ## Product constraints
 
@@ -34,8 +34,9 @@ The implementation was shaped by five constraints.
    warning is a defect.
 3. **Viewport evidence is temporary.** Highlights must not create objects,
    materials, collections, or saved metadata.
-4. **Simple fixes stay narrow.** Only deterministic cases with a clear local
-   operation receive a Fix button. There is no Fix All path.
+4. **Guidance stays non-destructive.** Reviewer points to the exact evidence and
+   suggests a practical next step, but it does not provide repair controls or
+   alter the mesh in the background.
 5. **The extension is self-contained.** Reviewer bundles its compatible Onyx Core
    runtime and does not require a separately installed framework.
 
@@ -67,8 +68,8 @@ Saved session baseline --> pure summary comparison --> delta UI and report
 | Area | Responsibility |
 | --- | --- |
 | `analysis.py` | Immutable issue, object-review, and summary data plus plain-text reporting |
-| `mesh_analysis.py` | BMesh evidence, evaluated metrics, selection maps, overlay geometry, and simple fix operations |
-| `operators.py` | Scope resolution and explicit Blender actions such as Review, Show, Inspect, and Fix |
+| `mesh_analysis.py` | BMesh evidence, evaluated metrics, selection maps, and overlay geometry |
+| `operators.py` | Scope resolution and explicit Blender actions such as Review, Show, Inspect, and Guide |
 | `highlight_state.py` | One transient GPU draw-handler lifecycle and stable finding colors |
 | `viewport_state.py` | Capture, apply, and exact restoration of per-viewport display settings |
 | `live_review.py` | Dependency-graph observation, debounce, current Edit Mode geometry, and density guard |
@@ -119,18 +120,18 @@ specific finding remains clear.
 
 ### Filtering changes presentation, not truth
 
-All, Errors, Warnings, and Fixable are views over the latest result. Switching
+All, Errors, Warnings, and On Mesh are views over the latest result. Switching
 views never deletes findings or triggers a new analysis. The visible overview
 follows the chosen view, while Copy Report always includes the complete result.
 This keeps a dense panel usable without producing incomplete handoff notes.
 
-### Mutation requires an explicit local decision
+### Guidance leaves the modeling decision with the artist
 
-Only inconsistent winding, exact duplicate faces, loose edges, and loose
-vertices offer simple fixes. Each click creates one Blender undo step, clears
-stale visual evidence, performs the single named operation, and reruns the
-review. Linked meshes, shared mesh data, and meshes with shape keys are refused
-because a seemingly local change could have wider consequences.
+**Show** draws the affected elements, **Inspect** selects them in Edit Mode, and
+the hover card or **Guide** explains a sensible next step. None of those actions
+changes topology. Reviewer deliberately avoids automatic cleanup, hole filling,
+merging, normal changes, and other operations where modeling intent
+matters.
 
 ### Live Review reuses the manual path
 
@@ -168,11 +169,11 @@ from being mistaken for a healthier mesh.
 | Layer | What is checked |
 | --- | --- |
 | Pure result tests | Aggregation, severity, profile resolution, filtering, delta comparison, reporting, and compatibility behavior |
-| Blender mesh tests | Real BMesh findings including normal outliers and two kinds of face overlap, source/evaluated counts, selection domains, and simple mutations |
+| Blender mesh tests | Real BMesh findings including normal outliers and two kinds of face overlap, source/evaluated counts, selection domains, and geometry preservation |
 | Viewport tests | Highlight geometry, stable distinct colors, topology maps, and exact state restoration |
 | Lifecycle tests | Registration rollback, embedded Core parity, standalone Core coexistence, and cleanup |
 | Release checks | Manifest/runtime version parity, public-source audit, deterministic packaging, archive inspection, SHA-256 output, and native Blender ZIP validation |
-| Manual product pass | Installation, panel flow, real viewport overlays, filters, fixes, undo, and scene restoration in Blender 5.2 LTS |
+| Manual product pass | Installation, panel flow, real viewport overlays, filters, guidance, inspection, and scene restoration in Blender 5.2 LTS |
 
 Hosted checks run the portable result, framework, embedding, source-audit, and
 packaging gates on Windows and Linux. The complete local release gate also runs
@@ -188,9 +189,9 @@ the real Blender smoke and coexistence suites with a clean factory startup.
   does not guess which side of an entire open model is globally inside or out.
 - Live Review is debounced on Blender's main thread rather than running mesh
   analysis asynchronously.
-- Simple fixes deliberately exclude operations whose correct result depends on
-  modeling intent, including hole filling, broad merging, remeshing, transform
-  application, UV creation, and material assignment.
+- Reviewer deliberately leaves mesh repair to the artist, including hole
+  filling, merging, remeshing, transform application, UV creation, and material
+  assignment.
 
 ## Next directions
 
