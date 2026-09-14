@@ -176,6 +176,32 @@ def _secondary_island_vertices(bm):
     )
 
 
+def _boundary_component_count(boundary_edges):
+    """Count connected boundary openings without depending on edge density."""
+
+    remaining = {edge.index: edge for edge in boundary_edges}
+    edges_by_vertex = {}
+    for edge in boundary_edges:
+        for vertex in edge.verts:
+            edges_by_vertex.setdefault(vertex.index, []).append(edge)
+
+    component_count = 0
+    while remaining:
+        component_count += 1
+        stack = [next(iter(remaining.values()))]
+        while stack:
+            edge = stack.pop()
+            if remaining.pop(edge.index, None) is None:
+                continue
+            for vertex in edge.verts:
+                stack.extend(
+                    neighbor
+                    for neighbor in edges_by_vertex.get(vertex.index, ())
+                    if neighbor.index in remaining
+                )
+    return component_count
+
+
 def issue_selection_domain(issue_code):
     """Return the element domain for an inspectable finding or topology class."""
     if issue_code in _TOPOLOGY_MAP_SELECTION_DOMAINS:
@@ -457,7 +483,7 @@ def _matching_elements(
     bm,
     issue_code,
     *,
-    non_planar_angle=5.0,
+    non_planar_angle=90.0,
     loop_triangles=None,
 ):
     if issue_code == "topology.non_manifold":
@@ -511,7 +537,7 @@ def _matching_elements(
     raise ValueError(f"Finding cannot select mesh elements: {issue_code}")
 
 
-def select_issue_elements(mesh, issue_code, *, non_planar_angle=5.0):
+def select_issue_elements(mesh, issue_code, *, non_planar_angle=90.0):
     """Select edit-mesh elements matching a finding or topology class."""
     domain = issue_selection_domain(issue_code)
     if not domain:
@@ -561,7 +587,7 @@ def issue_overlays_geometry(
     issue_codes,
     *,
     evidence=None,
-    non_planar_angle=5.0,
+    non_planar_angle=90.0,
 ):
     """Build world-space overlay geometry for inspectable element classes."""
     issue_codes = tuple(dict.fromkeys(issue_codes))
@@ -632,7 +658,7 @@ def issue_overlay_geometry(
     issue_code,
     *,
     evidence=None,
-    non_planar_angle=5.0,
+    non_planar_angle=90.0,
 ):
     """Build world-space points and lines for one inspectable element class."""
     _, domain, points, lines, count = issue_overlays_geometry(
@@ -649,7 +675,7 @@ def _base_mesh_metrics(
     *,
     evidence_codes=(),
     evidence_out=None,
-    non_planar_angle=5.0,
+    non_planar_angle=90.0,
 ):
     bm = bmesh.new()
     try:
@@ -787,6 +813,7 @@ def _base_mesh_metrics(
             "faces": len(bm.faces),
             "triangles": triangles,
             "boundaries": len(boundary_matches),
+            "open_holes": _boundary_component_count(boundary_matches),
             "non_manifold": len(non_manifold_matches),
             "loose_edges": len(loose_edge_matches),
             "loose_vertices": len(loose_vertex_matches),
@@ -826,7 +853,7 @@ def review_object(
     triangle_budget=100_000,
     allowed_boundary_edges=0,
     allowed_ngons=0,
-    non_planar_angle=5.0,
+    non_planar_angle=90.0,
     profile=None,
     evidence_codes=(),
     evidence_out=None,
@@ -930,18 +957,18 @@ def review_object(
         )
     if (
         _rule_enabled(profile, "topology.boundary", object_mode)
-        and base["boundaries"] > allowed_boundary_edges
+        and base["open_holes"] > allowed_boundary_edges
     ):
-        message = "Open boundary edges"
+        message = "Open holes"
         if allowed_boundary_edges:
             message = (
-                f"Open boundary edges exceed the {allowed_boundary_edges:,}-edge allowance"
+                f"Open holes exceed the {allowed_boundary_edges:,}-hole allowance"
             )
         issues.append(
             _issue(
                 "topology.boundary",
                 message,
-                base["boundaries"],
+                base["open_holes"],
             )
         )
     if (

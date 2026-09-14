@@ -201,43 +201,86 @@ def _project(region, region_data, coordinate):
     return tuple(value) if value is not None else None
 
 
-def _hovered_highlight(region, region_data, mouse):
-    best = None
+def _highlight_hover_distance(
+    region,
+    region_data,
+    mouse,
+    highlight,
+    *,
+    point_limit,
+    segment_limit,
+):
     best_distance = _HOVER_RADIUS * _HOVER_RADIUS
+    matched = False
+    point_step = max(1, (len(highlight.points) + point_limit - 1) // point_limit)
+    for index in range(0, len(highlight.points), point_step):
+        projected = _project(region, region_data, highlight.points[index])
+        if projected is None:
+            continue
+        distance = (mouse[0] - projected[0]) ** 2 + (mouse[1] - projected[1]) ** 2
+        if distance < best_distance:
+            best_distance = distance
+            matched = True
+
+    segment_count = len(highlight.lines) // 2
+    segment_step = max(1, (segment_count + segment_limit - 1) // segment_limit)
+    for segment_index in range(0, segment_count, segment_step):
+        start_index = segment_index * 2
+        start = _project(region, region_data, highlight.lines[start_index])
+        end = _project(region, region_data, highlight.lines[start_index + 1])
+        if start is None or end is None:
+            continue
+        distance = _distance_squared_to_segment(mouse, start, end)
+        if distance < best_distance:
+            best_distance = distance
+            matched = True
+    return best_distance if matched else None
+
+
+def _hovered_highlights(region, region_data, mouse):
+    """Return every finding represented at the hovered part of the mesh."""
+
     highlight_count = max(len(_ACTIVE), 1)
     point_limit = max(64, _MAX_HOVER_POINTS // highlight_count)
     segment_limit = max(64, _MAX_HOVER_SEGMENTS // highlight_count)
-    # Reverse order matches the marks drawn last when several issue types overlap.
-    for highlight in reversed(_ACTIVE):
+    matches = []
+    # Reverse order still gives priority to the marks drawn last.
+    for order, highlight in enumerate(reversed(_ACTIVE)):
         if not issue_recommendation(highlight.issue_code):
             continue
-
-        point_step = max(1, (len(highlight.points) + point_limit - 1) // point_limit)
-        for index in range(0, len(highlight.points), point_step):
-            projected = _project(region, region_data, highlight.points[index])
-            if projected is None:
-                continue
-            distance = (mouse[0] - projected[0]) ** 2 + (mouse[1] - projected[1]) ** 2
-            if distance < best_distance:
-                best = highlight
-                best_distance = distance
-
-        segment_count = len(highlight.lines) // 2
-        segment_step = max(
-            1,
-            (segment_count + segment_limit - 1) // segment_limit,
+        distance = _highlight_hover_distance(
+            region,
+            region_data,
+            mouse,
+            highlight,
+            point_limit=point_limit,
+            segment_limit=segment_limit,
         )
-        for segment_index in range(0, segment_count, segment_step):
-            start_index = segment_index * 2
-            start = _project(region, region_data, highlight.lines[start_index])
-            end = _project(region, region_data, highlight.lines[start_index + 1])
-            if start is None or end is None:
-                continue
-            distance = _distance_squared_to_segment(mouse, start, end)
-            if distance < best_distance:
-                best = highlight
-                best_distance = distance
-    return best
+        if distance is not None:
+            matches.append((distance, order, highlight))
+    if not matches:
+        return ()
+
+    matches.sort(key=lambda item: (item[0], item[1]))
+    nearest_distance = matches[0][0] ** 0.5
+    same_location_limit = min(_HOVER_RADIUS, nearest_distance + 6.0) ** 2
+    seen_codes = set()
+    grouped = []
+    for distance, _order, highlight in matches:
+        if distance > same_location_limit:
+            continue
+        if highlight.issue_code in seen_codes:
+            continue
+        seen_codes.add(highlight.issue_code)
+        grouped.append(highlight)
+    return tuple(grouped)
+
+
+def _hovered_highlight(region, region_data, mouse):
+    """Compatibility helper returning only the nearest hovered finding."""
+
+    highlights = _hovered_highlights(region, region_data, mouse)
+    return highlights[0] if highlights else None
 
 
 def _draw_rectangle(shader, x, y, width, height, color):
@@ -260,24 +303,71 @@ def _draw_rectangle(shader, x, y, width, height, color):
     batch.draw(shader)
 
 
-def _draw_tooltip(region, mouse, highlight):
-    recommendation = issue_recommendation(highlight.issue_code)
-    if not recommendation:
+def _tooltip_lines(highlights):
+    if isinstance(highlights, Highlight):
+        highlights = (highlights,)
+    else:
+        highlights = tuple(highlights)
+    white = (1.0, 1.0, 1.0, 1.0)
+    soft = (0.82, 0.82, 0.82, 1.0)
+    lines = []
+    if len(highlights) == 1:
+        highlight = highlights[0]
+        recommendation = issue_recommendation(highlight.issue_code)
+        lines.extend(
+            (line, white)
+            for line in textwrap.wrap(
+                f"{highlight.message} ({highlight.element_count:,})",
+                width=48,
+            )
+        )
+        lines.append(("", soft))
+        lines.extend(
+            (line, soft)
+            for line in textwrap.wrap(f"Try: {recommendation}", width=58)
+        )
+    else:
+        lines.extend(
+            ((f"{len(highlights)} problems here", white), ("", soft))
+        )
+        for index, highlight in enumerate(highlights):
+            style = finding_style(highlight.issue_code, highlight.severity)
+            lines.extend(
+                (line, style.color)
+                for line in textwrap.wrap(
+                    f"{highlight.message} ({highlight.element_count:,})",
+                    width=48,
+                )
+            )
+            recommendation = issue_recommendation(highlight.issue_code)
+            lines.extend(
+                (line, soft)
+                for line in textwrap.wrap(f"Try: {recommendation}", width=58)
+            )
+            if index + 1 < len(highlights):
+                lines.append(("", soft))
+    return tuple(lines)
+
+
+def _draw_tooltip(region, mouse, highlights):
+    if isinstance(highlights, Highlight):
+        highlights = (highlights,)
+    else:
+        highlights = tuple(highlights)
+    if not highlights:
         return
 
     ui_scale = max(float(bpy.context.preferences.system.ui_scale), 0.75)
     font_id = 0
     font_size = max(11, round(13 * ui_scale))
     blf.size(font_id, font_size)
-    title_lines = textwrap.wrap(
-        f"{highlight.message} ({highlight.element_count:,})",
-        width=48,
-    )
-    guide_lines = textwrap.wrap(f"Try: {recommendation}", width=58)
-    lines = (*title_lines, "", *guide_lines)
+    lines = _tooltip_lines(highlights)
     line_height = 18 * ui_scale
     padding = 12 * ui_scale
-    widest = max((blf.dimensions(font_id, line)[0] for line in lines), default=0.0)
+    widest = max(
+        (blf.dimensions(font_id, line)[0] for line, _color in lines),
+        default=0.0,
+    )
     width = min(max(widest + padding * 2, 260 * ui_scale), region.width - 16)
     height = line_height * len(lines) + padding * 2
 
@@ -294,16 +384,22 @@ def _draw_tooltip(region, mouse, highlight):
     gpu.state.blend_set("ALPHA")
     try:
         _draw_rectangle(shader, x, y, width, height, (0.025, 0.025, 0.025, 0.94))
-        style = finding_style(highlight.issue_code, highlight.severity)
-        _draw_rectangle(shader, x, y + height - 3 * ui_scale, width, 3 * ui_scale, style.color)
+        stripe_width = width / len(highlights)
+        for index, highlight in enumerate(highlights):
+            style = finding_style(highlight.issue_code, highlight.severity)
+            _draw_rectangle(
+                shader,
+                x + stripe_width * index,
+                y + height - 3 * ui_scale,
+                stripe_width + 1.0,
+                3 * ui_scale,
+                style.color,
+            )
 
         cursor_y = y + height - padding - line_height
-        for index, line in enumerate(lines):
+        for line, color in lines:
             blf.position(font_id, x + padding, cursor_y, 0)
-            if index < len(title_lines):
-                blf.color(font_id, 1.0, 1.0, 1.0, 1.0)
-            else:
-                blf.color(font_id, 0.82, 0.82, 0.82, 1.0)
+            blf.color(font_id, *color)
             if line:
                 blf.draw(font_id, line)
             cursor_y -= line_height
@@ -325,9 +421,9 @@ def _draw_hover():
     if region.as_pointer() != _HOVER_POSITION[0]:
         return
     mouse = _HOVER_POSITION[1:]
-    highlight = _hovered_highlight(region, region_data, mouse)
-    if highlight is not None:
-        _draw_tooltip(region, mouse, highlight)
+    highlights = _hovered_highlights(region, region_data, mouse)
+    if highlights:
+        _draw_tooltip(region, mouse, highlights)
 
 
 def _draw_highlight():

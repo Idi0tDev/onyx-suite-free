@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.0/onyx_reviewer-1.0.0.zip"><img alt="Download Onyx Reviewer 1.0.0" src="https://img.shields.io/badge/Download-Onyx%20Reviewer-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
+  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.1/onyx_reviewer-1.0.1.zip"><img alt="Download Onyx Reviewer 1.0.1" src="https://img.shields.io/badge/Download-Onyx%20Reviewer-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
 </p>
 
 Onyx Reviewer checks the editable mesh and the evaluated modifier result, then
@@ -51,7 +51,7 @@ the viewport back exactly as it was.
 
 ## Install
 
-1. **[Download Onyx Reviewer 1.0.0](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.0/onyx_reviewer-1.0.0.zip)** and leave the ZIP packed.
+1. **[Download Onyx Reviewer 1.0.1](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.1/onyx_reviewer-1.0.1.zip)** and leave the ZIP packed.
 2. In Blender, open **Edit → Preferences → Get Extensions**.
 3. Open the menu in the top-right and choose **Install from Disk**.
 4. Pick the downloaded `onyx_reviewer-<version>.zip` and confirm the installation.
@@ -89,7 +89,7 @@ comes back automatically; if Live was on, Reviewer starts with a fresh scan.
 
 - Base and evaluated vertex, face, and triangle counts
 - Triangles, quads, ngons, and 3/5/6+ edge poles
-- Open boundaries and edges connected to more than two faces
+- Open holes and edges connected to more than two faces
 - Degenerate, duplicate, crossing, and overlapping faces
 - Bent faces whose triangles no longer agree on one flat surface
 - Inconsistent winding and faces pointing against their connected neighbors
@@ -104,11 +104,11 @@ comes back automatically; if Live was on, Reviewer starts with a fresh scan.
 - Negative transforms and unapplied scale
 - Missing UV maps and material slots
 - Optional evaluated triangle budget
-- Optional allowances for intentionally open edges and ngons
+- Optional allowances for intentionally open holes and ngons
 
 </details>
 
-Review findings describe facts, not universal rules. An open boundary can be a
+Review findings describe facts, not universal rules. An open hole can be a
 mistake on a closed prop and completely intentional on cloth, cards, or trim.
 
 ## Review profiles
@@ -126,8 +126,8 @@ as if they were the same review.
 
 If an asset is intentionally open or contains a few ngons, open **More Settings
 → Topology Limits** and enter what is acceptable. This is also where you can
-adjust the **Non-Planar Angle**. Its 5° default catches clearly bent quads and
-ngons without treating every tiny wobble as a problem.
+adjust the **Non-Planar Angle**. Its conservative 90° default keeps the first
+scan quiet; lower it when a job needs stricter flat-face checks.
 
 ## Pick colors that work for you
 
@@ -208,7 +208,7 @@ and workflow questions, see
 From a clean checkout, use Blender's extension builder:
 
 ```powershell
-blender --command extension build --source-dir onyx_reviewer --output-filepath onyx_reviewer-1.0.0.zip
+blender --command extension build --source-dir onyx_reviewer --output-filepath onyx_reviewer-1.0.1.zip
 ```
 
 The result is the same ready-to-install ZIP linked above. If `blender` is not

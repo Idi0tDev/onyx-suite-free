@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.0.1 - 2026-09-14
+
+- Start with a conservative 90° non-planar angle so the first review stays
+  readable; lower the angle when a job needs stricter flat-face checks.
+- Show every matching finding in the viewport guide when several problems
+  occupy the same part of a face, with each entry using its problem color.
+- Report connected boundary openings as **Open holes**, counting each opening
+  once no matter how many edges form its outline. Existing saved allowances
+  remain compatible and now represent the number of accepted holes.
+
 ## 1.0.0 - 2026-09-12
 
 - Add Onyx, High Contrast, and Colorblind Safe problem-color palettes.

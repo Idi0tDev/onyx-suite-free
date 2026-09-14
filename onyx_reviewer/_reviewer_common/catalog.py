@@ -175,12 +175,12 @@ BASE_RULES = (
     ),
     _rule(
         "topology.boundary",
-        "Open boundary edges",
+        "Open holes",
         "TOPOLOGY",
         "WARNING",
         "EDGE",
-        "Close accidental gaps by filling or bridging the open loop, or weld nearby "
-        "vertices. If the opening is intentional, add a topology allowance.",
+        "Close an accidental hole by filling or bridging its boundary, or weld nearby "
+        "vertices. If the opening is intentional, add a hole allowance.",
         threshold_keys=("allowed_boundary_edges",),
     ),
     _rule(

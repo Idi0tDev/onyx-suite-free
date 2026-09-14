@@ -53,16 +53,17 @@ Those changes also clear a saved Review Delta baseline. A baseline made with
 General should not be compared with a Topology Only result, because missing
 findings could come from the profile instead of a mesh edit.
 
-### Allow intentional open edges or ngons
+### Allow intentional open holes or ngons
 
-Some models are meant to have open edges. A cloth panel, hair card, trim sheet,
+Some models are meant to have open holes. A cloth panel, hair card, trim sheet,
 or other flat asset should not need a noisy warning on every review. The same
 can be true for a small number of deliberate ngons.
 
 Open **More Settings > Topology Limits** and set:
 
-- **Allowed Open Edges** — how many boundary edges can exist before the open-edge
-  warning appears; and
+- **Allowed Open Holes** — how many connected boundary openings can exist before
+  the warning appears. One hole counts once whether its outline has four edges
+  or four hundred; and
 - **Allowed Ngons** — how many faces with more than four sides can exist before
   the ngon warning appears.
 
@@ -80,9 +81,10 @@ display and rendering, and those triangles may shade or export differently.
 
 Reviewer compares the triangles inside each quad or ngon with the face's
 overall direction. When one triangle differs by more than the **Non-Planar
-Angle**, the face is marked as **Non-planar faces**. The default is 5°.
-Lower it when a job needs very flat surfaces; raise it when small bends are
-expected. A higher value means fewer warnings.
+Angle**, the face is marked as **Non-planar faces**. The conservative default is
+90°, which keeps the first scan from covering a model in mild surface warnings.
+Lower it when a job needs very flat surfaces. A higher value means fewer
+warnings.
 
 Triangles are skipped because three points already define one plane. Zero-area
 faces are also skipped here because the separate degenerate-face check explains
@@ -144,9 +146,13 @@ faces, or a negative world-transform determinant. Reviewer also flags a face
 when it points against a clear majority of the connected surface around it.
 Exact duplicate faces occupying the same vertex positions stay separate from
 partial overlaps so you know which problem you are looking at. Warnings identify
-conditions that may be valid but deserve review, such as open boundaries,
+conditions that may be valid but deserve review, such as open holes,
 non-planar faces, ngons, unapplied scale, coincident unwelded vertices,
 disconnected islands, or missing UVs.
+
+When several checks point to the same part of a face, its hover guide lists all
+of them together instead of hiding whichever finding was drawn first. Each
+entry keeps its problem color and its own suggested next step.
 
 The normal-direction check looks for local odd faces, not every hard corner. It
 needs at least three connected neighbors that mostly agree with each other, then
@@ -154,7 +160,7 @@ reports a face only when it points strongly against that group. A normal cube or
 deliberately sharp low-poly model should not light up just because it has hard
 edges.
 
-An open boundary is not automatically a bad mesh: planes, cards, clothing, and
+An open hole is not automatically a bad mesh: planes, cards, clothing, and
 other intentionally open surfaces can be correct. Onyx Reviewer reports facts and
 leaves the production decision to the artist.
 

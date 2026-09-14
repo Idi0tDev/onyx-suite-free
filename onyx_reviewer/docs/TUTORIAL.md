@@ -23,15 +23,17 @@ broken. Reviewer tells you what it found; you decide what matters for the job.
 3. Switch to face selection, select any one face, and delete **Faces**.
 4. Wait a moment for Live Review to catch up.
 
-The missing face leaves open boundary edges. They appear in their own color on
-the cube. If Live Review is not useful for a very dense object, turn it off and
-use **Run Now** after your edits instead.
+The missing face leaves one open hole. Its boundary edges appear in their own
+color on the cube, but the result counts the opening once rather than counting
+every edge around it. If Live Review is not useful for a very dense object,
+turn it off and use **Run Now** after your edits instead.
 
 ## 3. Ask Reviewer where to look
 
 Use **Next** to focus the first drawable problem, or open the cube's card and
-press **Show** beside the boundary finding. Rest the pointer over one of the
+press **Show** beside the open-hole finding. Rest the pointer over one of the
 colored lines. A small guide explains the finding and suggests what to check.
+If another problem occupies the same place, the guide lists both.
 
 You can also press **Inspect**. Reviewer selects the matching mesh elements in
 Edit Mode, but it does not edit them. This is handy when a tiny problem is hard
@@ -40,7 +42,7 @@ to click by hand.
 ## 4. Remove the test problem
 
 Press **Ctrl+Z** to bring the deleted face back. Live Review refreshes after a
-short pause and removes the boundary finding once the next scan confirms it is
+short pause and removes the open-hole finding once the next scan confirms it is
 gone.
 
 If you turned Live off, press **Run Review** again. Either way, Reviewer waits

@@ -194,11 +194,11 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
         update=_review_semantics_changed,
     )
     allowed_boundary_edges: IntProperty(
-        name="Allowed Open Edges",
+        name="Allowed Open Holes",
         default=0,
         min=0,
         soft_max=1_000,
-        description="Ignore the open-edge warning up to this count; zero flags any open edge",
+        description="Ignore this many connected boundary openings; the edge count of each hole does not matter",
         update=_review_semantics_changed,
     )
     allowed_ngons: IntProperty(
@@ -211,7 +211,7 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
     )
     non_planar_angle: FloatProperty(
         name="Non-Planar Angle",
-        default=5.0,
+        default=90.0,
         min=0.0,
         max=90.0,
         precision=1,

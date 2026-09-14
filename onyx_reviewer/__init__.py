@@ -15,7 +15,7 @@ from . import (
 from ._onyx_core import EmbeddedCore, Lifecycle
 
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 CORE = EmbeddedCore(
     bpy,
