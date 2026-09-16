@@ -53,6 +53,8 @@ repair, remesh, or otherwise change your geometry.
 - Review Delta shows what appeared, changed, or disappeared since a baseline.
 - Viewport modes help inspect form, silhouette, topology, and face direction.
 - Open holes count once per connected opening, regardless of edge density.
+- Saving a baseline or adjusting topology limits keeps the current colored
+  evidence visible while the next review is prepared.
 
 <p align="center">
   <img src="docs/assets/onyx-reviewer-live-review.gif" alt="Onyx Reviewer updating its findings while a topology problem is fixed in Edit Mode" width="100%">
@@ -66,8 +68,8 @@ repair, remesh, or otherwise change your geometry.
 Pick the add-on you want. These are ready-to-install Blender ZIPs—there is no
 need to download the repository or unpack anything.
 
-- **[Download Onyx Reviewer 1.0.1](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.1/onyx_reviewer-1.0.1.zip)** — find mesh problems and see them on the model.
-- **[Download Onyx Core 0.2.1](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.1/onyx_core-0.2.1.zip)** — optional standalone diagnostics for the shared framework.
+- **[Download Onyx Reviewer 1.0.2](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.2/onyx_reviewer-1.0.2.zip)** — find mesh problems and see them on the model.
+- **[Download Onyx Core 0.2.1](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.2/onyx_core-0.2.1.zip)** — optional standalone diagnostics for the shared framework.
 
 Each Onyx add-on includes the Core runtime it needs, so you never have to
 install Core as a separate dependency. All versions, checksums, and release

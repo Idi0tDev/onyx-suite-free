@@ -694,7 +694,6 @@ class ONYX_OT_set_review_baseline(bpy.types.Operator):
         settings = context.scene.onyx_reviewer
         delta_state.set_baseline(context.scene, _stored_summary(settings))
         _clear_delta_markers(settings)
-        highlight_state.clear_highlight()
         self.report({"INFO"}, "Review baseline saved for this Blender session")
         return {"FINISHED"}
 

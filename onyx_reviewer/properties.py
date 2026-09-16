@@ -39,8 +39,8 @@ def _color_palette_changed(_settings, _context):
     highlight_state.refresh_colors()
 
 
-def _review_semantics_changed(settings, context):
-    """Mark old results as stale and discard comparisons made with other checks."""
+def _mark_review_semantics_changed(settings, context, *, preserve_highlight):
+    """Invalidate the review while optionally keeping its last visual evidence."""
     if context is None:
         return
     from . import delta_state, highlight_state, live_review
@@ -50,8 +50,27 @@ def _review_semantics_changed(settings, context):
         for issue in result.issues:
             issue.delta_status = "NONE"
     delta_state.clear_baseline(context.scene)
-    highlight_state.clear_highlight()
+    if not preserve_highlight:
+        highlight_state.clear_highlight()
     live_review.review_options_changed(context.scene)
+
+
+def _review_semantics_changed(settings, context):
+    """Mark old results stale and discard visuals tied to a different review."""
+    _mark_review_semantics_changed(
+        settings,
+        context,
+        preserve_highlight=False,
+    )
+
+
+def _topology_limit_changed(settings, context):
+    """Keep current evidence visible until the new topology limits are scanned."""
+    _mark_review_semantics_changed(
+        settings,
+        context,
+        preserve_highlight=True,
+    )
 
 
 def _finding_filter_changed(_settings, context):
@@ -199,7 +218,7 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
         min=0,
         soft_max=1_000,
         description="Ignore this many connected boundary openings; the edge count of each hole does not matter",
-        update=_review_semantics_changed,
+        update=_topology_limit_changed,
     )
     allowed_ngons: IntProperty(
         name="Allowed Ngons",
@@ -207,7 +226,7 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
         min=0,
         soft_max=1_000,
         description="Ignore the ngon warning up to this count; zero flags any ngon",
-        update=_review_semantics_changed,
+        update=_topology_limit_changed,
     )
     non_planar_angle: FloatProperty(
         name="Non-Planar Angle",
@@ -219,7 +238,7 @@ class OnyxReviewerSettings(bpy.types.PropertyGroup):
             "Flag faces whose surface varies from the face direction by more "
             "than this many degrees"
         ),
-        update=_review_semantics_changed,
+        update=_topology_limit_changed,
     )
     triangle_budget: IntProperty(
         name="Triangle Budget",

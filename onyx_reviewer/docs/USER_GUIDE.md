@@ -71,7 +71,9 @@ Both start at zero, which means flag any amount. A count exactly equal to the
 allowance is accepted; the warning returns as soon as the mesh goes over it.
 These values change only the warnings. Face mix and the other mesh statistics
 stay visible, and no geometry is edited. Changing either allowance marks an old
-review as out of date and clears its temporary comparison baseline.
+review as out of date and clears its temporary comparison baseline. The last
+colored evidence stays visible while you choose the new limit, then a manual or
+Live review replaces it with the updated result.
 
 ### Check for bent faces
 
@@ -91,7 +93,8 @@ faces are also skipped here because the separate degenerate-face check explains
 them more clearly. This is a Quick check, so it stays current in Live Review.
 Like every Reviewer check, it only points at the face and never flattens it.
 Changing the angle marks the old result as out of date and clears a temporary
-Review Delta baseline, just like changing the other review limits.
+Review Delta baseline, just like changing the other review limits. It does not
+erase the current colored evidence while you are adjusting the value.
 
 ## Live Review
 
@@ -213,6 +216,10 @@ the mesh better, worse, or just different?”
 2. Open **Compare Changes** and press **Save Baseline**.
 3. Make your changes.
 4. Run Review again.
+
+Saving the baseline does not remove the current scan or its colored viewport
+evidence. The same problems remain visible while you start the next modeling
+pass; you do not need to press Review or Live again just to restore them.
 
 “Baseline” simply means the before snapshot. After the second review, Onyx
 shows:

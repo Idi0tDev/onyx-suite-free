@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.1/onyx_reviewer-1.0.1.zip"><img alt="Download Onyx Reviewer 1.0.1" src="https://img.shields.io/badge/Download-Onyx%20Reviewer-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
+  <a href="https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.2/onyx_reviewer-1.0.2.zip"><img alt="Download Onyx Reviewer 1.0.2" src="https://img.shields.io/badge/Download-Onyx%20Reviewer-e85d04?style=for-the-badge&logo=blender&logoColor=white"></a>
 </p>
 
 Onyx Reviewer checks the editable mesh and the evaluated modifier result, then
@@ -51,7 +51,7 @@ the viewport back exactly as it was.
 
 ## Install
 
-1. **[Download Onyx Reviewer 1.0.1](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.1/onyx_reviewer-1.0.1.zip)** and leave the ZIP packed.
+1. **[Download Onyx Reviewer 1.0.2](https://github.com/Idi0tDev/onyx-suite-free/releases/download/v1.0.2/onyx_reviewer-1.0.2.zip)** and leave the ZIP packed.
 2. In Blender, open **Edit → Preferences → Get Extensions**.
 3. Open the menu in the top-right and choose **Install from Disk**.
 4. Pick the downloaded `onyx_reviewer-<version>.zip` and confirm the installation.
@@ -208,7 +208,7 @@ and workflow questions, see
 From a clean checkout, use Blender's extension builder:
 
 ```powershell
-blender --command extension build --source-dir onyx_reviewer --output-filepath onyx_reviewer-1.0.1.zip
+blender --command extension build --source-dir onyx_reviewer --output-filepath onyx_reviewer-1.0.2.zip
 ```
 
 The result is the same ready-to-install ZIP linked above. If `blender` is not

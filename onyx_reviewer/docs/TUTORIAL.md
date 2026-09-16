@@ -86,6 +86,8 @@ Press **Show** or **Inspect** to point at the exact face. Undo the move and run
 Review again to clear it. If a real model is meant to bend this way, open
 **More Settings > Topology Limits** and raise **Non-Planar Angle**. Reviewer is
 showing a production question, not declaring that every bent face is wrong.
+The old colored evidence stays on the mesh while you adjust the limit and is
+replaced when the next scan finishes.
 
 ## If both editions are installed
 

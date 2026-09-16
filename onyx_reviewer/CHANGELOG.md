@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 1.0.2 - 2026-09-16
+
+- Keep the current scan results, colored evidence, hover target, and viewport
+  overlay visible when **Save Baseline** records the current review.
+- Keep the last scanned evidence visible while changing Allowed Open Holes,
+  Allowed Ngons, or Non-Planar Angle. The result is still marked for refresh,
+  and Live Review replaces it after the updated scan completes.
+
 ## 1.0.1 - 2026-09-14
 
 - Start with a conservative 90° non-planar angle so the first review stays
